@@ -1,22 +1,64 @@
 import { Card } from "./Card";
 
-const priceHistory = [
-  61200, 60800, 62100, 61500, 63400, 64200, 63800, 65100,
-  64500, 66200, 65800, 67100, 66500, 68200, 67800, 69400,
-  68900, 70200, 69600, 71300, 70800, 72100, 71500, 70200,
-  69400, 68800, 67200, 68100, 67600, 67420,
-];
+interface BTCData {
+  price: number;
+  change24h: number;
+  history: number[];
+}
 
-function GlowSparkline() {
+async function fetchBTCData(): Promise<BTCData | null> {
+  try {
+    const [priceRes, historyRes] = await Promise.all([
+      fetch(
+        "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true",
+        { next: { revalidate: 300 } }
+      ),
+      fetch(
+        "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30&interval=daily",
+        { next: { revalidate: 300 } }
+      ),
+    ]);
+
+    if (!priceRes.ok || !historyRes.ok) return null;
+
+    const priceData = await priceRes.json();
+    const historyData = await historyRes.json();
+
+    const price: number = priceData?.bitcoin?.usd ?? 0;
+    const change24h: number = priceData?.bitcoin?.usd_24h_change ?? 0;
+    const history: number[] = (historyData?.prices ?? []).map(
+      ([, p]: [number, number]) => p
+    );
+
+    if (!price || history.length === 0) return null;
+
+    return { price, change24h, history };
+  } catch {
+    return null;
+  }
+}
+
+const FALLBACK: BTCData = {
+  price: 67420,
+  change24h: 2.34,
+  history: [
+    61200, 60800, 62100, 61500, 63400, 64200, 63800, 65100,
+    64500, 66200, 65800, 67100, 66500, 68200, 67800, 69400,
+    68900, 70200, 69600, 71300, 70800, 72100, 71500, 70200,
+    69400, 68800, 67200, 68100, 67600, 67420,
+  ],
+};
+
+function GlowSparkline({ history }: { history: number[] }) {
   const W = 300;
   const H = 80;
   const pad = 3;
-  const min = Math.min(...priceHistory);
-  const max = Math.max(...priceHistory);
-  const range = max - min;
+  const min = Math.min(...history);
+  const max = Math.max(...history);
+  const range = max - min || 1;
 
-  const pts = priceHistory.map((v, i) => ({
-    x: pad + (i / (priceHistory.length - 1)) * (W - pad * 2),
+  const pts = history.map((v, i) => ({
+    x: pad + (i / (history.length - 1)) * (W - pad * 2),
     y: pad + (1 - (v - min) / range) * (H - pad * 2),
   }));
 
@@ -60,6 +102,15 @@ function GlowSparkline() {
   );
 }
 
+function formatPrice(n: number): string {
+  return "$" + n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
+
+function formatChange(n: number): string {
+  const sign = n >= 0 ? "+" : "";
+  return `${sign}${n.toFixed(2)}%`;
+}
+
 const stats = [
   { label: "Market Cap", value: "$1.33T" },
   { label: "24h Volume", value: "$38.2B" },
@@ -67,7 +118,10 @@ const stats = [
   { label: "Block", value: "841,204" },
 ];
 
-export default function BitcoinPanel() {
+export default async function BitcoinPanel() {
+  const data = (await fetchBTCData()) ?? FALLBACK;
+  const isUp = data.change24h >= 0;
+
   return (
     <Card
       className="p-5 md:p-8 h-full flex flex-col"
@@ -96,17 +150,24 @@ export default function BitcoinPanel() {
             backgroundClip: "text",
           }}
         >
-          $67,420
+          {formatPrice(data.price)}
         </p>
         <div className="text-right mb-1">
           <span
-            className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-400 px-2.5 py-1 rounded-full"
-            style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.12)" }}
+            className="inline-flex items-center gap-1 text-sm font-semibold px-2.5 py-1 rounded-full"
+            style={{
+              color: isUp ? "rgba(52,211,153,1)" : "rgba(248,113,113,1)",
+              background: isUp ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)",
+              border: isUp ? "1px solid rgba(52,211,153,0.12)" : "1px solid rgba(248,113,113,0.12)",
+            }}
           >
             <svg viewBox="0 0 10 10" fill="currentColor" className="w-2 h-2">
-              <path d="M5 1.5l3.5 5h-7L5 1.5z" />
+              {isUp
+                ? <path d="M5 1.5l3.5 5h-7L5 1.5z" />
+                : <path d="M5 8.5l3.5-5h-7L5 8.5z" />
+              }
             </svg>
-            +2.34%
+            {formatChange(data.change24h)}
           </span>
           <p className="text-[10px] text-white/20 mt-1.5">24h change</p>
         </div>
@@ -114,13 +175,13 @@ export default function BitcoinPanel() {
 
       {/* Chart */}
       <div className="my-3 -mx-1">
-        <GlowSparkline />
+        <GlowSparkline history={data.history} />
       </div>
-      <div className="flex justify-between text-[10px] text-white/15 mb-2 px-1">
+      <div className="flex justify-between text-[10px] text-white/15 px-1">
         <span>30 days ago</span>
         <span>Today</span>
       </div>
-      <p className="text-[9px] text-white/15 text-right mb-4 -mt-2">Updated just now</p>
+      <p className="text-[9px] text-white/15 text-right mb-4 -mt-0.5">Updated just now</p>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-2.5 mt-auto">
