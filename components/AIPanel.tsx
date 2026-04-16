@@ -6,22 +6,14 @@ import { Card } from "./Card";
 interface Message {
   role: "user" | "assistant";
   content: string;
+  error?: boolean;
 }
 
 const starters = [
-  "What's the Bitcoin market reading right now?",
-  "Give me a focus insight for this week",
-  "One principle for compounding wealth",
+  "What makes Bitcoin a sovereign money asset?",
+  "Give me a focus protocol for deep work mornings",
+  "One principle for asymmetric wealth building",
 ];
-
-const mockResponses = [
-  "Bitcoin is holding strong accumulation structure at current levels. The 30-day trend shows a healthy pullback from the $72K high — typical pre-breakout behavior. Institutional flows remain positive. Key support at $65K, next resistance at $71.5K. Patience is the edge here.",
-  "Your focus metrics are trending well: 4h 20m today, 15% above your weekly baseline. Your sharpest window appears to be 9–11am — protect it aggressively. One optimization: eliminate all incoming communication before noon and batch it post-lunch.",
-  "Asymmetric positioning. Take small, high-conviction bets where downside is fixed but upside is open-ended. Bitcoin was that bet for the last decade. The discipline isn't finding the idea — it's sizing correctly and holding through noise.",
-  "Sovereignty compounds. Every tool you own instead of rent, every skill you build instead of outsource, every asset you self-custody — they reduce your dependency surface and increase your leverage over time. Stack them intentionally.",
-];
-
-let responseIndex = 0;
 
 export default function AIPanel() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -38,11 +30,35 @@ export default function AIPanel() {
     setMessages((prev) => [...prev, { role: "user", content: text.trim() }]);
     setInput("");
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    const reply = mockResponses[responseIndex % mockResponses.length];
-    responseIndex++;
-    setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
-    setLoading(false);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text.trim() }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: data.error ?? "Something went wrong.", error: true },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: data.reply },
+        ]);
+      }
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "Connection error. Check your network and try again.", error: true },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -61,7 +77,7 @@ export default function AIPanel() {
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-400/50 mb-0.5">
             AI Assistant
           </p>
-          <p className="text-sm text-white/40">Ask about Bitcoin, focus, or wealth.</p>
+          <p className="text-sm text-white/40">Bitcoin · Focus · Wealth strategy</p>
         </div>
         <div
           className="w-8 h-8 rounded-xl flex items-center justify-center"
@@ -80,32 +96,34 @@ export default function AIPanel() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-5 md:px-8 py-4 md:py-6 space-y-4">
         {messages.length === 0 && (
-          <div className="flex flex-wrap gap-2.5 pt-1">
-            <p className="w-full text-[11px] text-white/18 mb-5 leading-relaxed">
+          <div className="flex flex-col gap-3 pt-1">
+            <p className="text-[11px] text-white/20 leading-relaxed">
               Intelligence, on demand. Ask anything about Bitcoin, focus, or wealth strategy.
             </p>
-            {starters.map((s) => (
-              <button
-                key={s}
-                onClick={() => send(s)}
-                className="text-xs text-white/40 hover:text-white/75 px-4 py-2.5 rounded-full transition-all"
-                style={{
-                  background: "rgba(99,102,241,0.07)",
-                  border: "1px solid rgba(99,102,241,0.18)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(99,102,241,0.13)";
-                  e.currentTarget.style.border = "1px solid rgba(99,102,241,0.3)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(99,102,241,0.07)";
-                  e.currentTarget.style.border = "1px solid rgba(99,102,241,0.18)";
-                }}
-              >
-                {s}
-              </button>
-            ))}
+            <div className="flex flex-wrap gap-2.5">
+              {starters.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => send(s)}
+                  className="text-xs text-white/40 hover:text-white/75 px-4 py-2.5 rounded-full transition-all"
+                  style={{
+                    background: "rgba(99,102,241,0.07)",
+                    border: "1px solid rgba(99,102,241,0.18)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(99,102,241,0.13)";
+                    e.currentTarget.style.border = "1px solid rgba(99,102,241,0.3)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(99,102,241,0.07)";
+                    e.currentTarget.style.border = "1px solid rgba(99,102,241,0.18)";
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -115,12 +133,12 @@ export default function AIPanel() {
               <div
                 className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center mt-0.5"
                 style={{
-                  background: "rgba(99,102,241,0.15)",
-                  border: "1px solid rgba(99,102,241,0.25)",
-                  boxShadow: "0 0 8px rgba(99,102,241,0.2)",
+                  background: msg.error ? "rgba(248,113,113,0.15)" : "rgba(99,102,241,0.15)",
+                  border: msg.error ? "1px solid rgba(248,113,113,0.25)" : "1px solid rgba(99,102,241,0.25)",
+                  boxShadow: msg.error ? "0 0 8px rgba(248,113,113,0.2)" : "0 0 8px rgba(99,102,241,0.2)",
                 }}
               >
-                <svg viewBox="0 0 12 12" fill="currentColor" className="w-3 h-3 text-indigo-400">
+                <svg viewBox="0 0 12 12" fill="currentColor" className={`w-3 h-3 ${msg.error ? "text-red-400" : "text-indigo-400"}`}>
                   <path d="M6 1l1.2 3.5L11 6 7.2 7.2 6 11 4.8 7.2 1 6l3.8-1.2L6 1z" />
                 </svg>
               </div>
@@ -135,6 +153,12 @@ export default function AIPanel() {
                       background: "rgba(255,255,255,0.08)",
                       border: "1px solid rgba(255,255,255,0.1)",
                       color: "rgba(255,255,255,0.85)",
+                    }
+                  : msg.error
+                  ? {
+                      background: "rgba(248,113,113,0.06)",
+                      border: "1px solid rgba(248,113,113,0.12)",
+                      color: "rgba(255,255,255,0.45)",
                     }
                   : {
                       background: "rgba(99,102,241,0.08)",
