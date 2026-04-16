@@ -1,4 +1,4 @@
-import { fetchBTCData, BTC_FALLBACK, formatPrice, formatChange } from "@/lib/btc";
+import { fetchBTCData, BTC_FALLBACK, formatPrice, formatChange, formatLargeUSD } from "@/lib/btc";
 import { Card } from "./Card";
 
 function GlowSparkline({ history }: { history: number[] }) {
@@ -54,12 +54,6 @@ function GlowSparkline({ history }: { history: number[] }) {
   );
 }
 
-const stats = [
-  { label: "Market Cap", value: "$1.33T" },
-  { label: "24h Volume", value: "$38.2B" },
-  { label: "Dominance", value: "54.1%" },
-  { label: "Block", value: "841,204" },
-];
 
 export default async function BitcoinPanel() {
   const data = (await fetchBTCData()) ?? BTC_FALLBACK;
@@ -128,7 +122,12 @@ export default async function BitcoinPanel() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-2.5 mt-auto">
-        {stats.map(({ label, value }) => (
+        {[
+          { label: "Market Cap", value: formatLargeUSD(data.marketCap) },
+          { label: "24h Volume", value: formatLargeUSD(data.volume24h) },
+          { label: "Dominance", value: data.dominance.toFixed(1) + "%" },
+          { label: "Block", value: "841,204" },
+        ].map(({ label, value }) => (
           <div
             key={label}
             className="rounded-xl px-4 py-3.5"
