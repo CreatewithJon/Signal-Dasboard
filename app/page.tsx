@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { MetricDisplay } from "@/components/MetricDisplay";
 import BitcoinPanel from "@/components/BitcoinPanel";
 import ProductivityPanel from "@/components/ProductivityPanel";
 import AIPanel from "@/components/AIPanel";
