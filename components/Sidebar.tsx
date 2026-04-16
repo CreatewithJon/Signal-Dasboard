@@ -63,44 +63,45 @@ export default function Sidebar() {
     >
       {/* Brand */}
       <div
-        className="px-5 py-6"
+        className="px-5 py-7"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
       >
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
             style={{
-              background: "linear-gradient(135deg, #f59e0b, #d97706)",
-              boxShadow: "0 0 16px rgba(245, 158, 11, 0.4)",
+              background: "linear-gradient(135deg, #fbbf24, #d97706)",
+              boxShadow: "0 0 20px rgba(245, 158, 11, 0.45), 0 2px 8px rgba(0,0,0,0.3)",
             }}
           >
-            <span className="text-black text-xs font-black">₿</span>
+            <span className="text-black text-sm font-black">₿</span>
           </div>
           <div>
-            <p className="text-sm font-semibold text-white/90 leading-none">Signal</p>
-            <p className="text-[10px] text-white/30 mt-0.5">Personal OS</p>
+            <p className="text-sm font-semibold text-white/92 leading-none tracking-tight">Signal</p>
+            <p className="text-[10px] text-white/28 mt-0.5 tracking-wide">Personal OS</p>
           </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      <nav className="flex-1 px-3 py-5 space-y-1">
         {nav.map((item) => {
           const isActive = pathname === "/" && item.href === "/";
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
                 isActive
                   ? "text-white"
-                  : "text-white/30 hover:text-white/70"
+                  : "text-white/30 hover:text-white/65"
               }`}
               style={
                 isActive
                   ? {
-                      background: "rgba(255,255,255,0.07)",
+                      background: "rgba(255,255,255,0.08)",
                       backdropFilter: "blur(12px)",
+                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
                     }
                   : undefined
               }

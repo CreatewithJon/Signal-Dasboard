@@ -29,11 +29,12 @@ function GlowSparkline() {
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
       className="w-full"
-      style={{ height: 88 }}
+      style={{ height: 112 }}
     >
       <defs>
         <linearGradient id="btc-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.22" />
+          <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.28" />
+          <stop offset="60%" stopColor="#f59e0b" stopOpacity="0.06" />
           <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
         </linearGradient>
         <filter id="line-glow" x="-20%" y="-20%" width="140%" height="140%">
@@ -69,9 +70,9 @@ const stats = [
 export default function BitcoinPanel() {
   return (
     <Card
-      className="p-7 h-full flex flex-col"
+      className="p-8 h-full flex flex-col"
       id="bitcoin"
-      glow="0 0 80px rgba(245, 158, 11, 0.06)"
+      glow="0 0 100px rgba(245, 158, 11, 0.08)"
     >
       {/* Label */}
       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-400/50 mb-5">
@@ -119,11 +120,15 @@ export default function BitcoinPanel() {
         {stats.map(({ label, value }) => (
           <div
             key={label}
-            className="rounded-xl px-4 py-3"
-            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.05)" }}
+            className="rounded-xl px-4 py-3.5"
+            style={{
+              background: "rgba(255,255,255,0.045)",
+              border: "1px solid rgba(255,255,255,0.07)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+            }}
           >
-            <p className="text-[10px] uppercase tracking-wider text-white/25 mb-1">{label}</p>
-            <p className="text-sm font-medium text-white/70">{value}</p>
+            <p className="text-[9px] uppercase tracking-[0.18em] font-semibold text-white/25 mb-1.5">{label}</p>
+            <p className="text-sm font-semibold text-white/80">{value}</p>
           </div>
         ))}
       </div>

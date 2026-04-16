@@ -23,7 +23,7 @@ export default function ProductivityPanel() {
   const progress = (done / tasks.length) * 100;
 
   return (
-    <Card className="p-7 h-full flex flex-col gap-7" id="focus">
+    <Card className="p-8 h-full flex flex-col gap-6" id="focus">
 
       {/* Focus block */}
       <div>
@@ -96,20 +96,28 @@ export default function ProductivityPanel() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-2.5">
         <div
-          className="rounded-xl px-4 py-3"
-          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.05)" }}
+          className="rounded-xl px-4 py-3.5"
+          style={{
+            background: "rgba(255,255,255,0.045)",
+            border: "1px solid rgba(255,255,255,0.07)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+          }}
         >
-          <p className="text-[10px] uppercase tracking-wider text-white/25 mb-1">Deep Work</p>
-          <p className="text-sm font-semibold text-white/70">4h 20m</p>
+          <p className="text-[9px] uppercase tracking-[0.18em] font-semibold text-white/25 mb-1.5">Deep Work</p>
+          <p className="text-sm font-semibold text-white/80">4h 20m</p>
         </div>
         <div
-          className="rounded-xl px-4 py-3"
-          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.05)" }}
+          className="rounded-xl px-4 py-3.5"
+          style={{
+            background: "rgba(255,255,255,0.045)",
+            border: "1px solid rgba(255,255,255,0.07)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+          }}
         >
-          <p className="text-[10px] uppercase tracking-wider text-white/25 mb-1">Streak</p>
+          <p className="text-[9px] uppercase tracking-[0.18em] font-semibold text-white/25 mb-1.5">Streak</p>
           <p
             className="text-sm font-semibold"
-            style={{ color: "#f59e0b", textShadow: "0 0 8px rgba(245,158,11,0.5)" }}
+            style={{ color: "#f59e0b", textShadow: "0 0 10px rgba(245,158,11,0.5)" }}
           >
             12 days
           </p>
@@ -118,7 +126,7 @@ export default function ProductivityPanel() {
 
       {/* Note */}
       <div className="mt-auto">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/25 mb-3">
+        <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-white/25 mb-2.5">
           Quick Note
         </p>
         <textarea
@@ -126,16 +134,19 @@ export default function ProductivityPanel() {
           onChange={(e) => setNote(e.target.value)}
           placeholder="Capture a thought..."
           rows={3}
-          className="w-full text-sm text-white/60 placeholder:text-white/15 focus:outline-none resize-none rounded-xl px-4 py-3 transition-colors"
+          className="w-full text-sm text-white/65 placeholder:text-white/15 focus:outline-none resize-none rounded-xl px-4 py-3.5 transition-colors leading-relaxed"
           style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.07)",
+            background: "rgba(255,255,255,0.025)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            boxShadow: "inset 0 1px 3px rgba(0,0,0,0.2)",
           }}
           onFocus={(e) => {
-            e.currentTarget.style.border = "1px solid rgba(255,255,255,0.15)";
+            e.currentTarget.style.border = "1px solid rgba(255,255,255,0.14)";
+            e.currentTarget.style.background = "rgba(255,255,255,0.04)";
           }}
           onBlur={(e) => {
-            e.currentTarget.style.border = "1px solid rgba(255,255,255,0.07)";
+            e.currentTarget.style.border = "1px solid rgba(255,255,255,0.06)";
+            e.currentTarget.style.background = "rgba(255,255,255,0.025)";
           }}
         />
       </div>

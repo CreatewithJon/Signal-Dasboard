@@ -49,12 +49,12 @@ export default function AIPanel() {
     <Card
       className="flex flex-col"
       id="ai"
-      glow="0 0 80px rgba(99, 102, 241, 0.06)"
-      style={{ minHeight: 400 }}
+      glow="0 0 100px rgba(99, 102, 241, 0.08)"
+      style={{ minHeight: 460 }}
     >
       {/* Header */}
       <div
-        className="px-7 py-5 flex items-center justify-between"
+        className="px-8 py-5 flex items-center justify-between"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
       >
         <div>
@@ -78,23 +78,26 @@ export default function AIPanel() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-7 py-5 space-y-4">
+      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4">
         {messages.length === 0 && (
-          <div className="flex flex-wrap gap-2 pt-2">
+          <div className="flex flex-wrap gap-2.5 pt-1">
             {starters.map((s) => (
               <button
                 key={s}
                 onClick={() => send(s)}
-                className="text-xs text-white/35 hover:text-white/70 px-3.5 py-2 rounded-xl transition-all"
+                className="text-xs text-white/40 hover:text-white/75 px-4 py-2.5 rounded-full transition-all"
                 style={{
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.07)",
+                  background: "rgba(99,102,241,0.07)",
+                  border: "1px solid rgba(99,102,241,0.18)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.border = "1px solid rgba(255,255,255,0.15)";
+                  e.currentTarget.style.background = "rgba(99,102,241,0.13)";
+                  e.currentTarget.style.border = "1px solid rgba(99,102,241,0.3)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.border = "1px solid rgba(255,255,255,0.07)";
+                  e.currentTarget.style.background = "rgba(99,102,241,0.07)";
+                  e.currentTarget.style.border = "1px solid rgba(99,102,241,0.18)";
                 }}
               >
                 {s}
@@ -177,7 +180,7 @@ export default function AIPanel() {
 
       {/* Input */}
       <div
-        className="px-7 py-4"
+        className="px-8 py-5"
         style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
       >
         <form

@@ -17,9 +17,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           className="flex h-screen text-zinc-100 overflow-hidden"
           style={{
             background: `
-              radial-gradient(ellipse 120% 70% at 50% -10%, rgba(88, 28, 235, 0.22) 0%, transparent 65%),
-              radial-gradient(ellipse 60% 50% at 90% 80%, rgba(245, 158, 11, 0.06) 0%, transparent 55%),
-              radial-gradient(ellipse 50% 40% at 10% 60%, rgba(99, 102, 241, 0.07) 0%, transparent 55%),
+              radial-gradient(ellipse 130% 80% at 50% -5%, rgba(88, 28, 235, 0.28) 0%, rgba(88, 28, 235, 0.08) 45%, transparent 68%),
+              radial-gradient(ellipse 70% 60% at 90% 85%, rgba(245, 158, 11, 0.09) 0%, transparent 55%),
+              radial-gradient(ellipse 55% 45% at 10% 65%, rgba(99, 102, 241, 0.09) 0%, transparent 55%),
+              radial-gradient(ellipse 40% 30% at 50% 100%, rgba(99, 102, 241, 0.05) 0%, transparent 60%),
               #030308
             `,
           }}

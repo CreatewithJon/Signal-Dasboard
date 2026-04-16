@@ -13,25 +13,25 @@ export default function HomePage() {
     <div className="max-w-5xl mx-auto">
 
       {/* Hero */}
-      <section className="relative py-20 text-center">
+      <section className="relative py-24 text-center">
         {/* Hero ambient glow */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "radial-gradient(ellipse 65% 70% at 50% 40%, rgba(88,28,235,0.18) 0%, transparent 70%)",
+              "radial-gradient(ellipse 75% 80% at 50% 35%, rgba(88,28,235,0.22) 0%, rgba(88,28,235,0.06) 55%, transparent 75%)",
           }}
         />
 
-        <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-purple-400/50 mb-5">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-purple-400/60 mb-6 relative">
           Command Center
         </p>
 
         <h1
-          className="text-5xl font-bold tracking-tight leading-tight mb-5 relative"
+          className="text-6xl font-bold tracking-[-0.02em] leading-[1.05] mb-6 relative"
           style={{
             background:
-              "linear-gradient(160deg, rgba(255,255,255,0.95) 30%, rgba(255,255,255,0.45) 100%)",
+              "linear-gradient(165deg, rgba(255,255,255,0.97) 20%, rgba(255,255,255,0.55) 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
@@ -42,51 +42,52 @@ export default function HomePage() {
           Intelligence.
         </h1>
 
-        <p className="text-base text-white/30 mb-14 max-w-sm mx-auto leading-relaxed">
+        <p className="text-sm text-white/25 mb-16 max-w-[260px] mx-auto leading-relaxed relative">
           Your personal operating system for the digital age.
         </p>
 
         {/* Metric pills */}
-        <div className="flex items-center justify-center gap-3 flex-wrap">
+        <div className="flex items-center justify-center gap-3 flex-wrap relative">
           {[
             {
               label: "BTC",
               value: "$67,420",
               sub: "↑ 2.34%",
-              subColor: "text-emerald-400",
+              subColor: "rgba(52,211,153,0.9)",
               accentColor: "#f59e0b",
             },
             {
               label: "Focus",
               value: "4h 20m",
               sub: "↑ 15% avg",
-              subColor: "text-white/30",
-              accentColor: "rgba(255,255,255,0.8)",
+              subColor: "rgba(255,255,255,0.3)",
+              accentColor: "rgba(255,255,255,0.85)",
             },
             {
               label: "Streak",
               value: "12 days",
               sub: "🔥",
-              subColor: "text-amber-400",
+              subColor: "rgba(245,158,11,0.9)",
               accentColor: "#f59e0b",
             },
           ].map(({ label, value, sub, subColor, accentColor }) => (
             <div
               key={label}
-              className="flex items-center gap-3 px-5 py-3 rounded-2xl"
+              className="flex items-center gap-3.5 px-6 py-4 rounded-2xl"
               style={{
-                background: "rgba(255,255,255,0.04)",
+                background: "rgba(255,255,255,0.045)",
                 backdropFilter: "blur(24px)",
                 WebkitBackdropFilter: "blur(24px)",
-                border: "1px solid rgba(255,255,255,0.07)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.25)",
               }}
             >
-              <span className="text-[10px] text-white/20 uppercase tracking-widest">{label}</span>
-              <span className="text-base font-semibold" style={{ color: accentColor }}>
+              <span className="text-[9px] text-white/20 uppercase tracking-[0.2em] font-semibold">{label}</span>
+              <span className="w-px h-3 shrink-0" style={{ background: "rgba(255,255,255,0.08)" }} />
+              <span className="text-sm font-semibold" style={{ color: accentColor }}>
                 {value}
               </span>
-              <span className={`text-xs font-medium ${subColor}`}>{sub}</span>
+              <span className="text-xs font-medium" style={{ color: subColor }}>{sub}</span>
             </div>
           ))}
         </div>
@@ -98,7 +99,7 @@ export default function HomePage() {
         style={{
           height: 1,
           background:
-            "linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0.06) 70%, transparent)",
+            "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 20%, rgba(255,255,255,0.04) 80%, transparent 100%)",
         }}
       />
 

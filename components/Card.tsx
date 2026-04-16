@@ -14,13 +14,13 @@ export function Card({ children, className = "", id, style, glow }: CardProps) {
       id={id}
       className={`rounded-2xl ${className}`}
       style={{
-        background: "rgba(255, 255, 255, 0.04)",
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
-        border: "1px solid rgba(255, 255, 255, 0.07)",
+        background: "rgba(255, 255, 255, 0.042)",
+        backdropFilter: "blur(28px)",
+        WebkitBackdropFilter: "blur(28px)",
+        border: "1px solid rgba(255, 255, 255, 0.08)",
         boxShadow: glow
-          ? `inset 0 1px 0 rgba(255,255,255,0.08), ${glow}`
-          : "inset 0 1px 0 rgba(255,255,255,0.06)",
+          ? `inset 0 1px 0 rgba(255,255,255,0.10), 0 4px 32px rgba(0,0,0,0.3), ${glow}`
+          : "inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 32px rgba(0,0,0,0.25)",
         ...style,
       }}
     >
