@@ -35,7 +35,7 @@ export default function ProductivityPanel() {
         </p>
         <div className="flex items-center gap-3">
           <div
-            className="flex-1 h-1 rounded-full overflow-hidden"
+            className="flex-1 h-1.5 rounded-full overflow-hidden"
             style={{ background: "rgba(255,255,255,0.07)" }}
           >
             <div
@@ -43,7 +43,7 @@ export default function ProductivityPanel() {
               style={{
                 width: `${progress}%`,
                 background: "linear-gradient(90deg, #f59e0b, #fbbf24)",
-                boxShadow: "0 0 8px rgba(245,158,11,0.5)",
+                boxShadow: progress > 0 ? "0 0 6px rgba(245,158,11,0.5)" : "none",
               }}
             />
           </div>

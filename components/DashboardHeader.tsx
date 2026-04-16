@@ -11,16 +11,16 @@ export default function DashboardHeader() {
 
   return (
     <header
-      className="h-13 px-8 flex items-center justify-between shrink-0"
+      className="h-16 px-8 flex items-center justify-between shrink-0"
       style={{
         borderBottom: "1px solid rgba(255,255,255,0.05)",
         background: "rgba(255,255,255,0.015)",
       }}
     >
-      <p className="text-sm text-white/30">
+      <p className="text-base font-medium text-white/50">
         {greeting},{" "}
-        <span className="text-white/70 font-medium">Jonathan</span>
-        <span className="mx-2 text-white/15">·</span>
+        <span className="text-white/85 font-semibold">Jonathan</span>
+        <span className="mx-2 text-white/20">·</span>
         <span className="text-white/20">{date}</span>
       </p>
       <span
@@ -31,7 +31,7 @@ export default function DashboardHeader() {
         }}
       >
         <span
-          className="w-1.5 h-1.5 rounded-full bg-emerald-400"
+          className="pulse-live w-1.5 h-1.5 rounded-full bg-emerald-400"
           style={{ boxShadow: "0 0 6px rgba(52,211,153,0.8)" }}
         />
         Live

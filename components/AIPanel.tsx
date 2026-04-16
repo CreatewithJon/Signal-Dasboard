@@ -81,6 +81,9 @@ export default function AIPanel() {
       <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4">
         {messages.length === 0 && (
           <div className="flex flex-wrap gap-2.5 pt-1">
+            <p className="w-full text-[11px] text-white/18 mb-5 leading-relaxed">
+              Intelligence, on demand. Ask anything about Bitcoin, focus, or wealth strategy.
+            </p>
             {starters.map((s) => (
               <button
                 key={s}
