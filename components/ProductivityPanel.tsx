@@ -23,7 +23,7 @@ export default function ProductivityPanel() {
   const progress = (done / tasks.length) * 100;
 
   return (
-    <Card className="p-8 h-full flex flex-col gap-6" id="focus">
+    <Card className="p-5 md:p-8 h-full flex flex-col gap-6" id="focus">
 
       {/* Focus block */}
       <div>

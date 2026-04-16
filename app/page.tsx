@@ -47,7 +47,7 @@ export default function HomePage() {
         </p>
 
         {/* Metric pills */}
-        <div className="flex items-center justify-center gap-3 flex-wrap relative">
+        <div className="flex items-center justify-center gap-2 flex-wrap relative">
           {[
             {
               label: "BTC",
@@ -84,10 +84,10 @@ export default function HomePage() {
             >
               <span className="text-[9px] text-white/20 uppercase tracking-[0.2em] font-semibold">{label}</span>
               <span className="w-px h-3 shrink-0" style={{ background: "rgba(255,255,255,0.08)" }} />
-              <span className="text-sm font-semibold" style={{ color: accentColor }}>
+              <span className="text-xs md:text-sm font-semibold" style={{ color: accentColor }}>
                 {value}
               </span>
-              <span className="text-xs font-medium" style={{ color: subColor }}>{sub}</span>
+              <span className="text-[11px] md:text-xs font-medium" style={{ color: subColor }}>{sub}</span>
             </div>
           ))}
         </div>

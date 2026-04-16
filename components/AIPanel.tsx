@@ -54,7 +54,7 @@ export default function AIPanel() {
     >
       {/* Header */}
       <div
-        className="px-8 py-5 flex items-center justify-between"
+        className="px-5 md:px-8 py-4 md:py-5 flex items-center justify-between"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
       >
         <div>
@@ -78,7 +78,7 @@ export default function AIPanel() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4">
+      <div className="flex-1 overflow-y-auto px-5 md:px-8 py-4 md:py-6 space-y-4">
         {messages.length === 0 && (
           <div className="flex flex-wrap gap-2.5 pt-1">
             <p className="w-full text-[11px] text-white/18 mb-5 leading-relaxed">
@@ -183,7 +183,7 @@ export default function AIPanel() {
 
       {/* Input */}
       <div
-        className="px-8 py-5"
+        className="px-5 md:px-8 py-4 md:py-5"
         style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
       >
         <form

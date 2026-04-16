@@ -70,7 +70,7 @@ const stats = [
 export default function BitcoinPanel() {
   return (
     <Card
-      className="p-8 h-full flex flex-col"
+      className="p-5 md:p-8 h-full flex flex-col"
       id="bitcoin"
       glow="0 0 100px rgba(245, 158, 11, 0.08)"
     >
