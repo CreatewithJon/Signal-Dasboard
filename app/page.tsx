@@ -2,13 +2,15 @@ import type { Metadata } from "next";
 import BitcoinPanel from "@/components/BitcoinPanel";
 import ProductivityPanel from "@/components/ProductivityPanel";
 import AIPanel from "@/components/AIPanel";
+import { fetchBTCData, BTC_FALLBACK, formatPrice } from "@/lib/btc";
 
 export const metadata: Metadata = {
   title: "Signal — Command Center",
   description: "Your personal command center for Bitcoin, productivity, and AI.",
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  const btc = (await fetchBTCData()) ?? BTC_FALLBACK;
   return (
     <div className="max-w-5xl mx-auto">
 
@@ -51,9 +53,9 @@ export default function HomePage() {
           {[
             {
               label: "BTC",
-              value: "$67,420",
-              sub: "↑ 2.34%",
-              subColor: "rgba(52,211,153,0.9)",
+              value: formatPrice(btc.price),
+              sub: (btc.change24h >= 0 ? "↑ " : "↓ ") + Math.abs(btc.change24h).toFixed(2) + "%",
+              subColor: btc.change24h >= 0 ? "rgba(52,211,153,0.9)" : "rgba(248,113,113,0.9)",
               accentColor: "#f59e0b",
             },
             {
