@@ -1,17 +1,69 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "./Card";
 
-const initialTasks = [
+interface Task {
+  id: number;
+  text: string;
+  done: boolean;
+}
+
+const DEFAULT_TASKS: Task[] = [
   { id: 1, text: "Review Bitcoin position sizing", done: false },
   { id: 2, text: "Write weekly reflection", done: true },
   { id: 3, text: "Read 30 pages of Deep Work", done: false },
 ];
 
+const TASKS_KEY = "signal_tasks";
+const NOTE_KEY = "signal_note";
+
+function loadTasks(): Task[] {
+  try {
+    const raw = localStorage.getItem(TASKS_KEY);
+    if (!raw) return DEFAULT_TASKS;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed as Task[];
+    return DEFAULT_TASKS;
+  } catch {
+    return DEFAULT_TASKS;
+  }
+}
+
+function loadNote(): string {
+  try {
+    return localStorage.getItem(NOTE_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
 export default function ProductivityPanel() {
-  const [tasks, setTasks] = useState(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>(DEFAULT_TASKS);
   const [note, setNote] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  // Load persisted state after mount (avoids SSR/hydration mismatch)
+  useEffect(() => {
+    setTasks(loadTasks());
+    setNote(loadNote());
+    setMounted(true);
+  }, []);
+
+  // Persist tasks whenever they change (skip before mount)
+  useEffect(() => {
+    if (!mounted) return;
+    localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
+  }, [tasks, mounted]);
+
+  // Persist note with debounce to avoid excessive writes
+  useEffect(() => {
+    if (!mounted) return;
+    const timer = setTimeout(() => {
+      localStorage.setItem(NOTE_KEY, note);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [note, mounted]);
 
   function toggleTask(id: number) {
     setTasks((prev) =>
