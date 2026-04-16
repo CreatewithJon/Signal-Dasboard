@@ -53,7 +53,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="w-48 shrink-0 flex flex-col"
+      className="hidden md:flex w-48 shrink-0 flex-col"
       style={{
         background: "rgba(255,255,255,0.02)",
         backdropFilter: "blur(24px)",

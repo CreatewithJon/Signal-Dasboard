@@ -75,14 +75,20 @@ export default function BitcoinPanel() {
       glow="0 0 100px rgba(245, 158, 11, 0.08)"
     >
       {/* Label */}
-      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-400/50 mb-5">
-        Bitcoin · BTC/USD
-      </p>
+      <div className="flex items-center gap-2 mb-5">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-400/50">
+          Bitcoin · BTC/USD
+        </p>
+        <span
+          className="pulse-live w-1.5 h-1.5 rounded-full"
+          style={{ background: "#f59e0b", boxShadow: "0 0 6px rgba(245,158,11,0.8)" }}
+        />
+      </div>
 
       {/* Price row */}
       <div className="flex items-end justify-between mb-2">
         <p
-          className="text-4xl font-semibold tracking-tight"
+          className="price-breathe text-4xl font-semibold tracking-tight"
           style={{
             background: "linear-gradient(135deg, #fbbf24, #f59e0b)",
             WebkitBackgroundClip: "text",
@@ -110,10 +116,11 @@ export default function BitcoinPanel() {
       <div className="my-3 -mx-1">
         <GlowSparkline />
       </div>
-      <div className="flex justify-between text-[10px] text-white/15 mb-6 px-1">
+      <div className="flex justify-between text-[10px] text-white/15 mb-2 px-1">
         <span>30 days ago</span>
         <span>Today</span>
       </div>
+      <p className="text-[9px] text-white/15 text-right mb-4 -mt-2">Updated just now</p>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-2.5 mt-auto">

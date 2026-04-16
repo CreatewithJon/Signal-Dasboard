@@ -20,8 +20,10 @@ export default function DashboardHeader() {
       <p className="text-base font-medium text-white/50">
         {greeting},{" "}
         <span className="text-white/85 font-semibold">Jonathan</span>
-        <span className="mx-2 text-white/20">·</span>
-        <span className="text-white/20">{date}</span>
+        <span className="hidden sm:inline">
+          <span className="mx-2 text-white/20">·</span>
+          <span className="text-white/20">{date}</span>
+        </span>
       </p>
       <span
         className="inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-wider uppercase text-emerald-400 px-3 py-1 rounded-full"

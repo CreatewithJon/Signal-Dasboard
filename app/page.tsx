@@ -13,7 +13,7 @@ export default function HomePage() {
     <div className="max-w-5xl mx-auto">
 
       {/* Hero */}
-      <section className="relative py-24 text-center">
+      <section className="relative py-14 md:py-24 text-center">
         {/* Hero ambient glow */}
         <div
           className="absolute inset-0 pointer-events-none"
@@ -28,7 +28,7 @@ export default function HomePage() {
         </p>
 
         <h1
-          className="text-6xl font-bold tracking-[-0.02em] leading-[1.05] mb-6 relative"
+          className="text-4xl md:text-6xl font-bold tracking-[-0.02em] leading-[1.05] mb-6 relative"
           style={{
             background:
               "linear-gradient(165deg, rgba(255,255,255,0.97) 20%, rgba(255,255,255,0.55) 100%)",
@@ -73,7 +73,7 @@ export default function HomePage() {
           ].map(({ label, value, sub, subColor, accentColor }) => (
             <div
               key={label}
-              className="flex items-center gap-3.5 px-6 py-4 rounded-2xl"
+              className="flex items-center gap-3.5 px-4 py-3 md:px-6 md:py-4 rounded-2xl"
               style={{
                 background: "rgba(255,255,255,0.045)",
                 backdropFilter: "blur(24px)",
@@ -104,11 +104,11 @@ export default function HomePage() {
       />
 
       {/* Panels */}
-      <div className="grid grid-cols-12 gap-5 mb-5">
-        <div className="col-span-7 flex">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mb-5">
+        <div className="col-span-1 md:col-span-7 flex">
           <BitcoinPanel />
         </div>
-        <div className="col-span-5 flex">
+        <div className="col-span-1 md:col-span-5 flex">
           <ProductivityPanel />
         </div>
       </div>

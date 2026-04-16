@@ -25,3 +25,11 @@ body::before {
 .pulse-live {
   animation: pulse-live 2s ease-in-out infinite;
 }
+
+@keyframes price-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.82; }
+}
+.price-breathe {
+  animation: price-breathe 4s ease-in-out infinite;
+}
