@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, FormEvent, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get("from") ?? "/";
 
@@ -27,7 +26,7 @@ function LoginForm() {
         setError(data.error ?? "Incorrect password.");
         return;
       }
-      router.push(data.redirect ?? "/");
+      window.location.href = data.redirect ?? "/";
     } catch {
       setError("Something went wrong.");
     } finally {
