@@ -12,7 +12,7 @@ function fmt(n: number): string {
 export default function BTCStackPanel({ initialPrice }: { initialPrice?: number }) {
   const [btcAmount, setBtcAmount] = useState("");
   const [avgCost, setAvgCost] = useState("");
-  const [price, setPrice] = useState<number | null>(initialPrice ?? null);
+  const [price] = useState<number | null>(initialPrice ?? null);
   const [editing, setEditing] = useState(false);
   const [mounted, setMounted] = useState(false);
 
