@@ -9,6 +9,9 @@ interface Message {
   error?: boolean;
 }
 
+const MESSAGES_KEY = "signal_ai_messages";
+const MAX_STORED = 40; // keep last 40 messages
+
 const starters = [
   "What makes Bitcoin a sovereign money asset?",
   "Give me a focus protocol for deep work mornings",
@@ -19,7 +22,29 @@ export default function AIPanel() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Load persisted messages on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(MESSAGES_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (Array.isArray(saved) && saved.length > 0) setMessages(saved);
+      }
+    } catch {}
+    setMounted(true);
+  }, []);
+
+  // Persist messages on change
+  useEffect(() => {
+    if (!mounted) return;
+    try {
+      const toStore = messages.slice(-MAX_STORED);
+      localStorage.setItem(MESSAGES_KEY, JSON.stringify(toStore));
+    } catch {}
+  }, [messages, mounted]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -79,17 +104,35 @@ export default function AIPanel() {
           </p>
           <p className="text-sm text-white/40">Bitcoin · Focus · Wealth strategy</p>
         </div>
-        <div
-          className="w-8 h-8 rounded-xl flex items-center justify-center"
-          style={{
-            background: "rgba(99,102,241,0.12)",
-            border: "1px solid rgba(99,102,241,0.2)",
-            boxShadow: "0 0 16px rgba(99,102,241,0.15)",
-          }}
-        >
-          <svg viewBox="0 0 14 14" fill="currentColor" className="w-3.5 h-3.5 text-indigo-400">
-            <path d="M7 1l1.3 3.9L12.5 7l-4.2 1.3L7 12.5l-1.3-4.2L1.5 7l4.2-1.3L7 1z" />
-          </svg>
+        <div className="flex items-center gap-2">
+          {messages.length > 0 && (
+            <button
+              onClick={() => {
+                setMessages([]);
+                try { localStorage.removeItem(MESSAGES_KEY); } catch {}
+              }}
+              className="text-[10px] px-2.5 py-1 rounded-lg transition-all"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.07)",
+                color: "rgba(255,255,255,0.25)",
+              }}
+            >
+              Clear
+            </button>
+          )}
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{
+              background: "rgba(99,102,241,0.12)",
+              border: "1px solid rgba(99,102,241,0.2)",
+              boxShadow: "0 0 16px rgba(99,102,241,0.15)",
+            }}
+          >
+            <svg viewBox="0 0 14 14" fill="currentColor" className="w-3.5 h-3.5 text-indigo-400">
+              <path d="M7 1l1.3 3.9L12.5 7l-4.2 1.3L7 12.5l-1.3-4.2L1.5 7l4.2-1.3L7 1z" />
+            </svg>
+          </div>
         </div>
       </div>
 

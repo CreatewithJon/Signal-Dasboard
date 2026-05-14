@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import BitcoinPanel from "@/components/BitcoinPanel";
 import ProductivityPanel from "@/components/ProductivityPanel";
 import AIPanel from "@/components/AIPanel";
-import { fetchBTCData, BTC_FALLBACK, formatPrice } from "@/lib/btc";
+import HabitPanel from "@/components/HabitPanel";
+import BTCStackPanel from "@/components/BTCStackPanel";
+import HeroStats from "@/components/HeroStats";
+import { fetchBTCData, BTC_FALLBACK } from "@/lib/btc";
 
 export const metadata: Metadata = {
   title: "Signal — Command Center",
@@ -48,51 +51,8 @@ export default async function HomePage() {
           Your personal operating system for the digital age.
         </p>
 
-        {/* Metric pills */}
-        <div className="flex items-center justify-center gap-2 flex-wrap relative">
-          {[
-            {
-              label: "BTC",
-              value: formatPrice(btc.price),
-              sub: (btc.change24h >= 0 ? "↑ " : "↓ ") + Math.abs(btc.change24h).toFixed(2) + "%",
-              subColor: btc.change24h >= 0 ? "rgba(52,211,153,0.9)" : "rgba(248,113,113,0.9)",
-              accentColor: "#f59e0b",
-            },
-            {
-              label: "Focus",
-              value: "4h 20m",
-              sub: "↑ 15% avg",
-              subColor: "rgba(255,255,255,0.3)",
-              accentColor: "rgba(255,255,255,0.85)",
-            },
-            {
-              label: "Streak",
-              value: "12 days",
-              sub: "🔥",
-              subColor: "rgba(245,158,11,0.9)",
-              accentColor: "#f59e0b",
-            },
-          ].map(({ label, value, sub, subColor, accentColor }) => (
-            <div
-              key={label}
-              className="flex items-center gap-3.5 px-4 py-3 md:px-6 md:py-4 rounded-2xl"
-              style={{
-                background: "rgba(255,255,255,0.045)",
-                backdropFilter: "blur(24px)",
-                WebkitBackdropFilter: "blur(24px)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 24px rgba(0,0,0,0.25)",
-              }}
-            >
-              <span className="text-[9px] text-white/20 uppercase tracking-[0.2em] font-semibold">{label}</span>
-              <span className="w-px h-3 shrink-0" style={{ background: "rgba(255,255,255,0.08)" }} />
-              <span className="text-xs md:text-sm font-semibold" style={{ color: accentColor }}>
-                {value}
-              </span>
-              <span className="text-[11px] md:text-xs font-medium" style={{ color: subColor }}>{sub}</span>
-            </div>
-          ))}
-        </div>
+        {/* Metric pills — live data from localStorage + server BTC */}
+        <HeroStats btcPrice={btc.price} btcChange={btc.change24h} />
       </section>
 
       {/* Divider */}
@@ -105,13 +65,23 @@ export default async function HomePage() {
         }}
       />
 
-      {/* Panels */}
+      {/* Row 1 — Bitcoin + Productivity */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mb-5">
         <div className="col-span-1 md:col-span-7 flex">
           <BitcoinPanel />
         </div>
         <div className="col-span-1 md:col-span-5 flex">
           <ProductivityPanel />
+        </div>
+      </div>
+
+      {/* Row 2 — Habits + BTC Stack */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mb-5">
+        <div className="col-span-1 md:col-span-5 flex">
+          <HabitPanel />
+        </div>
+        <div className="col-span-1 md:col-span-7 flex">
+          <BTCStackPanel initialPrice={btc.price} />
         </div>
       </div>
 

@@ -37,6 +37,37 @@ const nav = [
     ),
   },
   {
+    href: "/planner",
+    label: "Planner",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <rect x="3" y="4" width="14" height="13" rx="2" />
+        <path d="M3 8h14" strokeLinecap="round" />
+        <path d="M7 2v4M13 2v4" strokeLinecap="round" />
+        <path d="M7 12h2M7 15h4" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    href: "/content",
+    label: "Content",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <path d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.258a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    href: "/broll",
+    label: "B-Roll",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <rect x="2" y="5" width="16" height="10" rx="2" />
+        <path d="M6 5V3M14 5V3M2 9h16" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
     href: "/#ai",
     label: "AI",
     icon: (
@@ -86,7 +117,10 @@ export default function Sidebar() {
       {/* Nav */}
       <nav className="flex-1 px-3 py-5 space-y-1">
         {nav.map((item) => {
-          const isActive = pathname === "/" && item.href === "/";
+          const isActive =
+        ["/planner", "/content", "/broll"].includes(item.href)
+          ? pathname === item.href
+          : pathname === "/" && item.href === "/";
           return (
             <Link
               key={item.href}

@@ -118,7 +118,11 @@ export default async function BitcoinPanel() {
         <span>30 days ago</span>
         <span>Today</span>
       </div>
-      <p className="text-[9px] text-white/15 text-right mb-4 -mt-0.5">Updated just now</p>
+      <p className="text-[9px] text-white/15 text-right mb-4 -mt-0.5">
+        {data.fetchedAt > 0
+          ? `Updated ${new Date(data.fetchedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+          : "Updated just now"}
+      </p>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-2.5 mt-auto">
@@ -126,7 +130,7 @@ export default async function BitcoinPanel() {
           { label: "Market Cap", value: formatLargeUSD(data.marketCap) },
           { label: "24h Volume", value: formatLargeUSD(data.volume24h) },
           { label: "Dominance", value: data.dominance.toFixed(1) + "%" },
-          { label: "Block", value: "841,204" },
+          { label: "Block", value: data.blockHeight > 0 ? data.blockHeight.toLocaleString() : "—" },
         ].map(({ label, value }) => (
           <div
             key={label}
