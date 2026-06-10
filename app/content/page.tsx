@@ -7,13 +7,15 @@ import VideoAnalysisPanel from "@/components/content/VideoAnalysisPanel";
 import BrandRoadmap from "@/components/content/BrandRoadmap";
 import ContentDraftTool from "@/components/content/ContentDraftTool";
 import BRollPipeline from "@/components/content/BRollPipeline";
+import IdeasVault from "@/components/content/IdeasVault";
 
-type Tab = "research" | "brand" | "draft" | "broll";
+type Tab = "research" | "brand" | "draft" | "ideas" | "broll";
 
 const TABS: { id: Tab; label: string; description: string }[] = [
   { id: "research", label: "Research", description: "Find outliers · Extract frameworks · Rewrite scripts" },
   { id: "brand", label: "Brand Plan", description: "Step-by-step brand build roadmap" },
   { id: "draft", label: "Draft Content", description: "AI-powered LinkedIn · X · YouTube writer" },
+  { id: "ideas", label: "Ideas", description: "Capture hooks, angles, and content ideas" },
   { id: "broll", label: "B-Roll", description: "Upload video · Auto-transcribe · Generate clips" },
 ];
 
@@ -81,7 +83,7 @@ export default function ContentPage() {
         className="mb-6 p-1 rounded-2xl"
         style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
       >
-        <div className="grid grid-cols-3 gap-1">
+        <div className="grid grid-cols-5 gap-1">
           {TABS.map((tab) => {
             const active = activeTab === tab.id;
             return (
@@ -161,6 +163,11 @@ export default function ContentPage() {
         <div className="max-w-2xl mx-auto">
           <ContentDraftTool />
         </div>
+      )}
+
+      {/* ── Tab: Ideas ── */}
+      {activeTab === "ideas" && (
+        <IdeasVault />
       )}
 
       {/* ── Tab: B-Roll ── */}

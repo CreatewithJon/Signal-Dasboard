@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { callClaude } from "@/lib/ai";
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+  if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: "Anthropic API key not configured." }, { status: 503 });
   }
 
@@ -42,26 +42,11 @@ Format your response exactly like this:
 [post content]`;
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 2048,
-        messages: [{ role: "user", content: prompt }],
-      }),
+    const text = await callClaude({
+      messages: [{ role: "user", content: prompt }],
+      maxTokens: 2048,
+      tag: "content-linkedin",
     });
-
-    if (!response.ok) {
-      return NextResponse.json({ error: "AI service unavailable." }, { status: 502 });
-    }
-
-    const data = await response.json();
-    const text: string = data?.content?.[0]?.text ?? "";
     const posts = parsePosts(text);
 
     return NextResponse.json({ posts });

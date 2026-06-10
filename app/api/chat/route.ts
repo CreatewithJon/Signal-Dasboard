@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { callClaude } from "@/lib/ai";
 
 const SYSTEM_PROMPT = `You are a focused personal intelligence assistant embedded in a premium personal dashboard. Your purpose is to support three core themes:
 
@@ -16,9 +17,7 @@ Rules:
 - If asked about something outside your three themes, briefly redirect back to what you know best`;
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-
-  if (!apiKey) {
+  if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
       { error: "AI assistant is not configured." },
       { status: 503 }
@@ -38,33 +37,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 512,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: message }],
-      }),
+    const reply = await callClaude({
+      messages: [{ role: "user", content: message }],
+      system: SYSTEM_PROMPT,
+      maxTokens: 512,
+      tag: "chat",
     });
-
-    if (!response.ok) {
-      const err = await response.text();
-      console.error("Anthropic API error:", err);
-      return NextResponse.json(
-        { error: "AI service unavailable. Try again shortly." },
-        { status: 502 }
-      );
-    }
-
-    const data = await response.json();
-    const reply: string = data?.content?.[0]?.text ?? "No response received.";
-
     return NextResponse.json({ reply });
   } catch (err) {
     console.error("Chat route error:", err);

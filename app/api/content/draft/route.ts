@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { callClaude } from "@/lib/ai";
 
 const SYSTEM_PROMPT = `You are a personal brand strategist and copywriter for Jonathan Cardona.
 
@@ -39,8 +40,7 @@ Content pillars:
 Always write in first person as Jonathan. Match the requested format exactly. Be specific, not generic. Use real details when possible.`;
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+  if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: "Anthropic API key not configured." }, { status: 503 });
   }
 
@@ -75,27 +75,12 @@ ${context ? `Additional context: ${context}` : ""}
 Write the content now. Be specific to Jonathan's real story and voice. Do not be generic.`;
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 2048,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: prompt }],
-      }),
+    const draft = await callClaude({
+      messages: [{ role: "user", content: prompt }],
+      system: SYSTEM_PROMPT,
+      maxTokens: 2048,
+      tag: "content-draft",
     });
-
-    if (!response.ok) {
-      return NextResponse.json({ error: "AI service unavailable." }, { status: 502 });
-    }
-
-    const data = await response.json();
-    const draft: string = data?.content?.[0]?.text ?? "";
     return NextResponse.json({ draft });
   } catch (err) {
     console.error("Content draft error:", err);

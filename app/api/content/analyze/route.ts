@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { callClaude } from "@/lib/ai";
 
 const SYSTEM_PROMPT = `You are an expert YouTube content strategist and scriptwriter. Your job is to analyze successful YouTube videos and help creators replicate their success formula.
 
@@ -7,8 +8,7 @@ When analyzing videos, you extract what made them work — the hook, the structu
 Voice for rewritten scripts: Clear, sharp, confident. Focused on AI tools, Bitcoin, automation, digital wealth, and practical strategies for building income online. Direct and modern — not hypey, not corporate. Speaks to someone building a digital business and financial sovereignty.`;
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+  if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
       { error: "Anthropic API key not configured." },
       { status: 503 }
@@ -57,29 +57,12 @@ What specifically makes this video outperform the channel average? Be specific a
 Write a complete video script using the exact same framework and hook structure, but for an audience interested in AI tools, Bitcoin, automation, and building digital income. Make it 100% original content. Include: hook, intro, main content sections, and a strong CTA.`;
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 4096,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: prompt }],
-      }),
+    const analysis = await callClaude({
+      messages: [{ role: "user", content: prompt }],
+      system: SYSTEM_PROMPT,
+      maxTokens: 4096,
+      tag: "content-analyze",
     });
-
-    if (!response.ok) {
-      const err = await response.text();
-      console.error("Anthropic error:", err);
-      return NextResponse.json({ error: "AI service unavailable." }, { status: 502 });
-    }
-
-    const data = await response.json();
-    const analysis: string = data?.content?.[0]?.text ?? "";
     const sections = parseAnalysis(analysis);
 
     return NextResponse.json({ analysis, sections });

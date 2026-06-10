@@ -58,6 +58,36 @@ const nav = [
     ),
   },
   {
+    href: "/brand",
+    label: "Brand",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <path d="M10 2l2 5h5l-4 3 1.5 5L10 12l-4.5 3L7 10 3 7h5z" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    href: "/projects",
+    label: "Projects",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <rect x="2" y="2" width="7" height="7" rx="1.5" />
+        <rect x="11" y="2" width="7" height="7" rx="1.5" />
+        <rect x="2" y="11" width="7" height="7" rx="1.5" />
+        <rect x="11" y="11" width="7" height="7" rx="1.5" />
+      </svg>
+    ),
+  },
+  {
+    href: "/narrative",
+    label: "Narrative",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <path d="M4 6h12M4 10h8M4 14h10" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
     href: "/broll",
     label: "B-Roll",
     icon: (
@@ -118,7 +148,7 @@ export default function Sidebar() {
       <nav className="flex-1 px-3 py-5 space-y-1">
         {nav.map((item) => {
           const isActive =
-        ["/planner", "/content", "/broll"].includes(item.href)
+        ["/planner", "/content", "/broll", "/brand", "/projects", "/narrative"].includes(item.href)
           ? pathname === item.href
           : pathname === "/" && item.href === "/";
           return (
