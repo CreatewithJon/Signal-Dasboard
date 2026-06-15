@@ -14,7 +14,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const auth = req.cookies.get("signal-auth")?.value;
+  const auth = req.cookies.get("sovereign-auth")?.value ?? req.cookies.get("signal-auth")?.value;
   if (auth === process.env.DASHBOARD_PASSWORD) {
     return NextResponse.next();
   }

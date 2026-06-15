@@ -6,22 +6,13 @@ import { usePathname } from "next/navigation";
 const navItems = [
   {
     href: "/",
-    label: "Overview",
+    label: "Home",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-5 h-5">
         <rect x="2" y="2" width="7" height="7" rx="1.5" />
         <rect x="11" y="2" width="7" height="7" rx="1.5" />
         <rect x="2" y="11" width="7" height="7" rx="1.5" />
         <rect x="11" y="11" width="7" height="7" rx="1.5" />
-      </svg>
-    ),
-  },
-  {
-    href: "/#bitcoin",
-    label: "Bitcoin",
-    icon: (
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-5 h-5">
-        <path d="M7 4h5a2.5 2.5 0 010 5H7m0 0h5.5a2.5 2.5 0 010 5H7M7 2v16" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
   },
@@ -42,7 +33,26 @@ const navItems = [
     label: "Content",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-5 h-5">
-        <path d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.258a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" strokeLinecap="round" strokeLinejoin="round" />
+        <rect x="2" y="5" width="16" height="10" rx="2" />
+        <path d="M6 5V3M14 5V3M2 9h16" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    href: "/projects",
+    label: "Projects",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-5 h-5">
+        <path d="M3 5a2 2 0 012-2h4l2 2h4a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    href: "/narrative",
+    label: "Memory",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-5 h-5">
+        <path d="M4 6h12M4 10h8M4 14h10" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -56,27 +66,6 @@ const navItems = [
     ),
   },
   {
-    href: "/projects",
-    label: "Projects",
-    icon: (
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-5 h-5">
-        <rect x="2" y="2" width="7" height="7" rx="1.5" />
-        <rect x="11" y="2" width="7" height="7" rx="1.5" />
-        <rect x="2" y="11" width="7" height="7" rx="1.5" />
-        <rect x="11" y="11" width="7" height="7" rx="1.5" />
-      </svg>
-    ),
-  },
-  {
-    href: "/narrative",
-    label: "Narrative",
-    icon: (
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-5 h-5">
-        <path d="M4 6h12M4 10h8M4 14h10" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
     href: "/broll",
     label: "B-Roll",
     icon: (
@@ -86,47 +75,39 @@ const navItems = [
       </svg>
     ),
   },
-  {
-    href: "/#ai",
-    label: "AI",
-    icon: (
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-5 h-5">
-        <path d="M10 2l1.5 4.5L16 8l-4.5 1.5L10 14l-1.5-4.5L4 8l4.5-1.5L10 2z" strokeLinejoin="round" />
-        <path d="M16 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
 ];
+
+const EXACT_ROUTES = ["/planner", "/content", "/broll", "/brand", "/projects", "/narrative"];
 
 export default function MobileNav() {
   const pathname = usePathname();
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around h-16"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around h-16 overflow-x-auto"
       style={{
-        background: "rgba(3,3,8,0.88)",
+        background: "rgba(3,3,8,0.92)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         borderTop: "1px solid rgba(255,255,255,0.06)",
       }}
     >
       {navItems.map((item) => {
-        const isActive =
-          ["/planner", "/content", "/broll", "/brand", "/projects", "/narrative"].includes(item.href)
-            ? pathname === item.href
-            : pathname === "/" && item.href === "/";
+        const isActive = EXACT_ROUTES.includes(item.href)
+          ? pathname === item.href
+          : pathname === "/" && item.href === "/";
         return (
           <Link
             key={item.href}
             href={item.href}
-            className="flex items-center justify-center w-12 h-12 rounded-xl transition-all"
+            className="flex flex-col items-center justify-center gap-1 w-12 h-14 shrink-0 transition-all"
             style={{
-              color: isActive ? "#f59e0b" : "rgba(255,255,255,0.3)",
-              filter: isActive ? "drop-shadow(0 0 6px rgba(245,158,11,0.6))" : "none",
+              color: isActive ? "#8b5cf6" : "rgba(255,255,255,0.28)",
+              filter: isActive ? "drop-shadow(0 0 6px rgba(139,92,246,0.6))" : "none",
             }}
           >
             {item.icon}
+            <span className="text-[8px] font-semibold tracking-wide">{item.label}</span>
           </Link>
         );
       })}

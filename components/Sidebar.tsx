@@ -3,10 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const nav = [
+type NavItem = {
+  href: string;
+  label: string;
+  soon?: boolean;
+  icon: React.ReactNode;
+};
+
+const PRIMARY_NAV: NavItem[] = [
   {
     href: "/",
-    label: "Overview",
+    label: "Command Center",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
         <rect x="2" y="2" width="7" height="7" rx="1.5" />
@@ -17,8 +24,18 @@ const nav = [
     ),
   },
   {
+    href: "/#ai",
+    label: "AI",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <path d="M10 2l1.5 4.5L16 8l-4.5 1.5L10 14l-1.5-4.5L4 8l4.5-1.5L10 2z" strokeLinejoin="round" />
+        <path d="M16 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
     href: "/#bitcoin",
-    label: "Bitcoin",
+    label: "Signals",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
         <path d="M7 4h5a2.5 2.5 0 010 5H7m0 0h5.5a2.5 2.5 0 010 5H7M7 2v16" strokeLinecap="round" strokeLinejoin="round" />
@@ -27,7 +44,7 @@ const nav = [
   },
   {
     href: "/#focus",
-    label: "Focus",
+    label: "Tasks",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
         <circle cx="10" cy="10" r="8" />
@@ -36,6 +53,9 @@ const nav = [
       </svg>
     ),
   },
+];
+
+const MODULE_NAV: NavItem[] = [
   {
     href: "/planner",
     label: "Planner",
@@ -53,7 +73,8 @@ const nav = [
     label: "Content",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
-        <path d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.258a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" strokeLinecap="round" strokeLinejoin="round" />
+        <rect x="2" y="5" width="16" height="10" rx="2" />
+        <path d="M6 5V3M14 5V3M2 9h16" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -71,50 +92,108 @@ const nav = [
     label: "Projects",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
-        <rect x="2" y="2" width="7" height="7" rx="1.5" />
-        <rect x="11" y="2" width="7" height="7" rx="1.5" />
-        <rect x="2" y="11" width="7" height="7" rx="1.5" />
-        <rect x="11" y="11" width="7" height="7" rx="1.5" />
+        <path d="M3 5a2 2 0 012-2h4l2 2h4a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" strokeLinejoin="round" />
       </svg>
     ),
   },
   {
     href: "/narrative",
-    label: "Narrative",
+    label: "Memory",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
         <path d="M4 6h12M4 10h8M4 14h10" strokeLinecap="round" />
       </svg>
     ),
   },
+];
+
+const SYSTEM_NAV: NavItem[] = [
   {
-    href: "/broll",
-    label: "B-Roll",
+    href: "/leads",
+    label: "Leads",
+    soon: true,
     icon: (
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
-        <rect x="2" y="5" width="16" height="10" rx="2" />
-        <path d="M6 5V3M14 5V3M2 9h16" strokeLinecap="round" />
+        <path d="M9 12H5a2 2 0 00-2 2v2" strokeLinecap="round" />
+        <circle cx="7" cy="7" r="3" />
+        <path d="M13 8h4M13 11h4M13 14h2" strokeLinecap="round" />
       </svg>
     ),
   },
   {
-    href: "/#ai",
-    label: "AI",
+    href: "/settings",
+    label: "Settings",
+    soon: true,
     icon: (
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
-        <path d="M10 2l1.5 4.5L16 8l-4.5 1.5L10 14l-1.5-4.5L4 8l4.5-1.5L10 2z" strokeLinejoin="round" />
-        <path d="M16 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2z" strokeLinejoin="round" />
+        <circle cx="10" cy="10" r="2.5" />
+        <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.41 1.41M14.37 14.37l1.41 1.41M4.22 15.78l1.41-1.41M14.37 5.63l1.41-1.41" strokeLinecap="round" />
       </svg>
     ),
   },
 ];
+
+const FULL_NAV = [...MODULE_NAV.map((i) => i.href)];
+
+function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
+  const isActive = FULL_NAV.includes(item.href)
+    ? pathname === item.href
+    : pathname === "/" && item.href === "/";
+
+  return (
+    <Link
+      href={item.href}
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all ${
+        isActive ? "text-white" : "text-white/30 hover:text-white/65"
+      }`}
+      style={
+        isActive
+          ? {
+              background: "rgba(255,255,255,0.07)",
+              backdropFilter: "blur(12px)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07)",
+            }
+          : undefined
+      }
+    >
+      {item.icon}
+      <span className="flex-1">{item.label}</span>
+      {item.soon && (
+        <span
+          className="text-[8px] font-bold uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-full"
+          style={{ background: "rgba(139,92,246,0.12)", color: "rgba(167,139,250,0.5)", border: "1px solid rgba(139,92,246,0.18)" }}
+        >
+          Soon
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function NavSection({ label, items, pathname }: { label: string; items: NavItem[]; pathname: string }) {
+  return (
+    <div>
+      <p
+        className="px-3 mb-1.5 text-[9px] font-bold uppercase tracking-[0.2em]"
+        style={{ color: "rgba(255,255,255,0.15)" }}
+      >
+        {label}
+      </p>
+      <div className="space-y-0.5">
+        {items.map((item) => (
+          <NavLink key={item.href} item={item} pathname={pathname} />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Sidebar() {
   const pathname = usePathname();
 
   return (
     <aside
-      className="hidden md:flex w-48 shrink-0 flex-col"
+      className="hidden md:flex w-52 shrink-0 flex-col"
       style={{
         background: "rgba(255,255,255,0.02)",
         backdropFilter: "blur(24px)",
@@ -124,57 +203,33 @@ export default function Sidebar() {
     >
       {/* Brand */}
       <div
-        className="px-5 py-7"
+        className="px-5 py-6"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
       >
         <div className="flex items-center gap-3">
           <div
             className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
             style={{
-              background: "linear-gradient(135deg, #fbbf24, #d97706)",
-              boxShadow: "0 0 20px rgba(245, 158, 11, 0.45), 0 2px 8px rgba(0,0,0,0.3)",
+              background: "linear-gradient(135deg, #8b5cf6, #6d28d9)",
+              boxShadow: "0 0 20px rgba(139,92,246,0.4), 0 2px 8px rgba(0,0,0,0.3)",
             }}
           >
-            <span className="text-black text-sm font-black">₿</span>
+            <svg viewBox="0 0 20 20" fill="none" stroke="white" strokeWidth="1.6" className="w-4 h-4">
+              <path d="M10 2l1.5 4.5L16 8l-4.5 1.5L10 14l-1.5-4.5L4 8l4.5-1.5L10 2z" strokeLinejoin="round" />
+            </svg>
           </div>
           <div>
-            <p className="text-sm font-semibold text-white/92 leading-none tracking-tight">Signal</p>
-            <p className="text-[10px] text-white/28 mt-0.5 tracking-wide">Personal OS</p>
+            <p className="text-sm font-bold text-white/90 leading-none tracking-tight">Sovereign OS</p>
+            <p className="text-[10px] text-white/25 mt-0.5 tracking-wide">Personal OS</p>
           </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-5 space-y-1">
-        {nav.map((item) => {
-          const isActive =
-        ["/planner", "/content", "/broll", "/brand", "/projects", "/narrative"].includes(item.href)
-          ? pathname === item.href
-          : pathname === "/" && item.href === "/";
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
-                isActive
-                  ? "text-white"
-                  : "text-white/30 hover:text-white/65"
-              }`}
-              style={
-                isActive
-                  ? {
-                      background: "rgba(255,255,255,0.08)",
-                      backdropFilter: "blur(12px)",
-                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
-                    }
-                  : undefined
-              }
-            >
-              {item.icon}
-              {item.label}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 px-3 py-5 space-y-5 overflow-y-auto">
+        <NavSection label="Core" items={PRIMARY_NAV} pathname={pathname} />
+        <NavSection label="Modules" items={MODULE_NAV} pathname={pathname} />
+        <NavSection label="System" items={SYSTEM_NAV} pathname={pathname} />
       </nav>
     </aside>
   );

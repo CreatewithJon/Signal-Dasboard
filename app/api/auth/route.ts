@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
   const from = req.nextUrl.searchParams.get("from") ?? "/";
   const res = NextResponse.json({ ok: true, redirect: from });
-  res.cookies.set("signal-auth", correct, {
+  res.cookies.set("sovereign-auth", correct, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

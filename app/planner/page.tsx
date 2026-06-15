@@ -8,7 +8,7 @@ import AIPlannerPanel from "@/components/planner/AIPlannerPanel";
 import ProjectedOutcomesCard from "@/components/planner/ProjectedOutcomesCard";
 
 export const metadata: Metadata = {
-  title: "Life Planner — Signal",
+  title: "Life Planner — Sovereign OS",
   description: "Connect long-term vision to daily execution.",
 };
 

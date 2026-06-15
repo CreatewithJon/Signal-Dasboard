@@ -82,14 +82,14 @@ export default function LoginPage() {
               backgroundClip: "text",
             }}
           >
-            Signal
+            Sovereign OS
           </p>
           <p className="text-xs text-white/20 tracking-[0.2em] uppercase">Private Dashboard</p>
         </div>
         <Suspense fallback={<div className="rounded-2xl p-8" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }} />}>
           <LoginForm />
         </Suspense>
-        <p className="text-center text-xs text-white/15 mt-6">Jonathan OS · Signal Dashboard</p>
+        <p className="text-center text-xs text-white/15 mt-6">Jonathan Cardona · Sovereign OS</p>
       </div>
     </div>
   );

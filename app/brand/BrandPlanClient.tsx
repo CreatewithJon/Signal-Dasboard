@@ -201,7 +201,7 @@ export default function BrandPlanClient() {
             backgroundClip: "text",
           }}
         >
-          Your Brand.<br />Your Signal.
+          Your Brand.<br />Your Sovereignty.
         </h1>
         <p className="text-sm text-white/25 max-w-sm mx-auto leading-relaxed relative">
           Positioning, mission, content pillars, and offers — all in one place.
@@ -273,7 +273,7 @@ export default function BrandPlanClient() {
                 dot: "#3b82f6",
               },
               {
-                name: "Signal",
+                name: "Sovereign OS",
                 sub: "Personal OS",
                 desc: "Command center for focus, planning, content, and intelligence. Own your tools.",
                 color: "rgba(139,92,246,0.1)",

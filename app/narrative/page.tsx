@@ -50,8 +50,8 @@ const DEFAULT_NARRATIVES: Narrative[] = [
   },
   {
     id: "8",
-    title: "The Signal Promise",
-    body: "Your operating system should work for you, not against you. No subscriptions. No clutter. Just signal.",
+    title: "The Sovereign OS Promise",
+    body: "Your operating system should work for you, not against you. No subscriptions. No clutter. Own your tools, your data, your workflow.",
   },
 ];
 

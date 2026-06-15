@@ -39,10 +39,10 @@ const DEFAULT_PROJECTS: Project[] = [
   },
   {
     id: "2",
-    title: "Signal Dashboard",
+    title: "Sovereign OS",
     status: "Active",
-    description: "Personal OS & command center",
-    next_action: "Add Brand, Projects, Narrative modules",
+    description: "Personal AI operating system — command center, planner, content, AI",
+    next_action: "Complete nav restructure, add Leads + Settings modules",
     url: "",
     last_updated: new Date().toISOString(),
   },

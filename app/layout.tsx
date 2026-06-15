@@ -6,8 +6,8 @@ import DashboardHeader from "@/components/DashboardHeader";
 import MobileNav from "@/components/MobileNav";
 
 export const metadata: Metadata = {
-  title: "Signal Dashboard",
-  description: "Your personal command center for Bitcoin, productivity, and AI.",
+  title: "Sovereign OS",
+  description: "A personal AI operating system for building, organizing, and executing in the AI-powered digital era.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

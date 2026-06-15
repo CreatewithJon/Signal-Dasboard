@@ -8,8 +8,8 @@ import HeroStats from "@/components/HeroStats";
 import { fetchBTCData, BTC_FALLBACK } from "@/lib/btc";
 
 export const metadata: Metadata = {
-  title: "Signal — Command Center",
-  description: "Your personal command center for Bitcoin, productivity, and AI.",
+  title: "Sovereign OS — Command Center",
+  description: "A personal AI operating system for building, organizing, and executing in the AI-powered digital era.",
 };
 
 export default async function HomePage() {
