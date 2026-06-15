@@ -17,7 +17,7 @@ const DEFAULTS: Item[] = [
   { id: 5, text: "Prayer / reflection time", done: false },
 ];
 
-const KEY = "signal_planner_daily";
+const KEY = "sovereign_planner_daily";
 
 function todayStr(): string {
   return new Date().toISOString().slice(0, 10);

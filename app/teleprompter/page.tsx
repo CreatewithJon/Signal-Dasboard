@@ -12,7 +12,7 @@ export default function TeleprompterPage() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("signal_teleprompter_script");
+    const saved = localStorage.getItem("sovereign_teleprompter_script");
     if (saved) setScript(saved);
   }, []);
 

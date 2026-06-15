@@ -10,7 +10,7 @@ const DEFAULTS = [
   "Create visible progress",
 ];
 
-const KEY = "signal_planner_monthly";
+const KEY = "sovereign_planner_monthly";
 
 function monthStr(): string {
   const now = new Date();

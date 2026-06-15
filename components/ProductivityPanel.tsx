@@ -15,10 +15,10 @@ const DEFAULT_TASKS: Task[] = [
   { id: 3, text: "Read 30 pages of Deep Work", done: false },
 ];
 
-const TASKS_KEY = "signal_tasks";
-const NOTE_KEY = "signal_note";
-const SESSIONS_KEY = "signal_sessions";
-const STREAK_KEY = "signal_streak";
+const TASKS_KEY = "sovereign_tasks";
+const NOTE_KEY = "sovereign_note";
+const SESSIONS_KEY = "sovereign_sessions";
+const STREAK_KEY = "sovereign_streak";
 
 const WORK_SECS = 25 * 60;
 const BREAK_SECS = 5 * 60;

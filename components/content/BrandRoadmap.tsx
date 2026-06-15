@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-const STORAGE_KEY = "signal_brand_roadmap_v1";
+const STORAGE_KEY = "sovereign_brand_roadmap_v1";
 
 interface Step {
   id: string;

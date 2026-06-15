@@ -52,7 +52,7 @@ const CONFIG: Record<Horizon, { label: string; color: string; glow: string; bord
 };
 
 export default function LongTermVisionCard({ horizon }: Props) {
-  const storageKey = `signal_planner_${horizon}`;
+  const storageKey = `sovereign_planner_${horizon}`;
   const { label, color, glow, borderColor } = CONFIG[horizon];
 
   const [items, setItems] = useState<string[]>(DEFAULTS[horizon]);

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card } from "./Card";
 
-const STACK_KEY = "signal_btc_stack";
+const STACK_KEY = "sovereign_btc_stack";
 
 function fmt(n: number): string {
   return "$" + n.toLocaleString("en-US", { maximumFractionDigits: 0 });

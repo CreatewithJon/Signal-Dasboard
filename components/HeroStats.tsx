@@ -30,7 +30,7 @@ export default function HeroStats({
   useEffect(() => {
     // Read today's focus sessions
     try {
-      const raw = localStorage.getItem("signal_sessions");
+      const raw = localStorage.getItem("sovereign_sessions");
       if (raw) {
         const { date, count } = JSON.parse(raw);
         setFocusMins(date === todayStr() ? (count as number) * 25 : 0);
@@ -39,7 +39,7 @@ export default function HeroStats({
 
     // Read streak
     try {
-      const raw = localStorage.getItem("signal_streak");
+      const raw = localStorage.getItem("sovereign_streak");
       if (raw) {
         const { lastDate, streak: s } = JSON.parse(raw);
         const yesterday = new Date();

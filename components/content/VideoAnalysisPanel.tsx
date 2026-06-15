@@ -108,7 +108,7 @@ export default function VideoAnalysisPanel({ video }: Props) {
 
   function openTeleprompter() {
     const script = sections["Rewritten Script (My Voice)"] ?? "";
-    localStorage.setItem("signal_teleprompter_script", script);
+    localStorage.setItem("sovereign_teleprompter_script", script);
     window.open("/teleprompter", "_blank");
   }
 

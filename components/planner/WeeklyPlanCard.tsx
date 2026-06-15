@@ -17,7 +17,7 @@ const DEFAULTS: Item[] = [
   { id: 5, text: "Stay consistent with health routine", done: false },
 ];
 
-const KEY = "signal_planner_weekly";
+const KEY = "sovereign_planner_weekly";
 
 function weekStr(): string {
   const now = new Date();

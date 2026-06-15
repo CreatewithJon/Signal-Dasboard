@@ -39,7 +39,7 @@ const DEFAULT_IDEAS: ContentIdea[] = [
   { id: "5", title: "Stop buying courses. Start building systems.", platform: "LinkedIn", status: "Ready", notes: "", created_at: new Date().toISOString() },
 ];
 
-const LS_KEY = "signal_content_ideas";
+const LS_KEY = "sovereign_content_ideas";
 
 function load(): ContentIdea[] {
   if (typeof window === "undefined") return DEFAULT_IDEAS;

@@ -87,7 +87,7 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("signal_projects");
+      const stored = localStorage.getItem("sovereign_projects");
       if (stored) setProjects(JSON.parse(stored) as Project[]);
     } catch {
       // ignore
@@ -98,7 +98,7 @@ export default function ProjectsPage() {
   function saveProjects(next: Project[]) {
     setProjects(next);
     try {
-      localStorage.setItem("signal_projects", JSON.stringify(next));
+      localStorage.setItem("sovereign_projects", JSON.stringify(next));
     } catch {
       // ignore
     }

@@ -112,7 +112,7 @@ export default function ContentDraftTool() {
   }
 
   function openTeleprompter() {
-    localStorage.setItem("signal_teleprompter_script", draft);
+    localStorage.setItem("sovereign_teleprompter_script", draft);
     window.open("/teleprompter", "_blank");
   }
 

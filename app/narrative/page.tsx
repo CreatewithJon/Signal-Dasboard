@@ -160,7 +160,7 @@ export default function NarrativePage() {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("signal_narratives");
+      const stored = localStorage.getItem("sovereign_narratives");
       if (stored) setNarratives(JSON.parse(stored) as Narrative[]);
     } catch {
       // ignore
@@ -171,7 +171,7 @@ export default function NarrativePage() {
   function save(next: Narrative[]) {
     setNarratives(next);
     try {
-      localStorage.setItem("signal_narratives", JSON.stringify(next));
+      localStorage.setItem("sovereign_narratives", JSON.stringify(next));
     } catch {
       // ignore
     }

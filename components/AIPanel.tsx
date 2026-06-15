@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Card } from "./Card";
 
 interface Message {
@@ -9,81 +9,162 @@ interface Message {
   error?: boolean;
 }
 
-const MESSAGES_KEY = "signal_ai_messages";
-const MAX_STORED = 40; // keep last 40 messages
+const MESSAGES_KEY = "sovereign_ai_messages";
+const MAX_STORED = 40;
 
-const starters = [
+const STARTERS = [
   "What makes Bitcoin a sovereign money asset?",
   "Give me a focus protocol for deep work mornings",
   "One principle for asymmetric wealth building",
 ];
 
+function AvatarDot({ error, pulse }: { error?: boolean; pulse?: boolean }) {
+  return (
+    <div
+      className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center mt-0.5"
+      style={{
+        background: error ? "rgba(248,113,113,0.15)" : "rgba(99,102,241,0.15)",
+        border: error ? "1px solid rgba(248,113,113,0.25)" : "1px solid rgba(99,102,241,0.25)",
+        boxShadow: error ? "0 0 8px rgba(248,113,113,0.2)" : "0 0 8px rgba(99,102,241,0.2)",
+      }}
+    >
+      <svg
+        viewBox="0 0 12 12"
+        fill="currentColor"
+        className={`w-3 h-3 ${error ? "text-red-400" : "text-indigo-400"} ${pulse ? "animate-pulse" : ""}`}
+      >
+        <path d="M6 1l1.2 3.5L11 6 7.2 7.2 6 11 4.8 7.2 1 6l3.8-1.2L6 1z" />
+      </svg>
+    </div>
+  );
+}
+
 export default function AIPanel() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  // null = idle, "" or string = actively streaming
+  const [streamingContent, setStreamingContent] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+
   const bottomRef = useRef<HTMLDivElement>(null);
+  // AbortController so we can cancel an in-flight stream
+  const abortRef = useRef<AbortController | null>(null);
+
+  const isStreaming = streamingContent !== null;
 
   // Load persisted messages on mount
   useEffect(() => {
     try {
       const raw = localStorage.getItem(MESSAGES_KEY);
       if (raw) {
-        const saved = JSON.parse(raw);
+        const saved = JSON.parse(raw) as Message[];
         if (Array.isArray(saved) && saved.length > 0) setMessages(saved);
       }
     } catch {}
     setMounted(true);
   }, []);
 
-  // Persist messages on change
+  // Persist messages whenever they change (after mount)
   useEffect(() => {
     if (!mounted) return;
     try {
-      const toStore = messages.slice(-MAX_STORED);
-      localStorage.setItem(MESSAGES_KEY, JSON.stringify(toStore));
+      localStorage.setItem(MESSAGES_KEY, JSON.stringify(messages.slice(-MAX_STORED)));
     } catch {}
   }, [messages, mounted]);
 
+  // Scroll to bottom on new content
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  }, [messages, streamingContent]);
 
-  async function send(text: string) {
-    if (!text.trim() || loading) return;
-    setMessages((prev) => [...prev, { role: "user", content: text.trim() }]);
+  const stopStream = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    // Commit whatever was streamed so far as a complete message
+    setStreamingContent((prev) => {
+      if (prev !== null && prev.length > 0) {
+        setMessages((m) => [...m, { role: "assistant", content: prev }]);
+      }
+      return null;
+    });
+  }, []);
+
+  const send = useCallback(async (text: string) => {
+    if (!text.trim() || isStreaming) return;
+
+    const userMessage = text.trim();
     setInput("");
-    setLoading(true);
+    setError(null);
+    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    setStreamingContent(""); // start streaming state
+
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text.trim() }),
+        body: JSON.stringify({ message: userMessage }),
+        signal: controller.signal,
       });
 
-      const data = await res.json();
-
-      if (!res.ok || data.error) {
+      // Non-streaming error response (e.g. 503, 400)
+      if (!res.ok || !res.body) {
+        let errMsg = "Something went wrong. Try again.";
+        try {
+          const data = await res.json() as { error?: string };
+          if (data.error) errMsg = data.error;
+        } catch {}
+        setStreamingContent(null);
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: data.error ?? "Something went wrong.", error: true },
+          { role: "assistant", content: errMsg, error: true },
         ]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: data.reply },
-        ]);
+        return;
       }
-    } catch {
+
+      // ── Read the text stream ──────────────────────────────────────────
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        accumulated += chunk;
+        setStreamingContent(accumulated);
+      }
+
+      // Stream complete — commit to message history
+      setStreamingContent(null);
+      if (accumulated.length > 0) {
+        setMessages((prev) => [...prev, { role: "assistant", content: accumulated }]);
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        // User cancelled — already handled by stopStream()
+        return;
+      }
+      console.error("Chat stream error:", err);
+      setStreamingContent(null);
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: "Connection error. Check your network and try again.", error: true },
       ]);
     } finally {
-      setLoading(false);
+      abortRef.current = null;
     }
+  }, [isStreaming]);
+
+  function clearChat() {
+    stopStream();
+    setMessages([]);
+    setError(null);
+    try { localStorage.removeItem(MESSAGES_KEY); } catch {}
   }
 
   return (
@@ -93,7 +174,7 @@ export default function AIPanel() {
       glow="0 0 100px rgba(99, 102, 241, 0.08)"
       style={{ minHeight: 460 }}
     >
-      {/* Header */}
+      {/* ── Header ── */}
       <div
         className="px-5 md:px-8 py-4 md:py-5 flex items-center justify-between"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
@@ -102,15 +183,33 @@ export default function AIPanel() {
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-400/50 mb-0.5">
             AI Assistant
           </p>
-          <p className="text-sm text-white/40">Bitcoin · Focus · Wealth strategy</p>
+          <p className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
+            {isStreaming ? (
+              <span className="text-indigo-400/60 animate-pulse">Thinking…</span>
+            ) : (
+              "Bitcoin · Focus · Wealth strategy"
+            )}
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          {messages.length > 0 && (
+          {/* Stop button while streaming */}
+          {isStreaming && (
             <button
-              onClick={() => {
-                setMessages([]);
-                try { localStorage.removeItem(MESSAGES_KEY); } catch {}
+              onClick={stopStream}
+              className="flex items-center gap-1.5 text-[10px] font-semibold px-3 py-1.5 rounded-lg transition-all"
+              style={{
+                background: "rgba(248,113,113,0.08)",
+                border: "1px solid rgba(248,113,113,0.18)",
+                color: "rgba(248,113,113,0.75)",
               }}
+            >
+              <span className="w-1.5 h-1.5 rounded-sm" style={{ background: "rgba(248,113,113,0.8)" }} />
+              Stop
+            </button>
+          )}
+          {messages.length > 0 && !isStreaming && (
+            <button
+              onClick={clearChat}
               className="text-[10px] px-2.5 py-1 rounded-lg transition-all"
               style={{
                 background: "rgba(255,255,255,0.04)",
@@ -126,41 +225,49 @@ export default function AIPanel() {
             style={{
               background: "rgba(99,102,241,0.12)",
               border: "1px solid rgba(99,102,241,0.2)",
-              boxShadow: "0 0 16px rgba(99,102,241,0.15)",
+              boxShadow: isStreaming ? "0 0 20px rgba(99,102,241,0.3)" : "0 0 16px rgba(99,102,241,0.15)",
+              transition: "box-shadow 0.3s ease",
             }}
           >
-            <svg viewBox="0 0 14 14" fill="currentColor" className="w-3.5 h-3.5 text-indigo-400">
+            <svg
+              viewBox="0 0 14 14"
+              fill="currentColor"
+              className={`w-3.5 h-3.5 text-indigo-400 ${isStreaming ? "animate-pulse" : ""}`}
+            >
               <path d="M7 1l1.3 3.9L12.5 7l-4.2 1.3L7 12.5l-1.3-4.2L1.5 7l4.2-1.3L7 1z" />
             </svg>
           </div>
         </div>
       </div>
 
-      {/* Messages */}
+      {/* ── Messages ── */}
       <div className="flex-1 overflow-y-auto px-5 md:px-8 py-4 md:py-6 space-y-4">
-        {messages.length === 0 && (
+
+        {/* Empty state + starters */}
+        {messages.length === 0 && !isStreaming && (
           <div className="flex flex-col gap-3 pt-1">
-            <p className="text-[11px] text-white/20 leading-relaxed">
+            <p className="text-[11px] leading-relaxed" style={{ color: "rgba(255,255,255,0.2)" }}>
               Intelligence, on demand. Ask anything about Bitcoin, focus, or wealth strategy.
             </p>
             <div className="flex flex-wrap gap-2.5">
-              {starters.map((s) => (
+              {STARTERS.map((s) => (
                 <button
                   key={s}
                   onClick={() => send(s)}
-                  className="text-xs text-white/40 hover:text-white/75 px-4 py-2.5 rounded-full transition-all"
+                  className="text-xs px-4 py-2.5 rounded-full transition-all"
                   style={{
+                    color: "rgba(255,255,255,0.4)",
                     background: "rgba(99,102,241,0.07)",
                     border: "1px solid rgba(99,102,241,0.18)",
                     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = "rgba(99,102,241,0.13)";
-                    e.currentTarget.style.border = "1px solid rgba(99,102,241,0.3)";
+                    e.currentTarget.style.color = "rgba(255,255,255,0.7)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = "rgba(99,102,241,0.07)";
-                    e.currentTarget.style.border = "1px solid rgba(99,102,241,0.18)";
+                    e.currentTarget.style.color = "rgba(255,255,255,0.4)";
                   }}
                 >
                   {s}
@@ -170,44 +277,20 @@ export default function AIPanel() {
           </div>
         )}
 
+        {/* Conversation history */}
         {messages.map((msg, i) => (
           <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-            {msg.role === "assistant" && (
-              <div
-                className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center mt-0.5"
-                style={{
-                  background: msg.error ? "rgba(248,113,113,0.15)" : "rgba(99,102,241,0.15)",
-                  border: msg.error ? "1px solid rgba(248,113,113,0.25)" : "1px solid rgba(99,102,241,0.25)",
-                  boxShadow: msg.error ? "0 0 8px rgba(248,113,113,0.2)" : "0 0 8px rgba(99,102,241,0.2)",
-                }}
-              >
-                <svg viewBox="0 0 12 12" fill="currentColor" className={`w-3 h-3 ${msg.error ? "text-red-400" : "text-indigo-400"}`}>
-                  <path d="M6 1l1.2 3.5L11 6 7.2 7.2 6 11 4.8 7.2 1 6l3.8-1.2L6 1z" />
-                </svg>
-              </div>
-            )}
+            {msg.role === "assistant" && <AvatarDot error={msg.error} />}
             <div
               className={`max-w-[78%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                 msg.role === "user" ? "rounded-tr-sm" : "rounded-tl-sm"
               }`}
               style={
                 msg.role === "user"
-                  ? {
-                      background: "rgba(255,255,255,0.08)",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      color: "rgba(255,255,255,0.85)",
-                    }
+                  ? { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.85)" }
                   : msg.error
-                  ? {
-                      background: "rgba(248,113,113,0.06)",
-                      border: "1px solid rgba(248,113,113,0.12)",
-                      color: "rgba(255,255,255,0.45)",
-                    }
-                  : {
-                      background: "rgba(99,102,241,0.08)",
-                      border: "1px solid rgba(99,102,241,0.12)",
-                      color: "rgba(255,255,255,0.65)",
-                    }
+                  ? { background: "rgba(248,113,113,0.06)", border: "1px solid rgba(248,113,113,0.12)", color: "rgba(255,255,255,0.45)" }
+                  : { background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.12)", color: "rgba(255,255,255,0.65)" }
               }
             >
               {msg.content}
@@ -215,40 +298,54 @@ export default function AIPanel() {
           </div>
         ))}
 
-        {loading && (
+        {/* Streaming message — shows as it arrives */}
+        {isStreaming && (
           <div className="flex gap-3 justify-start">
+            <AvatarDot pulse />
             <div
-              className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center"
-              style={{
-                background: "rgba(99,102,241,0.15)",
-                border: "1px solid rgba(99,102,241,0.25)",
-              }}
-            >
-              <svg viewBox="0 0 12 12" fill="currentColor" className="w-3 h-3 text-indigo-400">
-                <path d="M6 1l1.2 3.5L11 6 7.2 7.2 6 11 4.8 7.2 1 6l3.8-1.2L6 1z" />
-              </svg>
-            </div>
-            <div
-              className="px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1.5"
+              className="max-w-[78%] px-4 py-3 rounded-2xl rounded-tl-sm text-sm leading-relaxed"
               style={{
                 background: "rgba(99,102,241,0.08)",
                 border: "1px solid rgba(99,102,241,0.12)",
+                color: "rgba(255,255,255,0.65)",
               }}
             >
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  className="w-1.5 h-1.5 rounded-full bg-indigo-400/60 animate-bounce"
-                  style={{ animationDelay: `${i * 150}ms` }}
-                />
-              ))}
+              {streamingContent === "" ? (
+                /* Typing dots — shown while waiting for first token */
+                <span className="flex items-center gap-1.5">
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className="w-1.5 h-1.5 rounded-full bg-indigo-400/60 animate-bounce"
+                      style={{ animationDelay: `${i * 150}ms` }}
+                    />
+                  ))}
+                </span>
+              ) : (
+                /* Token-by-token text with blinking cursor */
+                <span>
+                  {streamingContent}
+                  <span
+                    className="inline-block w-[2px] h-[1em] ml-[2px] align-middle bg-indigo-400/70 animate-pulse"
+                    style={{ verticalAlign: "text-bottom" }}
+                  />
+                </span>
+              )}
             </div>
           </div>
         )}
+
+        {/* Error banner (non-message errors) */}
+        {error && (
+          <p className="text-xs text-center" style={{ color: "rgba(248,113,113,0.6)" }}>
+            {error}
+          </p>
+        )}
+
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
+      {/* ── Input ── */}
       <div
         className="px-5 md:px-8 py-4 md:py-5"
         style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
@@ -264,16 +361,18 @@ export default function AIPanel() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask anything..."
-            className="flex-1 bg-transparent text-sm text-white/70 placeholder:text-white/20 focus:outline-none"
+            placeholder={isStreaming ? "Waiting for response…" : "Ask anything..."}
+            disabled={isStreaming}
+            className="flex-1 bg-transparent text-sm placeholder:text-white/20 focus:outline-none disabled:cursor-not-allowed"
+            style={{ color: isStreaming ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.7)" }}
           />
           <button
             type="submit"
-            disabled={!input.trim() || loading}
+            disabled={!input.trim() || isStreaming}
             className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-all disabled:opacity-20"
             style={{
               background: "linear-gradient(135deg, #6366f1, #818cf8)",
-              boxShadow: input.trim() ? "0 0 12px rgba(99,102,241,0.4)" : "none",
+              boxShadow: input.trim() && !isStreaming ? "0 0 12px rgba(99,102,241,0.4)" : "none",
             }}
           >
             <svg viewBox="0 0 14 14" fill="none" stroke="white" strokeWidth="1.5" className="w-3.5 h-3.5">

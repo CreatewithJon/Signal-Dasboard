@@ -26,7 +26,7 @@ const QUESTIONS: Record<Period, { q: string; placeholder: string }[]> = {
   ],
 };
 
-const BASE_KEY = "signal_planner_review";
+const BASE_KEY = "sovereign_planner_review";
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);

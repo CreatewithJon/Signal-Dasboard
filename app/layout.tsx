@@ -4,6 +4,7 @@ import "./globals.css";
 import Sidebar from "@/components/Sidebar";
 import DashboardHeader from "@/components/DashboardHeader";
 import MobileNav from "@/components/MobileNav";
+import StorageMigration from "@/components/StorageMigration";
 
 export const metadata: Metadata = {
   title: "Sovereign OS",
@@ -14,6 +15,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
+        <StorageMigration />
         <div
           className="flex h-screen text-zinc-100 overflow-hidden"
           style={{

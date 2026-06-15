@@ -17,8 +17,8 @@ const DEFAULT_HABITS: Habit[] = [
   { id: "reflect", name: "Evening Reflect", icon: "🌙" },
 ];
 
-const HABITS_KEY = "signal_habits";
-const LOG_KEY = "signal_habit_log";
+const HABITS_KEY = "sovereign_habits";
+const LOG_KEY = "sovereign_habit_log";
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
