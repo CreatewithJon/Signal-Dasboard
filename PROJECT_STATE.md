@@ -6,7 +6,7 @@ _Last updated: 2026-06-15_
 
 ## Current State
 
-**Version:** Sovereign OS v1 (Signal Dashboard rename: Complete)
+**Version:** Sovereign OS v1.5 (Project Management: Complete)
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
 
@@ -58,10 +58,21 @@ _Last updated: 2026-06-15_
 - All persisted to localStorage (`sovereign_brand_*`)
 
 ### Projects (`/projects`)
-- Project tracker with status (Active / Paused / Complete / Idea)
-- Editable title, description, next action, URL
-- Filter by status
-- Persisted to `sovereign_projects`
+- Full project management dashboard
+- Fields: name, status (Idea/Active/Paused/Shipped/Archived), category (8 options), priority (Critical/High/Medium/Low), description, objective, next action, due date, links, notes
+- Project cards with category/priority/status badges, next action, archive button
+- Project detail modal with 3 tabs: Overview, Tasks, AI
+- Tasks: per-project task list with status cycle, priority, due date
+- AI project assistant: streaming, 4 presets (Summarize, Next Steps, Break Into Tasks, Today's Focus), custom questions via `/api/project-chat`
+- Seed projects: Sovereign OS, DWT, Aigentic Systems, Big Money Realty, Crypto Mondays LV, UNLV GH-600
+- Auto-migrates old format data from previous projects page
+- Persisted to `sovereign_projects` + `sovereign_project_tasks`
+
+### Homepage (`/`) — Projects Widget
+- Active project count, open task count, high-priority task count
+- Top 3 active next actions sorted by priority
+- Active projects list with priority indicators
+- Links to `/projects`
 
 ### Memory / Narrative Bank (`/narrative`)
 - Editable brand narratives and one-liners
@@ -108,6 +119,7 @@ All keys use the `sovereign_` prefix. Migration from `signal_*` is handled autom
 | `sovereign_planner_review` | Review questions |
 | `sovereign_content_ideas` | Content ideas vault |
 | `sovereign_projects` | Project tracker |
+| `sovereign_project_tasks` | Per-project task list |
 | `sovereign_narratives` | Narrative bank |
 | `sovereign_teleprompter_script` | Teleprompter script |
 | `sovereign_brand_*` | Brand plan fields |

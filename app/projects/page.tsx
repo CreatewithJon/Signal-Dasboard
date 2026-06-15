@@ -1,169 +1,1192 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import type {
+  Project,
+  ProjectTask,
+  ProjectStatus,
+  ProjectCategory,
+  ProjectPriority,
+  TaskStatus,
+} from "@/lib/types/projects";
 
-// ── Types ──────────────────────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────────
 
-type Status = "Active" | "Paused" | "Complete" | "Idea";
+const PROJECTS_KEY = "sovereign_projects";
+const TASKS_KEY = "sovereign_project_tasks";
 
-interface Project {
-  id: string;
-  title: string;
-  status: Status;
-  description: string;
-  next_action: string;
-  url: string;
-  last_updated: string;
-}
-
-// ── Constants ─────────────────────────────────────────────────────────────
-
-const STATUS_CONFIG: Record<Status, { color: string; bg: string; border: string }> = {
-  Active: { color: "#10b981", bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.2)" },
-  Paused: { color: "#f59e0b", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.2)" },
-  Complete: { color: "#3b82f6", bg: "rgba(59,130,246,0.1)", border: "rgba(59,130,246,0.2)" },
-  Idea: { color: "#8b5cf6", bg: "rgba(139,92,246,0.1)", border: "rgba(139,92,246,0.2)" },
+const STATUS_CONFIG: Record<ProjectStatus, { color: string; bg: string; border: string }> = {
+  Active:   { color: "#10b981", bg: "rgba(16,185,129,0.1)",  border: "rgba(16,185,129,0.22)" },
+  Paused:   { color: "#f59e0b", bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.22)" },
+  Idea:     { color: "#8b5cf6", bg: "rgba(139,92,246,0.1)", border: "rgba(139,92,246,0.22)" },
+  Shipped:  { color: "#3b82f6", bg: "rgba(59,130,246,0.1)", border: "rgba(59,130,246,0.22)" },
+  Archived: { color: "#64748b", bg: "rgba(100,116,135,0.08)", border: "rgba(100,116,135,0.18)" },
 };
 
-const STATUSES: Status[] = ["Active", "Paused", "Complete", "Idea"];
+const PRIORITY_CONFIG: Record<ProjectPriority, { color: string; bg: string; border: string }> = {
+  Critical: { color: "#ef4444", bg: "rgba(239,68,68,0.1)",  border: "rgba(239,68,68,0.22)" },
+  High:     { color: "#f59e0b", bg: "rgba(245,158,11,0.08)", border: "rgba(245,158,11,0.18)" },
+  Medium:   { color: "#60a5fa", bg: "rgba(96,165,250,0.08)", border: "rgba(96,165,250,0.18)" },
+  Low:      { color: "#94a3b8", bg: "rgba(148,163,184,0.06)", border: "rgba(148,163,184,0.14)" },
+};
 
-const DEFAULT_PROJECTS: Project[] = [
+const CATEGORY_CONFIG: Record<ProjectCategory, { color: string; bg: string }> = {
+  "Personal":       { color: "#a78bfa", bg: "rgba(167,139,250,0.1)" },
+  "Client":         { color: "#60a5fa", bg: "rgba(96,165,250,0.1)" },
+  "Agentic Systems":{ color: "#fb7185", bg: "rgba(251,113,133,0.1)" },
+  "DWT":            { color: "#fbbf24", bg: "rgba(251,191,36,0.1)" },
+  "Sovereign OS":   { color: "#818cf8", bg: "rgba(129,140,248,0.1)" },
+  "Crypto Mondays": { color: "#fb923c", bg: "rgba(251,146,60,0.1)" },
+  "UNLV":           { color: "#34d399", bg: "rgba(52,211,153,0.1)" },
+  "Other":          { color: "#94a3b8", bg: "rgba(148,163,184,0.08)" },
+};
+
+const STATUSES: ProjectStatus[] = ["Active", "Paused", "Idea", "Shipped", "Archived"];
+const CATEGORIES: ProjectCategory[] = [
+  "Personal", "Client", "Agentic Systems", "DWT", "Sovereign OS", "Crypto Mondays", "UNLV", "Other",
+];
+const PRIORITIES: ProjectPriority[] = ["Critical", "High", "Medium", "Low"];
+// TaskStatus cycle order for task row toggling
+const TASK_STATUS_CYCLE: TaskStatus[] = ["Todo", "In Progress", "Done"];
+
+// ── Seed Data ─────────────────────────────────────────────────────────────────
+
+const now = () => new Date().toISOString();
+
+const SEED_PROJECTS: Project[] = [
   {
-    id: "1",
-    title: "digitalwealthtransfer.com",
-    status: "Active",
-    description: "Media company & marketplace platform",
-    next_action: "Commit DWT refactor and deploy",
-    url: "https://digitalwealthtransfer.com",
-    last_updated: new Date().toISOString(),
-  },
-  {
-    id: "2",
+    id: "seed_sovereign_os",
     title: "Sovereign OS",
     status: "Active",
-    description: "Personal AI operating system — command center, planner, content, AI",
-    next_action: "Complete nav restructure, add Leads + Settings modules",
-    url: "",
-    last_updated: new Date().toISOString(),
+    category: "Sovereign OS",
+    priority: "High",
+    description: "Personal AI operating system — command center, planner, content engine, AI assistant, project management.",
+    objective: "Ship full project management dashboard with AI",
+    next_action: "Test and iterate on new project features",
+    due_date: "",
+    links: [],
+    notes: "",
+    created_at: now(),
+    updated_at: now(),
   },
   {
-    id: "3",
+    id: "seed_dwt",
+    title: "Digital Wealth Transfer",
+    status: "Active",
+    category: "DWT",
+    priority: "High",
+    description: "AI-powered marketplace and service platform for Las Vegas businesses.",
+    objective: "Grow lead volume via directory and AI systems offer",
+    next_action: "Publish next blog post and promote AI systems offer",
+    due_date: "",
+    links: ["https://digitalwealthtransfer.com"],
+    notes: "",
+    created_at: now(),
+    updated_at: now(),
+  },
+  {
+    id: "seed_aigentic",
     title: "Aigentic Systems",
     status: "Active",
-    description: "AI automation services business",
+    category: "Agentic Systems",
+    priority: "Critical",
+    description: "AI automation services business for local businesses. Chatbots, funnels, CRM, lead systems.",
+    objective: "Close first paid client",
     next_action: "Set up lead engine with Alberto",
-    url: "",
-    last_updated: new Date().toISOString(),
+    due_date: "",
+    links: [],
+    notes: "",
+    created_at: now(),
+    updated_at: now(),
   },
   {
-    id: "4",
-    title: "Big Money Realty",
+    id: "seed_bmr",
+    title: "Big Money Realty Lead Engine",
     status: "Paused",
-    description: "AI-powered real estate platform",
-    next_action: "Alberto to run DB schema",
-    url: "",
-    last_updated: new Date().toISOString(),
+    category: "Client",
+    priority: "Medium",
+    description: "AI-powered lead engine for Big Money Realty.",
+    objective: "Launch MVP lead capture and qualification flow",
+    next_action: "Alberto to run DB schema migration",
+    due_date: "",
+    links: [],
+    notes: "",
+    created_at: now(),
+    updated_at: now(),
+  },
+  {
+    id: "seed_cm",
+    title: "Crypto Mondays Las Vegas",
+    status: "Active",
+    category: "Crypto Mondays",
+    priority: "Medium",
+    description: "Bitcoin and crypto education meetup chapter for Las Vegas.",
+    objective: "Host consistent monthly events and grow attendance",
+    next_action: "Plan next meetup venue and date",
+    due_date: "",
+    links: [],
+    notes: "Leads from the CM LV website go to the chapter operator (Aigentic Systems).",
+    created_at: now(),
+    updated_at: now(),
+  },
+  {
+    id: "seed_unlv",
+    title: "UNLV GH-600 Course",
+    status: "Active",
+    category: "UNLV",
+    priority: "High",
+    description: "Graduate health informatics certification and course development at UNLV.",
+    objective: "Complete course requirements and lab work",
+    next_action: "Review GH-600 lab materials",
+    due_date: "",
+    links: [],
+    notes: "",
+    created_at: now(),
+    updated_at: now(),
   },
 ];
 
-// ── Helpers ───────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function formatDate(iso: string) {
+function newId(prefix = "p"): string {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+}
+
+function formatDate(iso: string): string {
+  if (!iso) return "";
   const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function now() {
-  return new Date().toISOString();
+function formatDueDate(dateStr: string): string {
+  if (!dateStr) return "";
+  const d = new Date(dateStr + "T00:00:00");
+  if (isNaN(d.getTime())) return "";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diff = Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff < 0) return `${Math.abs(diff)}d overdue`;
+  if (diff === 0) return "Due today";
+  if (diff === 1) return "Due tomorrow";
+  if (diff <= 7) return `Due in ${diff}d`;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-// ── Main Component ────────────────────────────────────────────────────────
+// Migrate old-format projects (from previous version of projects page)
+function migrateProject(raw: Record<string, unknown>): Project {
+  const statusMap: Record<string, ProjectStatus> = {
+    Active: "Active", Paused: "Paused", Complete: "Shipped", Idea: "Idea",
+  };
+  const oldUrl = typeof raw.url === "string" && raw.url ? [raw.url] : [];
+  const ts = typeof raw.last_updated === "string" ? raw.last_updated : now();
+  return {
+    id: String(raw.id ?? newId()),
+    title: String(raw.title ?? "Untitled"),
+    status: statusMap[String(raw.status)] ?? "Idea",
+    category: "Other",
+    priority: "Medium",
+    description: String(raw.description ?? ""),
+    objective: "",
+    next_action: String(raw.next_action ?? ""),
+    due_date: "",
+    links: (raw.links as string[] | undefined) ?? oldUrl,
+    notes: "",
+    created_at: ts,
+    updated_at: ts,
+  };
+}
+
+function loadProjects(): Project[] {
+  try {
+    const raw = localStorage.getItem(PROJECTS_KEY);
+    if (!raw) return SEED_PROJECTS;
+    const parsed = JSON.parse(raw) as Record<string, unknown>[];
+    if (!Array.isArray(parsed) || parsed.length === 0) return SEED_PROJECTS;
+    // Migrate if old format (no category field)
+    return parsed.map((p) =>
+      "category" in p ? (p as unknown as Project) : migrateProject(p)
+    );
+  } catch {
+    return SEED_PROJECTS;
+  }
+}
+
+function loadTasks(): ProjectTask[] {
+  try {
+    const raw = localStorage.getItem(TASKS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as ProjectTask[];
+  } catch {
+    return [];
+  }
+}
+
+function save<T>(key: string, data: T) {
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch {}
+}
+
+// ── Pill Component ────────────────────────────────────────────────────────────
+
+function Pill({
+  label,
+  color,
+  bg,
+  border,
+}: {
+  label: string;
+  color: string;
+  bg: string;
+  border?: string;
+}) {
+  return (
+    <span
+      className="inline-flex items-center text-[9px] font-bold uppercase tracking-[0.12em] px-2 py-0.5 rounded-full shrink-0"
+      style={{ color, background: bg, border: `1px solid ${border ?? bg}` }}
+    >
+      {label}
+    </span>
+  );
+}
+
+// ── Select Component ──────────────────────────────────────────────────────────
+
+function InlineSelect<T extends string>({
+  value,
+  options,
+  onChange,
+  style,
+}: {
+  value: T;
+  options: T[];
+  onChange: (v: T) => void;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value as T)}
+      className="bg-transparent text-[10px] font-semibold uppercase tracking-wider focus:outline-none cursor-pointer appearance-none pr-1"
+      style={style}
+    >
+      {options.map((o) => (
+        <option key={o} value={o} style={{ background: "#0d0d14", color: "#fff" }}>
+          {o}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+// ── Task Row ──────────────────────────────────────────────────────────────────
+
+function TaskRow({
+  task,
+  onUpdate,
+  onDelete,
+}: {
+  task: ProjectTask;
+  onUpdate: (id: string, field: keyof ProjectTask, value: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const done = task.status === "Done";
+  return (
+    <div
+      className="flex items-center gap-2 px-3 py-2.5 rounded-xl group"
+      style={{
+        background: done ? "rgba(16,185,129,0.04)" : "rgba(255,255,255,0.03)",
+        border: done ? "1px solid rgba(16,185,129,0.1)" : "1px solid rgba(255,255,255,0.06)",
+      }}
+    >
+      {/* Status cycle button */}
+      <button
+        onClick={() => {
+          const idx = TASK_STATUS_CYCLE.indexOf(task.status);
+          const next = TASK_STATUS_CYCLE[(idx + 1) % TASK_STATUS_CYCLE.length];
+          onUpdate(task.id, "status", next);
+        }}
+        className="w-4 h-4 rounded-full shrink-0 flex items-center justify-center transition-all"
+        style={{
+          background: done ? "rgba(16,185,129,0.8)" : "transparent",
+          border: done
+            ? "1px solid rgba(16,185,129,0.8)"
+            : task.status === "In Progress"
+            ? "1px solid rgba(245,158,11,0.6)"
+            : "1px solid rgba(255,255,255,0.15)",
+        }}
+        title="Cycle status"
+      >
+        {done && (
+          <svg viewBox="0 0 8 8" fill="none" stroke="black" strokeWidth="1.5" className="w-2 h-2">
+            <path d="M1 4l2 2 4-3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+        {task.status === "In Progress" && (
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: "rgba(245,158,11,0.8)" }} />
+        )}
+      </button>
+
+      {/* Title */}
+      <input
+        value={task.title}
+        onChange={(e) => onUpdate(task.id, "title", e.target.value)}
+        className="flex-1 bg-transparent text-xs focus:outline-none min-w-0"
+        style={{
+          color: done ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.7)",
+          textDecoration: done ? "line-through" : "none",
+        }}
+        placeholder="Task title"
+      />
+
+      {/* Priority quick select */}
+      <InlineSelect
+        value={task.priority}
+        options={PRIORITIES}
+        onChange={(v) => onUpdate(task.id, "priority", v)}
+        style={{ color: PRIORITY_CONFIG[task.priority].color }}
+      />
+
+      {/* Due date */}
+      <input
+        type="date"
+        value={task.due_date}
+        onChange={(e) => onUpdate(task.id, "due_date", e.target.value)}
+        className="bg-transparent text-[9px] focus:outline-none w-24 text-white/20 cursor-pointer"
+        style={{ colorScheme: "dark" }}
+      />
+
+      {/* Delete */}
+      <button
+        onClick={() => onDelete(task.id)}
+        className="w-5 h-5 flex items-center justify-center rounded opacity-0 group-hover:opacity-40 hover:opacity-100 transition-opacity text-white/40"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
+// ── Project AI Panel ──────────────────────────────────────────────────────────
+
+function ProjectAIPanel({ project }: { project: Project }) {
+  const [response, setResponse] = useState("");
+  const [streaming, setStreaming] = useState(false);
+  const [customQ, setCustomQ] = useState("");
+  const abortRef = useRef<AbortController | null>(null);
+
+  function buildContext(): string {
+    return [
+      `Project: ${project.title}`,
+      `Status: ${project.status} | Priority: ${project.priority} | Category: ${project.category}`,
+      project.description ? `Description: ${project.description}` : "",
+      project.objective ? `Current Objective: ${project.objective}` : "",
+      project.next_action ? `Next Action: ${project.next_action}` : "",
+      project.due_date ? `Due Date: ${project.due_date}` : "",
+      project.notes ? `Notes: ${project.notes}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  const runAI = useCallback(
+    async (question: string) => {
+      if (streaming || !question.trim()) return;
+      setResponse("");
+      setStreaming(true);
+
+      const message = `${buildContext()}\n\n${question}`;
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      try {
+        const res = await fetch("/api/project-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message }),
+          signal: controller.signal,
+        });
+
+        if (!res.ok || !res.body) {
+          setResponse("AI service error. Try again.");
+          return;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let acc = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          acc += decoder.decode(value, { stream: true });
+          setResponse(acc);
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        setResponse("Connection error. Try again.");
+      } finally {
+        setStreaming(false);
+        abortRef.current = null;
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [streaming, project]
+  );
+
+  const PRESETS = [
+    { label: "Summarize", q: "Summarize this project in 2-3 sentences. Then identify the single most important thing to do next." },
+    { label: "Next Steps", q: "What are the next 5 concrete, specific steps to move this project forward right now?" },
+    { label: "Break Into Tasks", q: "Break this project into 10-15 specific actionable tasks I can assign and track. Use a numbered list." },
+    { label: "Today's Focus", q: "Given everything in this project, what is the single best thing to focus on today and why?" },
+  ];
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Preset buttons */}
+      <div className="flex flex-wrap gap-2">
+        {PRESETS.map((p) => (
+          <button
+            key={p.label}
+            onClick={() => runAI(p.q)}
+            disabled={streaming}
+            className="text-[10px] font-semibold px-3 py-1.5 rounded-lg transition-all disabled:opacity-40"
+            style={{
+              background: "rgba(99,102,241,0.1)",
+              border: "1px solid rgba(99,102,241,0.2)",
+              color: "rgba(165,180,252,0.85)",
+            }}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Custom question */}
+      <form
+        onSubmit={(e) => { e.preventDefault(); runAI(customQ); setCustomQ(""); }}
+        className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
+        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
+      >
+        <input
+          value={customQ}
+          onChange={(e) => setCustomQ(e.target.value)}
+          placeholder="Ask anything about this project…"
+          disabled={streaming}
+          className="flex-1 bg-transparent text-xs text-white/70 placeholder:text-white/20 focus:outline-none disabled:opacity-50"
+        />
+        <button
+          type="submit"
+          disabled={!customQ.trim() || streaming}
+          className="text-[10px] font-bold px-3 py-1 rounded-lg transition-all disabled:opacity-30"
+          style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.25)", color: "rgba(165,180,252,0.9)" }}
+        >
+          Ask
+        </button>
+        {streaming && (
+          <button
+            type="button"
+            onClick={() => { abortRef.current?.abort(); setStreaming(false); }}
+            className="text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all"
+            style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.18)", color: "rgba(248,113,113,0.75)" }}
+          >
+            Stop
+          </button>
+        )}
+      </form>
+
+      {/* Response */}
+      {(response || streaming) && (
+        <div
+          className="rounded-xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap"
+          style={{
+            background: "rgba(99,102,241,0.06)",
+            border: "1px solid rgba(99,102,241,0.12)",
+            color: "rgba(255,255,255,0.65)",
+            minHeight: 60,
+          }}
+        >
+          {response}
+          {streaming && (
+            <span
+              className="inline-block w-[2px] h-[1em] ml-[2px] align-middle bg-indigo-400/70 animate-pulse"
+              style={{ verticalAlign: "text-bottom" }}
+            />
+          )}
+          {!streaming && !response && (
+            <span className="flex items-center gap-1.5">
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className="w-1.5 h-1.5 rounded-full bg-indigo-400/50 animate-bounce"
+                  style={{ animationDelay: `${i * 150}ms` }}
+                />
+              ))}
+            </span>
+          )}
+        </div>
+      )}
+
+      {!response && !streaming && (
+        <p className="text-[10px] text-white/20 text-center pt-2">
+          Choose a preset or ask your own question about this project.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── Project Modal ─────────────────────────────────────────────────────────────
+
+type ModalTab = "overview" | "tasks" | "ai";
+
+function ProjectModal({
+  project,
+  tasks,
+  onClose,
+  onUpdateProject,
+  onAddTask,
+  onUpdateTask,
+  onDeleteTask,
+}: {
+  project: Project;
+  tasks: ProjectTask[];
+  onClose: () => void;
+  onUpdateProject: (id: string, patch: Partial<Project>) => void;
+  onAddTask: (projectId: string, title: string) => void;
+  onUpdateTask: (id: string, field: keyof ProjectTask, value: string) => void;
+  onDeleteTask: (id: string) => void;
+}) {
+  const [tab, setTab] = useState<ModalTab>("overview");
+  const [newLink, setNewLink] = useState("");
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+
+  const projectTasks = tasks.filter((t) => t.project_id === project.id);
+  const doneTasks = projectTasks.filter((t) => t.status === "Done").length;
+
+  function update(patch: Partial<Project>) {
+    onUpdateProject(project.id, patch);
+  }
+
+  function addLink() {
+    const url = newLink.trim();
+    if (!url) return;
+    update({ links: [...project.links, url] });
+    setNewLink("");
+  }
+
+  function removeLink(idx: number) {
+    update({ links: project.links.filter((_, i) => i !== idx) });
+  }
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  const statusCfg = STATUS_CONFIG[project.status];
+  const priorityCfg = PRIORITY_CONFIG[project.priority];
+  const categoryCfg = CATEGORY_CONFIG[project.category];
+
+  const TAB_LABELS: { id: ModalTab; label: string }[] = [
+    { id: "overview", label: "Overview" },
+    { id: "tasks", label: `Tasks (${projectTasks.length})` },
+    { id: "ai", label: "AI" },
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center pt-12 pb-8 px-4"
+      style={{ background: "rgba(0,0,0,0.75)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="w-full max-w-2xl flex flex-col rounded-3xl overflow-hidden"
+        style={{
+          background: "#0d0d14",
+          border: "1px solid rgba(255,255,255,0.09)",
+          boxShadow: "0 32px 80px rgba(0,0,0,0.6)",
+          maxHeight: "calc(100vh - 6rem)",
+        }}
+      >
+        {/* Modal header */}
+        <div
+          className="px-6 pt-6 pb-4 shrink-0"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          {/* Title row */}
+          <div className="flex items-start gap-3 mb-4">
+            <input
+              value={project.title}
+              onChange={(e) => update({ title: e.target.value })}
+              className="flex-1 bg-transparent text-lg font-bold text-white/90 focus:outline-none border-b border-transparent focus:border-white/10 pb-0.5 transition-colors"
+              placeholder="Project title"
+            />
+            <button
+              onClick={onClose}
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-white/30 hover:text-white/60 hover:bg-white/05 transition-all shrink-0 text-lg"
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Badges row */}
+          <div className="flex items-center gap-2 flex-wrap mb-4">
+            {/* Status */}
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
+              style={{ background: statusCfg.bg, border: `1px solid ${statusCfg.border}`, color: statusCfg.color }}
+            >
+              <InlineSelect
+                value={project.status}
+                options={STATUSES}
+                onChange={(v) => update({ status: v })}
+                style={{ color: statusCfg.color }}
+              />
+            </div>
+
+            {/* Priority */}
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
+              style={{ background: priorityCfg.bg, border: `1px solid ${priorityCfg.border}`, color: priorityCfg.color }}
+            >
+              <InlineSelect
+                value={project.priority}
+                options={PRIORITIES}
+                onChange={(v) => update({ priority: v })}
+                style={{ color: priorityCfg.color }}
+              />
+            </div>
+
+            {/* Category */}
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
+              style={{ background: categoryCfg.bg, color: categoryCfg.color, border: `1px solid ${categoryCfg.bg}` }}
+            >
+              <InlineSelect
+                value={project.category}
+                options={CATEGORIES}
+                onChange={(v) => update({ category: v })}
+                style={{ color: categoryCfg.color }}
+              />
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-1">
+            {TAB_LABELS.map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                className="text-[10px] font-semibold uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all"
+                style={{
+                  background: tab === id ? "rgba(99,102,241,0.12)" : "transparent",
+                  border: tab === id ? "1px solid rgba(99,102,241,0.22)" : "1px solid transparent",
+                  color: tab === id ? "rgba(165,180,252,0.9)" : "rgba(255,255,255,0.28)",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+
+          {/* ── OVERVIEW TAB ── */}
+          {tab === "overview" && (
+            <div className="flex flex-col gap-4">
+              {/* Description */}
+              <div>
+                <label className="block text-[9px] font-semibold uppercase tracking-[0.2em] text-white/25 mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  value={project.description}
+                  onChange={(e) => update({ description: e.target.value })}
+                  rows={2}
+                  className="w-full bg-transparent text-sm text-white/60 placeholder:text-white/20 focus:outline-none resize-none leading-relaxed"
+                  placeholder="What is this project?"
+                />
+              </div>
+
+              {/* Objective */}
+              <div
+                className="rounded-xl px-4 py-3"
+                style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.12)" }}
+              >
+                <label className="block text-[9px] font-semibold uppercase tracking-[0.2em] text-indigo-400/50 mb-1.5">
+                  Current Objective
+                </label>
+                <input
+                  value={project.objective}
+                  onChange={(e) => update({ objective: e.target.value })}
+                  className="w-full bg-transparent text-sm text-white/70 placeholder:text-white/20 focus:outline-none"
+                  placeholder="What are you trying to achieve right now?"
+                />
+              </div>
+
+              {/* Next Action */}
+              <div
+                className="rounded-xl px-4 py-3"
+                style={{ background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.12)" }}
+              >
+                <label className="block text-[9px] font-semibold uppercase tracking-[0.2em] text-emerald-400/50 mb-1.5">
+                  Next Action
+                </label>
+                <input
+                  value={project.next_action}
+                  onChange={(e) => update({ next_action: e.target.value })}
+                  className="w-full bg-transparent text-sm text-white/70 placeholder:text-white/20 focus:outline-none"
+                  placeholder="What's the immediate next step?"
+                />
+              </div>
+
+              {/* Due Date */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <label className="block text-[9px] font-semibold uppercase tracking-[0.2em] text-white/25 mb-1.5">
+                    Target Date
+                  </label>
+                  <input
+                    type="date"
+                    value={project.due_date}
+                    onChange={(e) => update({ due_date: e.target.value })}
+                    className="bg-transparent text-sm text-white/50 focus:outline-none cursor-pointer"
+                    style={{ colorScheme: "dark" }}
+                  />
+                </div>
+                {project.due_date && (
+                  <span className="text-xs mt-4" style={{ color: "rgba(245,158,11,0.65)" }}>
+                    {formatDueDate(project.due_date)}
+                  </span>
+                )}
+              </div>
+
+              {/* Links */}
+              <div>
+                <label className="block text-[9px] font-semibold uppercase tracking-[0.2em] text-white/25 mb-1.5">
+                  Links
+                </label>
+                <div className="flex flex-col gap-1.5 mb-2">
+                  {project.links.map((link, idx) => (
+                    <div key={idx} className="flex items-center gap-2 group">
+                      <a
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 text-xs text-blue-400/60 hover:text-blue-400/90 truncate transition-colors"
+                      >
+                        ↗ {link}
+                      </a>
+                      <button
+                        onClick={() => removeLink(idx)}
+                        className="text-white/20 hover:text-white/50 opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    value={newLink}
+                    onChange={(e) => setNewLink(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") addLink(); }}
+                    placeholder="https://..."
+                    className="flex-1 bg-transparent text-xs text-white/40 placeholder:text-white/15 focus:outline-none border-b border-white/08 pb-0.5"
+                  />
+                  <button
+                    onClick={addLink}
+                    disabled={!newLink.trim()}
+                    className="text-[9px] font-bold px-2.5 py-1 rounded-lg transition-all disabled:opacity-30"
+                    style={{ background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)", color: "rgba(147,197,253,0.8)" }}
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-[9px] font-semibold uppercase tracking-[0.2em] text-white/25 mb-1.5">
+                  Notes
+                </label>
+                <textarea
+                  value={project.notes}
+                  onChange={(e) => update({ notes: e.target.value })}
+                  rows={4}
+                  className="w-full bg-transparent text-sm text-white/50 placeholder:text-white/15 focus:outline-none resize-none leading-relaxed"
+                  placeholder="Context, decisions, blockers, ideas…"
+                />
+              </div>
+
+              {/* Timestamps */}
+              <div className="flex items-center gap-4 pt-2 text-[9px] text-white/15">
+                <span>Created {formatDate(project.created_at)}</span>
+                <span>·</span>
+                <span>Updated {formatDate(project.updated_at)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* ── TASKS TAB ── */}
+          {tab === "tasks" && (
+            <div className="flex flex-col gap-3">
+              {/* Add task */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (newTaskTitle.trim()) {
+                    onAddTask(project.id, newTaskTitle.trim());
+                    setNewTaskTitle("");
+                  }
+                }}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px dashed rgba(255,255,255,0.09)" }}
+              >
+                <span className="text-white/20 text-sm">+</span>
+                <input
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  placeholder="Add a task…"
+                  className="flex-1 bg-transparent text-sm text-white/60 placeholder:text-white/20 focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={!newTaskTitle.trim()}
+                  className="text-[10px] font-bold px-3 py-1 rounded-lg transition-all disabled:opacity-30"
+                  style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", color: "rgba(52,211,153,0.85)" }}
+                >
+                  Add
+                </button>
+              </form>
+
+              {/* Progress bar */}
+              {projectTasks.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-[3px] rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.round((doneTasks / projectTasks.length) * 100)}%`,
+                        background: "linear-gradient(90deg, #10b981, #34d399)",
+                      }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-white/25 shrink-0">
+                    {doneTasks}/{projectTasks.length}
+                  </span>
+                </div>
+              )}
+
+              {/* Task list - Todo/In Progress first, then Done */}
+              <div className="flex flex-col gap-1.5">
+                {projectTasks.filter((t) => t.status !== "Done").map((task) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    onUpdate={onUpdateTask}
+                    onDelete={onDeleteTask}
+                  />
+                ))}
+                {projectTasks.filter((t) => t.status === "Done").length > 0 && (
+                  <>
+                    <p className="text-[9px] text-white/15 uppercase tracking-wider mt-2 mb-0.5 pl-1">Completed</p>
+                    {projectTasks.filter((t) => t.status === "Done").map((task) => (
+                      <TaskRow
+                        key={task.id}
+                        task={task}
+                        onUpdate={onUpdateTask}
+                        onDelete={onDeleteTask}
+                      />
+                    ))}
+                  </>
+                )}
+              </div>
+
+              {projectTasks.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-sm text-white/20">No tasks yet.</p>
+                  <p className="text-xs text-white/12 mt-1">Add tasks above, or use AI → Break Into Tasks.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── AI TAB ── */}
+          {tab === "ai" && <ProjectAIPanel project={project} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Project Card ──────────────────────────────────────────────────────────────
+
+function ProjectCard({
+  project,
+  taskCount,
+  onOpen,
+  onUpdateStatus,
+  onArchive,
+}: {
+  project: Project;
+  taskCount: number;
+  onOpen: () => void;
+  onUpdateStatus: (id: string, status: ProjectStatus) => void;
+  onArchive: (id: string) => void;
+}) {
+  const statusCfg = STATUS_CONFIG[project.status];
+  const priorityCfg = PRIORITY_CONFIG[project.priority];
+  const categoryCfg = CATEGORY_CONFIG[project.category];
+
+  return (
+    <div
+      className="rounded-2xl p-5 flex flex-col gap-3 group relative transition-all cursor-pointer"
+      style={{
+        background: "rgba(255,255,255,0.025)",
+        border: "1px solid rgba(255,255,255,0.07)",
+      }}
+      onClick={onOpen}
+    >
+      {/* Archive button — top-right on hover */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onArchive(project.id); }}
+        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-[9px] font-semibold px-2 py-0.5 rounded-md transition-all"
+        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.2)" }}
+        title="Archive"
+      >
+        Archive
+      </button>
+
+      {/* Top row — category + priority */}
+      <div className="flex items-center gap-2 flex-wrap pr-14">
+        <Pill
+          label={project.category}
+          color={categoryCfg.color}
+          bg={categoryCfg.bg}
+          border={categoryCfg.bg}
+        />
+        <Pill
+          label={project.priority}
+          color={priorityCfg.color}
+          bg={priorityCfg.bg}
+          border={priorityCfg.border}
+        />
+        {taskCount > 0 && (
+          <span className="text-[9px] text-white/20 ml-auto">{taskCount} task{taskCount !== 1 ? "s" : ""}</span>
+        )}
+      </div>
+
+      {/* Title */}
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          {/* Status dot */}
+          <span
+            className="w-1.5 h-1.5 rounded-full shrink-0"
+            style={{ background: statusCfg.color, boxShadow: project.status === "Active" ? `0 0 5px ${statusCfg.color}80` : "none" }}
+          />
+          <h3 className="text-sm font-semibold text-white/85 leading-tight">{project.title}</h3>
+        </div>
+        {project.description && (
+          <p
+            className="text-xs leading-relaxed line-clamp-2 pl-3.5"
+            style={{ color: "rgba(255,255,255,0.35)" }}
+          >
+            {project.description}
+          </p>
+        )}
+      </div>
+
+      {/* Next action */}
+      {project.next_action && (
+        <div
+          className="rounded-xl px-3 py-2"
+          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-white/20 mb-0.5">Next</p>
+          <p className="text-xs text-white/55 leading-snug">{project.next_action}</p>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="flex items-center justify-between mt-auto pt-1">
+        <div className="flex items-center gap-2">
+          {/* Status quick-cycle */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const idx = STATUSES.indexOf(project.status);
+              const next = STATUSES[(idx + 1) % (STATUSES.length - 1)]; // exclude Archived from cycle
+              onUpdateStatus(project.id, next);
+            }}
+            className="text-[9px] font-bold px-2 py-0.5 rounded-full transition-all"
+            style={{ background: statusCfg.bg, border: `1px solid ${statusCfg.border}`, color: statusCfg.color }}
+            title="Cycle status"
+          >
+            {project.status}
+          </button>
+          {project.due_date && (
+            <span className="text-[9px]" style={{ color: "rgba(245,158,11,0.55)" }}>
+              {formatDueDate(project.due_date)}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[9px] text-white/15">{formatDate(project.updated_at)}</span>
+          <span
+            className="text-[10px] font-bold opacity-0 group-hover:opacity-60 transition-opacity"
+            style={{ color: "rgba(165,180,252,0.8)" }}
+          >
+            Open →
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
+type FilterStatus = ProjectStatus | "All";
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>(DEFAULT_PROJECTS);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<Status | "All">("All");
+  const [filterStatus, setFilterStatus] = useState<FilterStatus>("All");
+  const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("sovereign_projects");
-      if (stored) setProjects(JSON.parse(stored) as Project[]);
-    } catch {
-      // ignore
-    }
+    setProjects(loadProjects());
+    setTasks(loadTasks());
     setLoaded(true);
   }, []);
 
-  function saveProjects(next: Project[]) {
+  function saveProjectsState(next: Project[]) {
     setProjects(next);
-    try {
-      localStorage.setItem("sovereign_projects", JSON.stringify(next));
-    } catch {
-      // ignore
-    }
+    save(PROJECTS_KEY, next);
   }
 
-  function updateProject(id: string, field: keyof Project, value: string) {
-    saveProjects(
-      projects.map((p) =>
-        p.id === id ? { ...p, [field]: value, last_updated: now() } : p
-      )
-    );
-  }
-
-  function deleteProject(id: string) {
-    saveProjects(projects.filter((p) => p.id !== id));
+  function saveTasksState(next: ProjectTask[]) {
+    setTasks(next);
+    save(TASKS_KEY, next);
   }
 
   function addProject() {
-    const newP: Project = {
-      id: Date.now().toString(),
+    const p: Project = {
+      id: newId("proj"),
       title: "New Project",
       status: "Idea",
+      category: "Other",
+      priority: "Medium",
       description: "",
+      objective: "",
       next_action: "",
-      url: "",
-      last_updated: now(),
+      due_date: "",
+      links: [],
+      notes: "",
+      created_at: now(),
+      updated_at: now(),
     };
-    const next = [newP, ...projects];
-    saveProjects(next);
-    setEditingId(newP.id);
+    const next = [p, ...projects];
+    saveProjectsState(next);
+    setOpenId(p.id);
   }
 
-  const filtered =
-    filterStatus === "All" ? projects : projects.filter((p) => p.status === filterStatus);
+  function updateProject(id: string, patch: Partial<Project>) {
+    saveProjectsState(
+      projects.map((p) => p.id === id ? { ...p, ...patch, updated_at: now() } : p)
+    );
+  }
 
-  const counts = STATUSES.reduce(
-    (acc, s) => ({ ...acc, [s]: projects.filter((p) => p.status === s).length }),
-    {} as Record<Status, number>
-  );
+  function archiveProject(id: string) {
+    updateProject(id, { status: "Archived" });
+    if (openId === id) setOpenId(null);
+  }
+
+  function addTask(projectId: string, title: string) {
+    const t: ProjectTask = {
+      id: newId("task"),
+      project_id: projectId,
+      title,
+      status: "Todo",
+      priority: "Medium",
+      due_date: "",
+      notes: "",
+      created_at: now(),
+      updated_at: now(),
+    };
+    saveTasksState([t, ...tasks]);
+  }
+
+  function updateTask(id: string, field: keyof ProjectTask, value: string) {
+    saveTasksState(
+      tasks.map((t) => t.id === id ? { ...t, [field]: value, updated_at: now() } : t)
+    );
+  }
+
+  function deleteTask(id: string) {
+    saveTasksState(tasks.filter((t) => t.id !== id));
+  }
+
+  const activeProjects = projects.filter((p) => p.status !== "Archived");
+  const archivedProjects = projects.filter((p) => p.status === "Archived");
+  const showArchived = filterStatus === "Archived";
+
+  const visibleProjects = showArchived
+    ? archivedProjects
+    : filterStatus === "All"
+    ? activeProjects
+    : activeProjects.filter((p) => p.status === filterStatus);
+
+  const openProject = projects.find((p) => p.id === openId) ?? null;
+
+  const counts: Record<ProjectStatus, number> = {
+    Active:   activeProjects.filter((p) => p.status === "Active").length,
+    Paused:   activeProjects.filter((p) => p.status === "Paused").length,
+    Idea:     activeProjects.filter((p) => p.status === "Idea").length,
+    Shipped:  activeProjects.filter((p) => p.status === "Shipped").length,
+    Archived: archivedProjects.length,
+  };
 
   if (!loaded) {
-    return (
-      <div className="max-w-5xl mx-auto py-20 text-center text-white/20 text-sm">
-        Loading…
-      </div>
-    );
+    return <div className="max-w-5xl mx-auto py-20 text-center text-white/20 text-sm">Loading…</div>;
   }
 
   return (
     <div className="max-w-5xl mx-auto">
 
-      {/* ── Header ── */}
+      {/* ── Modal ── */}
+      {openProject && (
+        <ProjectModal
+          project={openProject}
+          tasks={tasks}
+          onClose={() => setOpenId(null)}
+          onUpdateProject={updateProject}
+          onAddTask={addTask}
+          onUpdateTask={updateTask}
+          onDeleteTask={deleteTask}
+        />
+      )}
+
+      {/* ── Hero ── */}
       <section className="relative py-12 text-center">
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "radial-gradient(ellipse 70% 70% at 50% 35%, rgba(59,130,246,0.12) 0%, rgba(99,102,241,0.05) 55%, transparent 75%)",
+              "radial-gradient(ellipse 70% 70% at 50% 35%, rgba(99,102,241,0.12) 0%, rgba(59,130,246,0.04) 55%, transparent 75%)",
           }}
         />
-        <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-blue-400/60 mb-4 relative">
-          Project Tracker
+        <p className="text-[10px] font-semibold uppercase tracking-[0.35em] text-indigo-400/60 mb-4 relative">
+          Project Management
         </p>
         <h1
-          className="text-4xl md:text-5xl font-bold tracking-[-0.02em] leading-[1.05] mb-4 relative"
+          className="text-4xl md:text-5xl font-bold tracking-[-0.02em] leading-[1.05] mb-3 relative"
           style={{
             background: "linear-gradient(165deg, rgba(255,255,255,0.97) 20%, rgba(255,255,255,0.5) 100%)",
             WebkitBackgroundClip: "text",
@@ -173,16 +1196,20 @@ export default function ProjectsPage() {
         >
           What&apos;s In Motion.
         </h1>
-        <p className="text-sm text-white/25 max-w-sm mx-auto leading-relaxed relative">
+        <p className="text-sm text-white/25 max-w-xs mx-auto leading-relaxed relative">
           Active projects, next actions, and where momentum lives.
         </p>
 
         {/* Status summary pills */}
         <div className="flex items-center justify-center gap-2 flex-wrap mt-8 relative">
-          {STATUSES.map((s) => {
+          {(["Active", "Paused", "Idea", "Shipped"] as ProjectStatus[]).map((s) => {
             const cfg = STATUS_CONFIG[s];
             return (
-              <div key={s} className="flex items-center gap-1.5 text-[10px] font-semibold px-3 py-1.5 rounded-full" style={{ background: cfg.bg, border: `1px solid ${cfg.border}`, color: cfg.color }}>
+              <div
+                key={s}
+                className="flex items-center gap-1.5 text-[10px] font-semibold px-3 py-1.5 rounded-full"
+                style={{ background: cfg.bg, border: `1px solid ${cfg.border}`, color: cfg.color }}
+              >
                 <span>{counts[s]}</span>
                 <span style={{ opacity: 0.7 }}>{s}</span>
               </div>
@@ -194,18 +1221,21 @@ export default function ProjectsPage() {
       {/* ── Controls ── */}
       <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
         <div className="flex items-center gap-1 flex-wrap">
-          {(["All", ...STATUSES] as (Status | "All")[]).map((s) => (
+          {(["All", "Active", "Paused", "Idea", "Shipped", "Archived"] as (FilterStatus)[]).map((s) => (
             <button
               key={s}
               onClick={() => setFilterStatus(s)}
               className="text-[10px] font-semibold uppercase tracking-[0.15em] px-3 py-1.5 rounded-lg transition-all"
               style={{
-                background: filterStatus === s ? "rgba(59,130,246,0.12)" : "rgba(255,255,255,0.03)",
-                border: filterStatus === s ? "1px solid rgba(59,130,246,0.25)" : "1px solid rgba(255,255,255,0.06)",
-                color: filterStatus === s ? "rgba(147,197,253,0.9)" : "rgba(255,255,255,0.3)",
+                background: filterStatus === s ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.03)",
+                border: filterStatus === s ? "1px solid rgba(99,102,241,0.25)" : "1px solid rgba(255,255,255,0.06)",
+                color: filterStatus === s ? "rgba(165,180,252,0.9)" : "rgba(255,255,255,0.3)",
               }}
             >
               {s}
+              {s === "Archived" && archivedProjects.length > 0 && (
+                <span className="ml-1 opacity-60">({archivedProjects.length})</span>
+              )}
             </button>
           ))}
         </div>
@@ -213,133 +1243,47 @@ export default function ProjectsPage() {
           onClick={addProject}
           className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl transition-all"
           style={{
-            background: "rgba(59,130,246,0.12)",
-            border: "1px solid rgba(59,130,246,0.25)",
-            color: "rgba(147,197,253,0.9)",
+            background: "rgba(99,102,241,0.12)",
+            border: "1px solid rgba(99,102,241,0.25)",
+            color: "rgba(165,180,252,0.9)",
           }}
         >
-          <span>+ Add Project</span>
+          + New Project
         </button>
       </div>
 
-      {/* ── Project Grid ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-12">
-        {filtered.map((project) => {
-          const cfg = STATUS_CONFIG[project.status];
-          const isEditing = editingId === project.id;
+      {/* ── Grid ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-16">
+        {visibleProjects.map((project) => (
+          <ProjectCard
+            key={project.id}
+            project={project}
+            taskCount={tasks.filter((t) => t.project_id === project.id && t.status !== "Done").length}
+            onOpen={() => setOpenId(project.id)}
+            onUpdateStatus={(id, status) => updateProject(id, { status })}
+            onArchive={archiveProject}
+          />
+        ))}
 
-          return (
-            <div
-              key={project.id}
-              className="rounded-2xl p-5 group relative"
-              style={{
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.06)",
-              }}
-            >
-              {/* Delete button */}
-              <button
-                onClick={() => deleteProject(project.id)}
-                className="absolute top-4 right-4 opacity-0 group-hover:opacity-40 hover:opacity-100 text-white/40 text-base transition-opacity"
-              >
-                ×
-              </button>
-
-              {/* Status pill */}
-              <div className="flex items-center gap-2 mb-3">
-                <div className="flex gap-1">
-                  {STATUSES.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => updateProject(project.id, "status", s)}
-                      className="text-[9px] font-bold uppercase tracking-[0.1em] px-2 py-0.5 rounded-full transition-all"
-                      style={
-                        project.status === s
-                          ? { background: cfg.bg, border: `1px solid ${cfg.border}`, color: cfg.color }
-                          : { background: "transparent", border: "1px solid transparent", color: "rgba(255,255,255,0.18)" }
-                      }
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Title */}
-              {isEditing ? (
-                <input
-                  autoFocus
-                  value={project.title}
-                  onChange={(e) => updateProject(project.id, "title", e.target.value)}
-                  onBlur={() => setEditingId(null)}
-                  className="w-full bg-transparent text-sm font-semibold text-white/90 outline-none border-b border-white/10 pb-1 mb-2"
-                />
-              ) : (
-                <button
-                  onClick={() => setEditingId(project.id)}
-                  className="text-left w-full text-sm font-semibold text-white/85 mb-2 hover:text-white/100 transition-colors"
-                >
-                  {project.title}
-                </button>
-              )}
-
-              {/* Description */}
-              <textarea
-                value={project.description}
-                onChange={(e) => updateProject(project.id, "description", e.target.value)}
-                rows={2}
-                className="w-full bg-transparent text-xs text-white/45 resize-none outline-none leading-relaxed mb-3"
-                placeholder="Short description…"
-              />
-
-              {/* Next action */}
-              <div
-                className="rounded-xl px-3 py-2.5 mb-3"
-                style={{ background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.1)" }}
-              >
-                <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-blue-400/50 mb-1">
-                  Next Move
-                </p>
-                <input
-                  value={project.next_action}
-                  onChange={(e) => updateProject(project.id, "next_action", e.target.value)}
-                  className="w-full bg-transparent text-xs text-white/70 outline-none"
-                  placeholder="What&apos;s the next action?"
-                />
-              </div>
-
-              {/* URL + timestamp */}
-              <div className="flex items-center justify-between gap-2">
-                <input
-                  value={project.url}
-                  onChange={(e) => updateProject(project.id, "url", e.target.value)}
-                  className="flex-1 bg-transparent text-[10px] text-white/20 outline-none"
-                  placeholder="URL (optional)"
-                />
-                {project.url && (
-                  <a
-                    href={project.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[10px] text-blue-400/50 hover:text-blue-400/80 transition-colors"
-                  >
-                    ↗
-                  </a>
-                )}
-                <span className="text-[10px] text-white/15 shrink-0">
-                  {formatDate(project.last_updated)}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-
-        {filtered.length === 0 && (
+        {visibleProjects.length === 0 && (
           <div
-            className="col-span-full rounded-2xl p-10 text-center"
-            style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}
+            className="col-span-full rounded-2xl p-12 text-center"
+            style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.07)" }}
           >
-            <p className="text-sm text-white/20">No projects in this status</p>
+            {showArchived ? (
+              <p className="text-sm text-white/20">No archived projects.</p>
+            ) : (
+              <div className="flex flex-col items-center gap-4">
+                <p className="text-sm text-white/25">No projects here yet.</p>
+                <button
+                  onClick={addProject}
+                  className="text-xs font-semibold px-4 py-2 rounded-xl transition-all"
+                  style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", color: "rgba(165,180,252,0.8)" }}
+                >
+                  + Add your first project
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

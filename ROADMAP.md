@@ -40,17 +40,32 @@ _Rename and reposition Signal Dashboard → Sovereign OS_
 
 ---
 
+## Phase 1.5 — Project Management (Complete)
+_Turn /projects into a full personal command center_
+
+- [x] New Project type: status, category, priority, objective, next_action, due_date, links, notes
+- [x] Project cards: category/priority/status badges, next action, archive button
+- [x] Project detail modal: Overview tab (all fields), Tasks tab, AI tab
+- [x] Tasks: per-project tasks with status cycle (Todo → In Progress → Done), priority, due date
+- [x] AI project assistant: streaming, 4 presets (Summarize, Next Steps, Break Into Tasks, Today's Focus), custom questions
+- [x] Seed projects: Sovereign OS, DWT, Aigentic Systems, Big Money Realty, Crypto Mondays LV, UNLV GH-600
+- [x] localStorage migration: old format auto-migrated to new format on load
+- [x] ProjectsWidget on homepage: stats, next actions, active projects, link to /projects
+- [x] localStorage keys: `sovereign_projects`, `sovereign_project_tasks`
+- [x] `/api/project-chat` streaming route with project management system prompt
+
+---
+
 ## Phase 2 — Module Depth
 _Deepen and improve existing modules_
 
 - [ ] **Command Center redesign** — cleaner card layout, collapsible panels, better mobile
-- [ ] **AI assistant upgrade** — streaming responses, conversation history length limit, clear chat
 - [ ] **Bitcoin panel** — add block height, mempool fees, sats per dollar display
 - [ ] **BTC stack** — add DCA cost basis, unrealized gain/loss, chart
 - [ ] **Planner** — add priority tagging, drag-to-reorder, carry-over from previous day
 - [ ] **Content Engine** — save analysis history, batch analyze multiple videos
 - [ ] **Memory** — tag system, search, export to markdown
-- [ ] **Projects** — link to planner next actions, add progress %
+- [ ] **Projects** — drag-to-reorder, project progress %, due date alerts
 - [ ] **B-Roll** — save pipeline runs, manage generated clips library
 
 ---

@@ -6,6 +6,7 @@ import HabitPanel from "@/components/HabitPanel";
 import BTCStackPanel from "@/components/BTCStackPanel";
 import HeroStats from "@/components/HeroStats";
 import SystemStatus from "@/components/SystemStatus";
+import ProjectsWidget from "@/components/ProjectsWidget";
 import { fetchBTCData, BTC_FALLBACK } from "@/lib/btc";
 
 export const metadata: Metadata = {
@@ -136,6 +137,11 @@ export default async function HomePage() {
           <HabitPanel />
         </div>
       </div>
+
+      {/* ── PROJECTS ────────────────────────────────────────────────── */}
+      <SectionDivider label="Projects" id="projects" accent="rgba(99,102,241,0.55)" />
+
+      <ProjectsWidget />
 
       {/* ── AI ──────────────────────────────────────────────────────── */}
       <SectionDivider label="AI" id="ai" accent="rgba(99,102,241,0.6)" />
