@@ -5,6 +5,7 @@ import AIPanel from "@/components/AIPanel";
 import HabitPanel from "@/components/HabitPanel";
 import BTCStackPanel from "@/components/BTCStackPanel";
 import HeroStats from "@/components/HeroStats";
+import SystemStatus from "@/components/SystemStatus";
 import { fetchBTCData, BTC_FALLBACK } from "@/lib/btc";
 
 export const metadata: Metadata = {
@@ -42,7 +43,10 @@ function SectionDivider({
 }
 
 export default async function HomePage() {
-  const btc = (await fetchBTCData()) ?? BTC_FALLBACK;
+  const rawBtc = await fetchBTCData();
+  const btc = rawBtc ?? BTC_FALLBACK;
+  const marketDataLive = rawBtc !== null;
+  const hasAIKey = !!process.env.ANTHROPIC_API_KEY;
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -93,6 +97,11 @@ export default async function HomePage() {
 
         {/* Live metric pills */}
         <HeroStats btcPrice={btc.price} btcChange={btc.change24h} />
+
+        {/* System status row */}
+        <div className="mt-6 max-w-lg mx-auto">
+          <SystemStatus hasAIKey={hasAIKey} marketDataLive={marketDataLive} />
+        </div>
       </section>
 
       {/* ── Gradient divider ────────────────────────────────────────── */}

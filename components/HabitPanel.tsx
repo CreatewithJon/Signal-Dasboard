@@ -181,7 +181,31 @@ export default function HabitPanel() {
       )}
 
       {/* ── Normal mode ── */}
-      {!editing && (
+      {!editing && habits.length === 0 && (
+        <div className="flex-1 flex flex-col items-center justify-center text-center gap-4 py-4">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl"
+            style={{ background: "rgba(52,211,153,0.07)", border: "1px solid rgba(52,211,153,0.14)" }}
+          >
+            ✦
+          </div>
+          <div>
+            <p className="text-sm font-semibold mb-1" style={{ color: "rgba(255,255,255,0.45)" }}>No habits yet</p>
+            <p className="text-xs leading-relaxed max-w-[180px] mx-auto" style={{ color: "rgba(255,255,255,0.22)" }}>
+              Add daily habits to track your consistency and build streaks.
+            </p>
+          </div>
+          <button
+            onClick={openEdit}
+            className="text-xs font-bold px-4 py-2 rounded-xl transition-all"
+            style={{ background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.2)", color: "rgba(52,211,153,0.8)" }}
+          >
+            Add Habits →
+          </button>
+        </div>
+      )}
+
+      {!editing && habits.length > 0 && (
         <div className="flex-1 flex flex-col gap-2">
           {habits.map((habit) => {
             const done = todayDone.includes(habit.id);

@@ -7,6 +7,7 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   error?: boolean;
+  retryText?: string; // original user text that caused this error, for retry
 }
 
 const MESSAGES_KEY = "sovereign_ai_messages";
@@ -79,15 +80,11 @@ export default function AIPanel() {
   }, [messages, streamingContent]);
 
   const stopStream = useCallback(() => {
+    // Cancel the in-flight request — no partial content is saved.
+    // The AbortError thrown in send() is caught and returns early.
     abortRef.current?.abort();
     abortRef.current = null;
-    // Commit whatever was streamed so far as a complete message
-    setStreamingContent((prev) => {
-      if (prev !== null && prev.length > 0) {
-        setMessages((m) => [...m, { role: "assistant", content: prev }]);
-      }
-      return null;
-    });
+    setStreamingContent(null);
   }, []);
 
   const send = useCallback(async (text: string) => {
@@ -120,7 +117,7 @@ export default function AIPanel() {
         setStreamingContent(null);
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: errMsg, error: true },
+          { role: "assistant", content: errMsg, error: true, retryText: userMessage },
         ]);
         return;
       }
@@ -153,7 +150,7 @@ export default function AIPanel() {
       setStreamingContent(null);
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "Connection error. Check your network and try again.", error: true },
+        { role: "assistant", content: "Connection error. Check your network and try again.", error: true, retryText: userMessage },
       ]);
     } finally {
       abortRef.current = null;
@@ -281,19 +278,40 @@ export default function AIPanel() {
         {messages.map((msg, i) => (
           <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             {msg.role === "assistant" && <AvatarDot error={msg.error} />}
-            <div
-              className={`max-w-[78%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
-                msg.role === "user" ? "rounded-tr-sm" : "rounded-tl-sm"
-              }`}
-              style={
-                msg.role === "user"
-                  ? { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.85)" }
-                  : msg.error
-                  ? { background: "rgba(248,113,113,0.06)", border: "1px solid rgba(248,113,113,0.12)", color: "rgba(255,255,255,0.45)" }
-                  : { background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.12)", color: "rgba(255,255,255,0.65)" }
-              }
-            >
-              {msg.content}
+            <div className={`max-w-[78%] flex flex-col gap-2 ${msg.role === "user" ? "items-end" : "items-start"}`}>
+              <div
+                className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                  msg.role === "user" ? "rounded-tr-sm" : "rounded-tl-sm"
+                }`}
+                style={
+                  msg.role === "user"
+                    ? { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.85)" }
+                    : msg.error
+                    ? { background: "rgba(248,113,113,0.06)", border: "1px solid rgba(248,113,113,0.12)", color: "rgba(255,255,255,0.45)" }
+                    : { background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.12)", color: "rgba(255,255,255,0.65)" }
+                }
+              >
+                {msg.content}
+              </div>
+              {/* Retry button on error messages */}
+              {msg.error && msg.retryText && (
+                <button
+                  onClick={() => {
+                    // Remove this error message, re-send the original text
+                    setMessages((prev) => prev.filter((_, idx) => idx !== i));
+                    send(msg.retryText!);
+                  }}
+                  disabled={isStreaming}
+                  className="text-[10px] font-semibold px-3 py-1 rounded-lg transition-all disabled:opacity-30"
+                  style={{
+                    background: "rgba(248,113,113,0.08)",
+                    border: "1px solid rgba(248,113,113,0.15)",
+                    color: "rgba(248,113,113,0.65)",
+                  }}
+                >
+                  ↺ Retry
+                </button>
+              )}
             </div>
           </div>
         ))}
