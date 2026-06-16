@@ -53,6 +53,9 @@ _Turn /projects into a full personal command center_
 - [x] ProjectsWidget on homepage: stats, next actions, active projects, link to /projects
 - [x] localStorage keys: `sovereign_projects`, `sovereign_project_tasks`
 - [x] `/api/project-chat` streaming route with project management system prompt
+- [x] Overdue detection: red badges on cards, tasks, modal header, widget alert banner; amber for due within 3 days
+- [x] Task progress on project cards: done/total count + mini progress bar
+- [x] AI → Tasks import: parse numbered/bulleted list responses, deduplicate, batch create tasks with priority inference
 
 ---
 

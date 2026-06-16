@@ -66,6 +66,9 @@ _Last updated: 2026-06-15_
 - AI project assistant: streaming, 4 presets (Summarize, Next Steps, Break Into Tasks, Today's Focus), custom questions via `/api/project-chat`
 - Seed projects: Sovereign OS, DWT, Aigentic Systems, Big Money Realty, Crypto Mondays LV, UNLV GH-600
 - Auto-migrates old format data from previous projects page
+- **Overdue alerts:** red badge on cards/modal/tasks for past-due items; amber for due within 3 days
+- **Task progress bar:** on each project card — `done/total` text + mini progress bar
+- **AI → Tasks import:** after any AI response containing a list, "Import as Tasks" button parses and creates tasks; deduplicates against existing; shows imported/skipped count
 - Persisted to `sovereign_projects` + `sovereign_project_tasks`
 
 ### Homepage (`/`) — Projects Widget
