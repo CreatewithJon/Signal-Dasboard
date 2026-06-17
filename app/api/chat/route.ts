@@ -31,7 +31,7 @@ ${memoryContext}
 
 Context sources for this response: ${sourceList}.
 
-The above context is drawn from the user's own saved data inside Sovereign OS. Use it naturally when relevant. You may reference it with phrases like "based on your saved notes…", "your planner shows…", or "according to your vision…". Do not mention localStorage, internal key names, or technical implementation details. Do not fabricate details beyond what is explicitly provided above.`;
+The above context is drawn from the user's own saved data inside Sovereign OS. Use it naturally when relevant. You may reference it with phrases like "based on your saved notes…", "your planner shows…", "according to your vision…", or "your content pipeline shows…". Do not mention localStorage, internal key names, or technical implementation details. Do not fabricate details beyond what is explicitly provided above.`;
 }
 
 function buildAnthropicRequest(message: string, memoryContext?: string, contextSources?: string[]) {

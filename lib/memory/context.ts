@@ -1,5 +1,6 @@
 import type { MemoryItem } from "@/lib/types/memory";
 import type { Project, ProjectTask } from "@/lib/types/projects";
+import type { ContentItem } from "@/lib/types/content";
 
 export interface MemoryContextResult {
   items: MemoryItem[];
@@ -10,6 +11,7 @@ export interface MemoryContextResult {
 
 const SECTION_CAPS = {
   project: 900,
+  content: 800,
   memory:  900,
   planner: 700,
   vision:  700,
@@ -64,11 +66,12 @@ export interface CombinedContextResult {
 }
 
 interface CombinedContextInput {
-  projectBlock?: string;
-  memoryBlock:  string;
-  plannerBlock: string;
-  visionBlock:  string;
-  habitBlock?:  string;
+  projectBlock?:  string;
+  contentBlock?:  string;
+  memoryBlock:    string;
+  plannerBlock:   string;
+  visionBlock:    string;
+  habitBlock?:    string;
   maxTotalChars?: number;
 }
 
@@ -81,17 +84,19 @@ interface CombinedContextInput {
  */
 export function buildCombinedContext(input: CombinedContextInput): CombinedContextResult {
   const {
-    projectBlock = "",
+    projectBlock  = "",
+    contentBlock  = "",
     memoryBlock,
     plannerBlock,
     visionBlock,
-    habitBlock  = "",
+    habitBlock    = "",
     maxTotalChars = MAX_TOTAL_CHARS,
   } = input;
 
-  // Apply per-section caps first — priority: project > memory > planner > vision > habits
+  // Apply per-section caps first — priority: project > content > memory > planner > vision > habits
   const sections: Array<{ key: string; label: string; block: string }> = [
     { key: "project", label: "Project", block: projectBlock ? trimContextSection(projectBlock, SECTION_CAPS.project) : "" },
+    { key: "content", label: "Content", block: contentBlock ? trimContextSection(contentBlock, SECTION_CAPS.content) : "" },
     { key: "memory",  label: "Memory",  block: memoryBlock  ? trimContextSection(memoryBlock,  SECTION_CAPS.memory)  : "" },
     { key: "planner", label: "Planner", block: plannerBlock ? trimContextSection(plannerBlock, SECTION_CAPS.planner) : "" },
     { key: "vision",  label: "Vision",  block: visionBlock  ? trimContextSection(visionBlock,  SECTION_CAPS.vision)  : "" },
@@ -357,6 +362,148 @@ export function getHabitContext(
   }
 
   return sections.join("\n").trimEnd();
+}
+
+// ── Content context ────────────────────────────────────────────────────────
+
+const CONTENT_TRIGGERS = [
+  "content",
+  "create",
+  "creator",
+  "post",
+  "publish",
+  "article",
+  "blog",
+  "newsletter",
+  "podcast",
+  "youtube",
+  "instagram",
+  "linkedin",
+  "reel",
+  "video",
+  "script",
+  "caption",
+  "crypto mondays",
+  "dwt",
+  "repurpose",
+  "outline",
+];
+
+/**
+ * getContentContext
+ *
+ * Returns relevant content pipeline items when the query matches content/
+ * creator keywords. Scores items by title/description/platform match,
+ * urgency (overdue or due soon), status (Ready boosted), and priority.
+ *
+ * Returns empty string when no trigger matches or no items exist.
+ */
+export function getContentContext(
+  query: string,
+  contentItems: ContentItem[],
+  projects: Project[],
+  memoryItems: MemoryItem[]
+): string {
+  const q = query.toLowerCase();
+  const triggered = CONTENT_TRIGGERS.some((t) => q.includes(t));
+  if (!triggered || contentItems.length === 0) return "";
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const words = q.split(/\s+/).filter((w) => w.length > 2);
+  const active = contentItems.filter((i) => i.status !== "Archived");
+
+  const scored = active
+    .map((item) => {
+      let score = 0;
+
+      const searchText = [
+        item.title,
+        item.description,
+        item.notes,
+        item.format,
+        ...item.platforms,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      // Full phrase match
+      if (searchText.includes(q)) score += 10;
+
+      // Individual word matches
+      for (const word of words) {
+        if (searchText.includes(word)) score += 2;
+      }
+
+      // Platform keyword in query
+      for (const platform of item.platforms) {
+        if (q.includes(platform.toLowerCase())) score += 5;
+      }
+
+      // Time-sensitive boosts
+      if (item.status === "Ready") score += 3;
+      if (item.publish_date) {
+        if (item.publish_date < todayStr) {
+          score += 4; // overdue — surface first
+        } else {
+          const diff = Math.round(
+            (new Date(item.publish_date + "T00:00:00").getTime() - new Date().setHours(0, 0, 0, 0)) /
+              86400000
+          );
+          if (diff <= 7) score += 2; // due within a week
+        }
+      }
+
+      // Priority boost
+      const priorityBoost: Record<string, number> = {
+        Critical: 4, High: 3, Medium: 1, Low: 0,
+      };
+      score += priorityBoost[item.priority] ?? 0;
+
+      return { item, score };
+    })
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4)
+    .map(({ item }) => item);
+
+  if (scored.length === 0) return "";
+
+  // Suppress unused-variable warning — memoryItems available for future scoring
+  void memoryItems;
+
+  const projectMap = new Map(projects.map((p) => [p.id, p.title]));
+  const lines: string[] = ["## Relevant Content Pipeline", ""];
+
+  for (let i = 0; i < scored.length; i++) {
+    const item = scored[i];
+    const isOverdue = item.publish_date && item.publish_date < todayStr;
+    const platformStr = item.platforms.length > 0 ? item.platforms.join(", ") : "No platform";
+    const projectName = item.related_project_id
+      ? (projectMap.get(item.related_project_id) ?? null)
+      : null;
+
+    lines.push(`### [${i + 1}] [${item.status}] ${item.title || "Untitled"}`);
+    lines.push(
+      `Platform: ${platformStr} · Format: ${item.format} · Priority: ${item.priority}`
+    );
+
+    if (item.publish_date) {
+      lines.push(
+        `Publish: ${item.publish_date}${isOverdue ? " ⚠️ OVERDUE" : ""}`
+      );
+    }
+    if (item.description) lines.push(`Angle: ${item.description}`);
+    if (projectName)      lines.push(`Project: ${projectName}`);
+    if (item.notes) {
+      const notes = item.notes.length > 200
+        ? item.notes.slice(0, 200) + "…"
+        : item.notes;
+      lines.push(`Notes: ${notes}`);
+    }
+    lines.push("");
+  }
+
+  return lines.join("\n").trimEnd();
 }
 
 // ── Project context ────────────────────────────────────────────────────────

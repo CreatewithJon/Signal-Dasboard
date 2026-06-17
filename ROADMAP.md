@@ -68,6 +68,20 @@ _Filters, Today view, and AI-powered weekly review_
 
 ---
 
+## Phase 2.7 — Content Context Injection (Complete)
+_AI assistant automatically loads content pipeline context on creator/publishing queries_
+
+- [x] `getContentContext(query, contentItems, projects, memoryItems)` added to `lib/memory/context.ts`
+- [x] 20 trigger keywords: content, create, creator, post, publish, article, blog, newsletter, podcast, youtube, instagram, linkedin, reel, video, script, caption, crypto mondays, dwt, repurpose, outline
+- [x] Scoring: title/description/platform keyword match, platform-in-query boost (+5), Ready status (+3), overdue (+4), due within 7 days (+2), priority boost (Critical +4, High +3)
+- [x] Returns top 4 matching non-archived items formatted as structured blocks with status, platform, format, priority, publish date (⚠️ overdue), angle, project link, notes snippet
+- [x] `contentBlock` added as second priority in `buildCombinedContext()` — project > content > memory > planner > vision > habits; cap 800 chars
+- [x] `AIPanel.tsx`: reads `sovereign_content_items`, calls `getContentContext()`, passes `contentBlock`, `contentIncluded` state, "content" in indicator
+- [x] `/api/chat`: added "your content pipeline shows…" as attribution phrase
+- [x] All lint/typecheck/build clean
+
+---
+
 ## Phase 2.6 — Content Engine Pipeline (Complete)
 _Full content management system: ideas → drafts → publishing pipeline with AI tools_
 

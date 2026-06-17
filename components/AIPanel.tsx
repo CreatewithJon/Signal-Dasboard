@@ -2,10 +2,11 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Card } from "./Card";
-import { getRelevantMemoryContext, getPlannerContext, getVisionContext, getHabitContext, getProjectContext, buildCombinedContext } from "@/lib/memory/context";
+import { getRelevantMemoryContext, getPlannerContext, getVisionContext, getHabitContext, getProjectContext, getContentContext, buildCombinedContext } from "@/lib/memory/context";
 import type { PlannerData, VisionData, HabitEntry } from "@/lib/memory/context";
 import type { MemoryItem, MemoryType, MemoryImportance } from "@/lib/types/memory";
 import type { Project, ProjectTask } from "@/lib/types/projects";
+import type { ContentItem } from "@/lib/types/content";
 import { KEYS } from "@/lib/keys";
 
 interface Message {
@@ -100,6 +101,8 @@ export default function AIPanel() {
   const [habitsIncluded, setHabitsIncluded] = useState(false);
   // Whether project context was included for the most recent request
   const [projectIncluded, setProjectIncluded] = useState(false);
+  // Whether content pipeline context was included for the most recent request
+  const [contentIncluded, setContentIncluded] = useState(false);
   // Save states per message index: "saved" | "duplicate" | undefined (idle)
   const [savedStates, setSavedStates] = useState<Record<number, "saved" | "duplicate">>({});
   // Active save modal
@@ -147,6 +150,7 @@ export default function AIPanel() {
     setVisionIncluded(false);
     setHabitsIncluded(false);
     setProjectIncluded(false);
+    setContentIncluded(false);
   }, []);
 
   const send = useCallback(async (text: string) => {
@@ -160,6 +164,7 @@ export default function AIPanel() {
     setVisionIncluded(false);
     setHabitsIncluded(false);
     setProjectIncluded(false);
+    setContentIncluded(false);
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setStreamingContent(""); // start streaming state
 
@@ -171,6 +176,7 @@ export default function AIPanel() {
     let visionUsed = false;
     let habitsUsed = false;
     let projectUsed = false;
+    let contentUsed = false;
 
     try {
       // Memory items + projects + project tasks
@@ -183,6 +189,14 @@ export default function AIPanel() {
 
       // Project context — highest priority, matched by name/category
       const projectBlock = getProjectContext(userMessage, projects, projectTasks, memoryItems);
+
+      // Content context — second priority, triggered by content/creator keywords
+      let contentBlock = "";
+      try {
+        const rawContent = localStorage.getItem(KEYS.CONTENT_ITEMS);
+        const contentItems: ContentItem[] = rawContent ? (JSON.parse(rawContent) as ContentItem[]) : [];
+        contentBlock = getContentContext(userMessage, contentItems, projects, memoryItems);
+      } catch { /* ignore */ }
 
       const memResult =
         memoryItems.length > 0
@@ -269,9 +283,10 @@ export default function AIPanel() {
         habitBlock = getHabitContext(userMessage, habits, habitLog);
       } catch { /* ignore */ }
 
-      // Apply budget caps and combine — project > memory > planner > vision > habits
+      // Apply budget caps and combine — project > content > memory > planner > vision > habits
       const { combined, sources } = buildCombinedContext({
         projectBlock,
+        contentBlock,
         memoryBlock:  memResult.contextBlock,
         plannerBlock,
         visionBlock,
@@ -280,6 +295,7 @@ export default function AIPanel() {
 
       if (combined) memoryContext = combined;
       projectUsed = sources.includes("Project");
+      contentUsed = sources.includes("Content");
       plannerUsed = sources.includes("Planner");
       visionUsed  = sources.includes("Vision");
       habitsUsed  = sources.includes("Habits");
@@ -296,6 +312,7 @@ export default function AIPanel() {
     setVisionIncluded(visionUsed);
     setHabitsIncluded(habitsUsed);
     setProjectIncluded(projectUsed);
+    setContentIncluded(contentUsed);
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -445,7 +462,7 @@ export default function AIPanel() {
               "Bitcoin · Focus · Wealth strategy"
             )}
           </p>
-          {(projectIncluded || activeMemoryCount > 0 || plannerIncluded || visionIncluded || habitsIncluded) && (
+          {(projectIncluded || contentIncluded || activeMemoryCount > 0 || plannerIncluded || visionIncluded || habitsIncluded) && (
             <p
               className="text-[10px] mt-0.5 flex items-center gap-1.5 flex-wrap"
               style={{ color: "rgba(139,92,246,0.6)" }}
@@ -457,6 +474,7 @@ export default function AIPanel() {
               {(() => {
                 const parts: string[] = [];
                 if (projectIncluded)  parts.push("project");
+                if (contentIncluded)  parts.push("content");
                 if (activeMemoryCount > 0) parts.push(`${activeMemoryCount} ${activeMemoryCount === 1 ? "memory" : "memories"}`);
                 if (plannerIncluded) parts.push("planner");
                 if (visionIncluded)  parts.push("vision");

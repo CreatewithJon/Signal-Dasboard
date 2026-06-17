@@ -1,12 +1,12 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-17 (v2.6 — Content Engine Pipeline)_
+_Last updated: 2026-06-17 (v2.7 — Content Context Injection)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v2.6 (Content Engine Pipeline: Complete)
+**Version:** Sovereign OS v2.7 (Content Context Injection: Complete)
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
 
@@ -39,6 +39,7 @@ _Last updated: 2026-06-17 (v2.6 — Content Engine Pipeline)_
 - **Source attribution:** `contextSources: string[]` (e.g. `["Memory", "Planner"]`) is sent from `AIPanel` alongside `memoryContext` to `/api/chat`. The route's `buildSystemPrompt()` appends `"Context sources for this response: Memory, Planner."` and instructs the AI to use natural phrases ("based on your saved notes…", "your planner shows…", "according to your vision…") without mentioning localStorage or internal key names.
 - **Habit context:** `lib/memory/context.ts` exports `getHabitContext(query, habits, habitLog)`. Triggered by 11 keywords: habit, habits, streak, consistent, consistency, discipline, routine, routines, daily, momentum, accountability. Reads `sovereign_habits` (HabitEntry[]) and `sovereign_habit_log` (Record<string, string[]>). Formats as `## Relevant Habit Context` with Tracked Habits (name + streak 🔥 if > 0) and Today's Status (✓ / ○ per habit). Capped at 500 chars. Added as fourth priority in `buildCombinedContext()`. UI indicator extended to show "habits" alongside other active sources.
 - **Project context:** `lib/memory/context.ts` exports `getProjectContext(query, projects, projectTasks, memoryItems)`. Matches project by title (≥50% word overlap) then falls back to category keyword aliases. Injects full project detail: status, priority, category, due date (overdue flag), objective, next action, description, task progress, overdue tasks, open tasks, notes, related memories. Capped at 900 chars. Highest priority in `buildCombinedContext()` — project > memory > planner > vision > habits. UI indicator shows "project" when active.
+- **Content context:** `lib/memory/context.ts` exports `getContentContext(query, contentItems, projects, memoryItems)`. Triggered by 20 keywords (content, create, youtube, instagram, linkedin, podcast, blog, newsletter, reel, video, script, caption, crypto mondays, dwt, repurpose, outline, etc.). Scores non-archived items by keyword/platform match, urgency (overdue, due-within-7d, Ready status), and priority. Returns top 4 as structured blocks with status, platform, format, priority, publish date, angle, project link, notes. Capped at 800 chars. Second priority in `buildCombinedContext()` — project > content > memory > planner > vision > habits. UI indicator shows "content" when active.
 - **Save to Memory:** Every completed assistant message shows a subtle "🧠 Save to memory" button. Clicking it opens a metadata modal pre-filled with: auto-generated title (first sentence or first 9 words), type (Note), importance (Medium), and inferred tags (always "ai-response" + keyword-matched tags from the user prompt: bitcoin, focus, wealth, strategy, ai). User can edit all fields before saving. Duplicate detection: checks exact content match against existing `sovereign_memory_items`; shows "Already saved" if duplicate, "✓ Saved to memory" on success. All saved memories use `source: "AI"`.
 
 ### Life Planner (`/planner`)
