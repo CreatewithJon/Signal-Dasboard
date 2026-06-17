@@ -2,7 +2,7 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-16 (v1.7)_
+_Last updated: 2026-06-17 (v1.8)_
 
 ---
 
@@ -65,6 +65,25 @@ _Filters, Today view, and AI-powered weekly review_
 - [x] **Advanced filters + search** — search bar across title/description/objective/next action; status filter tabs; category dropdown; priority dropdown; Overdue toggle; active filter count badge; Clear button; empty state per filter condition
 - [x] **Today View** — dedicated "Today" tab showing overdue tasks, tasks due today, high-priority open tasks, and project next actions; toggle task done inline; click project name to open modal
 - [x] **Weekly Review modal** — AI-powered weekly analysis streaming via `/api/project-chat`; prompt synthesizes active projects, overdue items, completed tasks, and high-priority open tasks; structured output: Overall Status / What's Working / Needs Attention / Top 3 Priorities / Weekly Focus; Regenerate button; Escape/backdrop to close
+
+---
+
+## Phase 3.0 — Focus Engine (Complete)
+_Transform Sovereign OS from a collection of tools into a daily execution system_
+
+- [x] `lib/focus/engine.ts` — `computeFocusEngine(FocusEngineInput)` pure utility; no side effects
+- [x] `FocusEngineResult`: `{ generatedAt, topThree[], whyItMatters[], focusBlocks[], avoidList[], momentumScore, alignmentScore, aiPromptContext }`
+- [x] Candidate scoring from 7 sources: overdue tasks (100+), overdue projects (90+), critical tasks (70), content deadlines (65), high tasks (60), planner items (55), project next actions (50)
+- [x] Why It Matters per priority: `whyNow` (urgency description), `supportsProject`, optional `supportsVision` (vision keyword match), `impact`
+- [x] Deterministic Focus Blocks: 09:00 / 10:30 / 11:00 / 12:00 / 13:30 / 15:00 — content-aware type labels (deep-work / admin / creator / recovery / review)
+- [x] Avoid List: low-priority work, paused projects, ideation spirals, scope creep, research rabbit holes
+- [x] Momentum Score: `clamp(40 + habitBonus(0–40) + taskScore(0–20) + streakBonus(0–15) − overduePenalty(7/item max 35), 0, 100)`
+- [x] Alignment Score: daily plan (+20) + high-signal top priority (+30) + vision keyword overlap (+25) + open weekly goals (+25) — clamped 0–100
+- [x] `app/focus/page.tsx` — premium page: SVG score rings, expandable priority cards, focus schedule blocks, avoid list, AI refinement streaming panel
+- [x] `components/FocusEngineCard.tsx` — homepage card: top priority, #2/#3 mini tiles, momentum + alignment progress bars
+- [x] `components/Sidebar.tsx` — `/focus` added as first MODULE_NAV entry
+- [x] `app/page.tsx` — `FocusEngineCard` added to Today section after `DailyBriefingCard`
+- [x] All lint/typecheck/build clean
 
 ---
 

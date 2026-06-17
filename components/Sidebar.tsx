@@ -57,6 +57,17 @@ const PRIMARY_NAV: NavItem[] = [
 
 const MODULE_NAV: NavItem[] = [
   {
+    href: "/focus",
+    label: "Focus Engine",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <circle cx="10" cy="10" r="8" />
+        <circle cx="10" cy="10" r="3.5" />
+        <circle cx="10" cy="10" r="1" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+  },
+  {
     href: "/planner",
     label: "Planner",
     icon: (
@@ -133,7 +144,7 @@ const SYSTEM_NAV: NavItem[] = [
   },
 ];
 
-const FULL_NAV = [...MODULE_NAV.map((i) => i.href)];
+const FULL_NAV = MODULE_NAV.map((i) => i.href);
 
 function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const isActive = FULL_NAV.includes(item.href)

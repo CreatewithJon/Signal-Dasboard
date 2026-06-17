@@ -1,18 +1,31 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-17 (v2.7 — Content Context Injection)_
+_Last updated: 2026-06-17 (v3.0 — Focus Engine)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v2.7 (Content Context Injection: Complete)
+**Version:** Sovereign OS v3.0 (Focus Engine: Complete)
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
 
 ---
 
 ## What's Working
+
+### Focus Engine (`/focus`)
+- `lib/focus/engine.ts` — pure `computeFocusEngine(FocusEngineInput)` utility; synthesizes all data sources
+- **Top 3 priorities** with ranking signals: overdue-task (100+) > overdue-project (90+) > critical-task (70) > content-deadline (65) > high-task (60) > planner (55) > project-action (50); deduplicated, sorted by score
+- **Why It Matters** per priority: `whyNow` (urgency reason), `supportsProject`, `supportsVision` (vision keyword match), `impact` (fixed per source type)
+- **Focus Blocks** — 6 deterministic time blocks: 09:00 Deep Work, 10:30 Admin, 11:00 Deep/Creator, 12:00 Recovery, 13:30 Deep/Creator/Overdue-clear, 15:00 Review; content-aware (creator blocks when content work is top priority)
+- **Avoid List** — dynamic: low-priority work when high-priority exists, paused projects, content ideation spirals, unplanned scope creep, research rabbit holes
+- **Momentum Score (0–100):** base 40 + habit completion (0–40) + task done ratio (0–20) + streak bonus (0–15) − overdue penalty (7/item, max 35); clamped 0–100
+- **Alignment Score (0–100):** daily plan exists (+20) + high-signal top priority (+30) + vision keyword overlap (+25) + open weekly goals (+25); clamped 0–100
+- `/focus` page: premium dark UI — score rings (SVG arc), expandable priority cards with why-it-matters, focus schedule, avoid list, "Refine My Focus" AI streaming panel
+- `components/FocusEngineCard.tsx` — homepage card: top priority with source badge, priority #2/#3 mini tiles, momentum + alignment progress bars, link to /focus
+- Homepage: FocusEngineCard placed inside the Today section after DailyBriefingCard
+- Sidebar: `/focus` added as first MODULE_NAV entry "Focus Engine"
 
 ### Command Center (`/`)
 - BTC price + 24h change (live from CoinGecko via server component)

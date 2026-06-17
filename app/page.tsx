@@ -12,6 +12,7 @@ import OverdueDigest from "@/components/OverdueDigest";
 import MemoryWidget from "@/components/MemoryWidget";
 import ContentWidget from "@/components/ContentWidget";
 import DailyBriefingCard from "@/components/DailyBriefingCard";
+import FocusEngineCard from "@/components/FocusEngineCard";
 import { fetchBTCData, BTC_FALLBACK } from "@/lib/btc";
 
 export const metadata: Metadata = {
@@ -126,6 +127,10 @@ export default async function HomePage() {
       <SectionDivider label="Today" id="briefing" accent="rgba(139,92,246,0.5)" />
 
       <DailyBriefingCard />
+
+      <div className="mt-4">
+        <FocusEngineCard />
+      </div>
 
       {/* ── SIGNALS ─────────────────────────────────────────────────── */}
       <SectionDivider label="Signals" id="bitcoin" accent="rgba(245,158,11,0.6)" />
