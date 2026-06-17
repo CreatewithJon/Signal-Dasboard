@@ -1,11 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { MemoryItem, MemoryType, MemoryImportance } from "@/lib/types/memory";
 import type { Project } from "@/lib/types/projects";
+import {
+  saveMemoryItemDual,
+  deleteMemoryItemDual,
+  getMemoryItemsLocal,
+} from "@/lib/repositories/memoryRepository";
 
-const MEMORY_KEY = "sovereign_memory_items";
 const PROJECTS_KEY = "sovereign_projects";
+
+type SyncStatus = "saving" | "synced" | "local-only" | null;
 
 // ── Visual configs ────────────────────────────────────────────────────────────
 
@@ -58,23 +64,12 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function loadMemory(): MemoryItem[] {
-  try {
-    const r = localStorage.getItem(MEMORY_KEY);
-    return r ? (JSON.parse(r) as MemoryItem[]) : [];
-  } catch { return []; }
-}
-
 function loadProjects(): Project[] {
   try {
     const r = localStorage.getItem(PROJECTS_KEY);
     const parsed = r ? JSON.parse(r) : [];
     return Array.isArray(parsed) ? (parsed as Project[]) : [];
   } catch { return []; }
-}
-
-function persist(items: MemoryItem[]) {
-  try { localStorage.setItem(MEMORY_KEY, JSON.stringify(items)); } catch {}
 }
 
 // ── Pill ──────────────────────────────────────────────────────────────────────
@@ -498,6 +493,8 @@ export default function MemoryPage() {
   const [items, setItems] = useState<MemoryItem[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(null);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Quick capture
   const [captureText, setCaptureText] = useState("");
@@ -514,14 +511,18 @@ export default function MemoryPage() {
   const [editItem, setEditItem] = useState<MemoryItem | null>(null);
 
   useEffect(() => {
-    setItems(loadMemory());
+    setItems(getMemoryItemsLocal());
     setProjects(loadProjects());
     setLoaded(true);
   }, []);
 
-  function saveItems(next: MemoryItem[]) { setItems(next); persist(next); }
+  function showSync(status: SyncStatus) {
+    setSyncStatus(status);
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+    syncTimerRef.current = setTimeout(() => setSyncStatus(null), 3000);
+  }
 
-  function capture() {
+  async function capture() {
     if (!captureText.trim()) return;
     const item: MemoryItem = {
       id: newId(),
@@ -536,17 +537,24 @@ export default function MemoryPage() {
       createdAt: nowIso(),
       updatedAt: nowIso(),
     };
-    saveItems([item, ...items]);
+    setItems((prev) => [item, ...prev]);
     setCaptureText("");
+    showSync("saving");
+    const result = await saveMemoryItemDual(item);
+    showSync(result.supabase === "success" ? "synced" : "local-only");
   }
 
-  function handleSave(updated: MemoryItem) {
-    saveItems(items.map((i) => (i.id === updated.id ? updated : i)));
+  async function handleSave(updated: MemoryItem) {
+    setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
     setEditItem(null);
+    showSync("saving");
+    const result = await saveMemoryItemDual(updated);
+    showSync(result.supabase === "success" ? "synced" : "local-only");
   }
 
-  function handleDelete(id: string) {
-    saveItems(items.filter((i) => i.id !== id));
+  async function handleDelete(id: string) {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+    await deleteMemoryItemDual(id);
   }
 
   // Derived
@@ -719,14 +727,32 @@ export default function MemoryPage() {
             })}
           </div>
 
-          <button
-            onClick={capture}
-            disabled={!captureText.trim()}
-            className="ml-auto text-xs font-bold px-5 py-2 rounded-xl transition-all disabled:opacity-30"
-            style={{ background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.25)", color: "rgba(167,139,250,0.9)" }}
-          >
-            Capture
-          </button>
+          <div className="ml-auto flex items-center gap-3">
+            {syncStatus && (
+              <span
+                className="text-[9px] font-semibold transition-opacity"
+                style={{
+                  color: syncStatus === "synced"
+                    ? "rgba(52,211,153,0.7)"
+                    : syncStatus === "saving"
+                    ? "rgba(167,139,250,0.5)"
+                    : "rgba(148,163,184,0.5)",
+                }}
+              >
+                {syncStatus === "saving" && "Saving…"}
+                {syncStatus === "synced" && "Synced ✓"}
+                {syncStatus === "local-only" && "Saved locally"}
+              </span>
+            )}
+            <button
+              onClick={capture}
+              disabled={!captureText.trim()}
+              className="text-xs font-bold px-5 py-2 rounded-xl transition-all disabled:opacity-30"
+              style={{ background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.25)", color: "rgba(167,139,250,0.9)" }}
+            >
+              Capture
+            </button>
+          </div>
         </div>
       </div>
 

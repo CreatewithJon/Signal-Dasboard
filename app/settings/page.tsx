@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getSupabaseStatus } from "@/lib/supabase/status";
 import StorageExport from "@/components/settings/StorageExport";
+import MemorySyncStatus from "@/components/settings/MemorySyncStatus";
 
 export const metadata: Metadata = {
   title: "Settings — Sovereign OS",
@@ -174,8 +175,8 @@ export default function SettingsPage() {
           style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
         >
           {[
-            { version: "v4.0", label: "Foundation", desc: "Supabase client, schema, status — current", done: true },
-            { version: "v4.1", label: "Dual Write", desc: "Writes go to localStorage + Supabase in parallel", done: false },
+            { version: "v4.0", label: "Foundation", desc: "Supabase client, schema, status", done: true },
+            { version: "v4.1", label: "Dual Write", desc: "Memory writes go to localStorage + Supabase in parallel — current", done: true },
             { version: "v4.2", label: "Auth", desc: "User identity; migration endpoint; data scoped per user", done: false },
             { version: "v4.3", label: "RLS", desc: "Row-level security; data private by default", done: false },
             { version: "v4.4", label: "Read Shift", desc: "Reads from Supabase; localStorage becomes write-through cache", done: false },
@@ -194,12 +195,28 @@ export default function SettingsPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold" style={{ color: phase.done ? "rgba(255,255,255,0.65)" : "rgba(255,255,255,0.3)" }}>
                   {phase.label}
-                  {phase.done && <span className="ml-2 text-[8px] text-emerald-400/60">● Current</span>}
+                  {phase.version === "v4.1" && phase.done && <span className="ml-2 text-[8px] text-emerald-400/60">● Current</span>}
                 </p>
                 <p className="text-[10px] text-white/25 mt-0.5 leading-relaxed">{phase.desc}</p>
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ── Memory Sync ─────────────────────────────────────────────────── */}
+      <section className="mb-8">
+        <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-4">
+          Memory Sync
+        </p>
+        <div
+          className="rounded-2xl p-5"
+          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          <MemorySyncStatus />
+          <p className="text-[10px] text-white/20 mt-3 leading-relaxed">
+            Memory items are saved to localStorage first (always), then synced to Supabase in the background when configured. Reads still come from localStorage.
+          </p>
         </div>
       </section>
 
@@ -229,7 +246,7 @@ export default function SettingsPage() {
           className="rounded-2xl px-5 py-1"
           style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
         >
-          <SettingRow label="Version" value="Sovereign OS v4.0" />
+          <SettingRow label="Version" value="Sovereign OS v4.1" />
           <SettingRow label="Persistence" value={supabase.mode === "supabase-ready" ? "Supabase + localStorage" : "localStorage only"} />
           <SettingRow label="AI Model" value="Claude Haiku 4.5" />
           <SettingRow label="Deployment" value="Vercel (auto-deploy from main)" />

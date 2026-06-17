@@ -8,6 +8,7 @@ import type { MemoryItem, MemoryType, MemoryImportance } from "@/lib/types/memor
 import type { Project, ProjectTask } from "@/lib/types/projects";
 import type { ContentItem } from "@/lib/types/content";
 import { KEYS } from "@/lib/keys";
+import { saveMemoryItemDual, getMemoryItemsLocal } from "@/lib/repositories/memoryRepository";
 
 interface Message {
   role: "user" | "assistant";
@@ -103,8 +104,8 @@ export default function AIPanel() {
   const [projectIncluded, setProjectIncluded] = useState(false);
   // Whether content pipeline context was included for the most recent request
   const [contentIncluded, setContentIncluded] = useState(false);
-  // Save states per message index: "saved" | "duplicate" | undefined (idle)
-  const [savedStates, setSavedStates] = useState<Record<number, "saved" | "duplicate">>({});
+  // Save states per message index: "saved" | "synced" | "local-only" | "duplicate" | undefined (idle)
+  const [savedStates, setSavedStates] = useState<Record<number, "saved" | "synced" | "local-only" | "duplicate">>({});
   // Active save modal
   const [saveModal, setSaveModal] = useState<SaveModal | null>(null);
 
@@ -390,46 +391,47 @@ export default function AIPanel() {
     });
   }
 
-  function commitSave() {
+  async function commitSave() {
     if (!saveModal) return;
     const msg = messages[saveModal.messageIndex];
     if (!msg?.content) { setSaveModal(null); return; }
 
-    try {
-      const raw = localStorage.getItem(KEYS.MEMORY_ITEMS);
-      const existing: MemoryItem[] = raw ? (JSON.parse(raw) as MemoryItem[]) : [];
+    const existing = getMemoryItemsLocal();
 
-      // Duplicate check — exact content match
-      const isDuplicate = existing.some(
-        (item) => item.content.trim() === msg.content.trim()
-      );
-      if (isDuplicate) {
-        setSavedStates((prev) => ({ ...prev, [saveModal.messageIndex]: "duplicate" }));
-        setSaveModal(null);
-        return;
-      }
-
-      const now = new Date().toISOString();
-      const newItem: MemoryItem = {
-        id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-        title: saveModal.title.trim() || autoTitle(msg.content),
-        content: msg.content,
-        type: saveModal.type,
-        importance: saveModal.importance,
-        tags: saveModal.tags,
-        relatedProjectIds: [],
-        relatedPeople: [],
-        source: "AI",
-        createdAt: now,
-        updatedAt: now,
-      };
-
-      localStorage.setItem(KEYS.MEMORY_ITEMS, JSON.stringify([newItem, ...existing]));
-      setSavedStates((prev) => ({ ...prev, [saveModal.messageIndex]: "saved" }));
-    } catch {
-      // localStorage write failed — silently dismiss
+    // Duplicate check — exact content match
+    const isDuplicate = existing.some(
+      (item) => item.content.trim() === msg.content.trim()
+    );
+    if (isDuplicate) {
+      setSavedStates((prev) => ({ ...prev, [saveModal.messageIndex]: "duplicate" }));
+      setSaveModal(null);
+      return;
     }
+
+    const now = new Date().toISOString();
+    const newItem: MemoryItem = {
+      id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      title: saveModal.title.trim() || autoTitle(msg.content),
+      content: msg.content,
+      type: saveModal.type,
+      importance: saveModal.importance,
+      tags: saveModal.tags,
+      relatedProjectIds: [],
+      relatedPeople: [],
+      source: "AI",
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const idx = saveModal.messageIndex;
     setSaveModal(null);
+    setSavedStates((prev) => ({ ...prev, [idx]: "saved" }));
+
+    const result = await saveMemoryItemDual(newItem);
+    setSavedStates((prev) => ({
+      ...prev,
+      [idx]: result.supabase === "success" ? "synced" : "local-only",
+    }));
   }
 
   function clearChat() {
@@ -617,12 +619,17 @@ export default function AIPanel() {
               {/* Save to Memory button — completed assistant messages only */}
               {msg.role === "assistant" && !msg.error && !isStreaming && (
                 <div className="flex items-center gap-2">
-                  {savedStates[i] === "saved" ? (
+                  {savedStates[i] === "saved" || savedStates[i] === "synced" || savedStates[i] === "local-only" ? (
                     <span
                       className="text-[10px] flex items-center gap-1"
-                      style={{ color: "rgba(139,92,246,0.65)" }}
+                      style={{
+                        color: savedStates[i] === "synced"
+                          ? "rgba(52,211,153,0.7)"
+                          : "rgba(139,92,246,0.65)",
+                      }}
                     >
-                      <span>✓</span> Saved to memory
+                      <span>✓</span>
+                      {savedStates[i] === "synced" ? "Saved + synced" : savedStates[i] === "local-only" ? "Saved locally" : "Saving…"}
                     </span>
                   ) : savedStates[i] === "duplicate" ? (
                     <span
