@@ -10,6 +10,7 @@ import SystemStatus from "@/components/SystemStatus";
 import ProjectsWidget from "@/components/ProjectsWidget";
 import OverdueDigest from "@/components/OverdueDigest";
 import MemoryWidget from "@/components/MemoryWidget";
+import DailyBriefingCard from "@/components/DailyBriefingCard";
 import { fetchBTCData, BTC_FALLBACK } from "@/lib/btc";
 
 export const metadata: Metadata = {
@@ -119,6 +120,11 @@ export default async function HomePage() {
             "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 20%, rgba(255,255,255,0.04) 80%, transparent 100%)",
         }}
       />
+
+      {/* ── BRIEFING ────────────────────────────────────────────────── */}
+      <SectionDivider label="Today" id="briefing" accent="rgba(139,92,246,0.5)" />
+
+      <DailyBriefingCard />
 
       {/* ── SIGNALS ─────────────────────────────────────────────────── */}
       <SectionDivider label="Signals" id="bitcoin" accent="rgba(245,158,11,0.6)" />

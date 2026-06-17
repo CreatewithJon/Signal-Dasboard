@@ -68,6 +68,18 @@ _Filters, Today view, and AI-powered weekly review_
 
 ---
 
+## Phase 2.4 — Daily Briefing Engine (Complete)
+_Proactive daily synthesis: projects, tasks, planner, memory, habits → actionable briefing_
+
+- [x] `lib/briefing/daily.ts` — `computeDailyBriefing()` pure utility with typed input/output
+- [x] Computes: overdue items, due today, top 3 priorities, high-leverage projects (max 3), relevant memories (Critical/High, max 3), habit focus with streaks, suggested focus block, headline, AI prompt context
+- [x] Priority order: overdue → Critical tasks → High tasks → planner items
+- [x] `app/briefing/page.tsx` — full briefing page: sections for all computed data, inline AI streaming refinement via /api/chat, Stop/Clear controls
+- [x] `components/DailyBriefingCard.tsx` — compact homepage widget: headline, status chips, top 2 priorities, CTA to /briefing
+- [x] `app/page.tsx` — new "Today" section with DailyBriefingCard above Signals
+
+---
+
 ## Phase 2.3 — Habit Context Layer (Complete)
 _AI assistant now reads habit list and today's completion state on habit/discipline queries_
 

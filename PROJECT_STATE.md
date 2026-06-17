@@ -1,12 +1,12 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-17 (v2.3 — Habit Context Layer)_
+_Last updated: 2026-06-17 (v2.4 — Daily Briefing Engine)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v2.3 (Habit Context Layer: Complete)
+**Version:** Sovereign OS v2.4 (Daily Briefing Engine: Complete)
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
 
@@ -94,6 +94,14 @@ _Last updated: 2026-06-17 (v2.3 — Habit Context Layer)_
 - Red pulsing dot + "N overdue" link in the Projects section divider
 - Client component (`components/OverdueDigest.tsx`) reads localStorage and counts overdue projects + tasks
 - Only renders when overdue count > 0; routes to `/projects` on click
+
+### Daily Briefing (`/briefing`)
+- `lib/briefing/daily.ts` — pure `computeDailyBriefing(BriefingInput)` utility; accepts projects, tasks, memory, daily/weekly/monthly planner, habits, habitLog
+- Computes: overdue items (tasks + projects past due, sorted by days overdue), due today (tasks + planner), top 3 priorities (overdue first → critical → high → planner), high-leverage projects (Critical/High active, max 3), relevant memories (Critical/High, max 3), habit focus (all habits with done state + streak), suggested focus block, headline summary, AI prompt context string
+- `/briefing` page: client component, reads all localStorage on mount, renders all sections with premium dark UI — header/headline, numbered priorities, overdue/due today 2-col grid, project cards, habit grid (green done state), memory badges, suggested focus highlight
+- AI refinement: "Ask AI to refine today's plan" button → inline streaming response via `/api/chat` with full `aiPromptContext`; Stop button; Clear button
+- Homepage `DailyBriefingCard` in "Today" section: headline, status chips (overdue/due today/habits), top 2 priorities, CTA to full briefing
+- Sidebar navigation entry should be added in a future pass
 
 ### Homepage (`/`) — Memory Widget
 - Memory section between Projects and AI sections
