@@ -1,3 +1,4 @@
+import React from "react";
 import type { Metadata } from "next";
 import BitcoinPanel from "@/components/BitcoinPanel";
 import ProductivityPanel from "@/components/ProductivityPanel";
@@ -7,6 +8,8 @@ import BTCStackPanel from "@/components/BTCStackPanel";
 import HeroStats from "@/components/HeroStats";
 import SystemStatus from "@/components/SystemStatus";
 import ProjectsWidget from "@/components/ProjectsWidget";
+import OverdueDigest from "@/components/OverdueDigest";
+import MemoryWidget from "@/components/MemoryWidget";
 import { fetchBTCData, BTC_FALLBACK } from "@/lib/btc";
 
 export const metadata: Metadata = {
@@ -20,10 +23,12 @@ function SectionDivider({
   label,
   id,
   accent = "rgba(255,255,255,0.1)",
+  extra,
 }: {
   label: string;
   id?: string;
   accent?: string;
+  extra?: React.ReactNode;
 }) {
   return (
     <div id={id} className="flex items-center gap-4 pt-10 pb-5">
@@ -39,6 +44,7 @@ function SectionDivider({
           background: `linear-gradient(to right, ${accent}33, transparent)`,
         }}
       />
+      {extra}
     </div>
   );
 }
@@ -139,9 +145,14 @@ export default async function HomePage() {
       </div>
 
       {/* ── PROJECTS ────────────────────────────────────────────────── */}
-      <SectionDivider label="Projects" id="projects" accent="rgba(99,102,241,0.55)" />
+      <SectionDivider label="Projects" id="projects" accent="rgba(99,102,241,0.55)" extra={<OverdueDigest />} />
 
       <ProjectsWidget />
+
+      {/* ── MEMORY ──────────────────────────────────────────────────── */}
+      <SectionDivider label="Memory" id="memory" accent="rgba(139,92,246,0.55)" />
+
+      <MemoryWidget />
 
       {/* ── AI ──────────────────────────────────────────────────────── */}
       <SectionDivider label="AI" id="ai" accent="rgba(99,102,241,0.6)" />

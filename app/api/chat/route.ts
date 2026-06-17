@@ -15,7 +15,26 @@ Rules:
 - Speak directly to someone who values clarity, sovereignty, and compounding returns
 - If asked about something outside your three themes, briefly redirect back to what you know best`;
 
-function buildAnthropicRequest(message: string) {
+function buildSystemPrompt(memoryContext?: string, contextSources?: string[]): string {
+  if (!memoryContext) return SYSTEM_PROMPT;
+
+  const sourceList =
+    contextSources && contextSources.length > 0
+      ? contextSources.join(", ")
+      : "Saved Context";
+
+  return `${SYSTEM_PROMPT}
+
+---
+
+${memoryContext}
+
+Context sources for this response: ${sourceList}.
+
+The above context is drawn from the user's own saved data inside Sovereign OS. Use it naturally when relevant. You may reference it with phrases like "based on your saved notes…", "your planner shows…", or "according to your vision…". Do not mention localStorage, internal key names, or technical implementation details. Do not fabricate details beyond what is explicitly provided above.`;
+}
+
+function buildAnthropicRequest(message: string, memoryContext?: string, contextSources?: string[]) {
   const useHelicone = !!process.env.HELICONE_API_KEY;
   const baseURL = useHelicone
     ? "https://anthropic.helicone.ai"
@@ -37,7 +56,7 @@ function buildAnthropicRequest(message: string) {
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 512,
-      system: SYSTEM_PROMPT,
+      system: buildSystemPrompt(memoryContext, contextSources),
       stream: true,
       messages: [{ role: "user", content: message }],
     }),
@@ -52,7 +71,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { message?: string };
+  let body: { message?: string; memoryContext?: string; contextSources?: string[] };
   try {
     body = await req.json();
   } catch {
@@ -70,7 +89,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { url, headers, body: reqBody } = buildAnthropicRequest(message);
+  // memoryContext is optional — only injected when relevant context was found
+  const memoryContext =
+    typeof body.memoryContext === "string" && body.memoryContext.trim()
+      ? body.memoryContext.trim()
+      : undefined;
+
+  // contextSources is an optional string[] listing which sources are present
+  const contextSources =
+    Array.isArray(body.contextSources) && body.contextSources.length > 0
+      ? (body.contextSources as string[]).filter((s) => typeof s === "string")
+      : undefined;
+
+  const { url, headers, body: reqBody } = buildAnthropicRequest(message, memoryContext, contextSources);
 
   let anthropicRes: Response;
   try {

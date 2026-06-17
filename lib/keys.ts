@@ -43,6 +43,7 @@ export const KEYS = {
   NARRATIVES:        "sovereign_narratives",
   PROJECTS:          "sovereign_projects",
   PROJECT_TASKS:     "sovereign_project_tasks",
+  MEMORY_ITEMS:      "sovereign_memory_items",
 
   // Migration sentinel — presence means migration has run
   MIGRATION_V1:      "sovereign_migration_v1_complete",

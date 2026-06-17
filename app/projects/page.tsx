@@ -336,22 +336,127 @@ function InlineSelect<T extends string>({
   );
 }
 
+// ── DragHandle ────────────────────────────────────────────────────────────────
+
+function DragHandle() {
+  return (
+    <div
+      className="flex flex-col gap-[3px] shrink-0 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-25 hover:!opacity-60 transition-opacity select-none"
+      style={{ width: 10, paddingTop: 1 }}
+    >
+      {[0, 1].map((row) => (
+        <div key={row} className="flex gap-[3px]">
+          {[0, 1].map((col) => (
+            <span
+              key={col}
+              className="w-[3px] h-[3px] rounded-full"
+              style={{ background: "rgba(255,255,255,0.5)" }}
+            />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── TaskDueDate ───────────────────────────────────────────────────────────────
+
+function TaskDueDate({ value, onChange, isComplete }: { value: string; onChange: (v: string) => void; isComplete: boolean }) {
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const state = getDueDateState(value, isComplete);
+
+  function openPicker() {
+    setEditing(true);
+    requestAnimationFrame(() => {
+      try { inputRef.current?.showPicker(); } catch {}
+      inputRef.current?.focus();
+    });
+  }
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        type="date"
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setEditing(false); }}
+        onBlur={() => setEditing(false)}
+        className="bg-transparent text-[9px] focus:outline-none w-24 shrink-0"
+        style={{ colorScheme: "dark", color: "rgba(255,255,255,0.4)" }}
+      />
+    );
+  }
+
+  if (!value) {
+    return (
+      <button
+        onClick={openPicker}
+        className="text-[9px] text-white/15 hover:text-white/35 transition-colors shrink-0 whitespace-nowrap opacity-0 group-hover:opacity-100"
+      >
+        Set date
+      </button>
+    );
+  }
+
+  const label = formatDueDate(value);
+  const color = state === "overdue" ? "#ef4444" : state === "urgent" ? "rgba(245,158,11,0.8)" : "rgba(255,255,255,0.25)";
+
+  return (
+    <div className="flex items-center gap-0.5 shrink-0">
+      <button
+        onClick={openPicker}
+        className="text-[9px] transition-opacity hover:opacity-80 whitespace-nowrap"
+        style={{ color, fontWeight: state === "overdue" || state === "urgent" ? "bold" : "normal" }}
+      >
+        {state === "overdue" ? `⚠ ${label}` : label}
+      </button>
+      <button
+        onClick={() => onChange("")}
+        className="text-white/15 hover:text-white/40 transition-colors text-[10px] leading-none ml-0.5 opacity-0 group-hover:opacity-100"
+        title="Clear date"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
 // ── TaskRow ───────────────────────────────────────────────────────────────────
 
 function TaskRow({
-  task, onUpdate, onDelete,
-}: { task: ProjectTask; onUpdate: (id: string, field: keyof ProjectTask, value: string) => void; onDelete: (id: string) => void }) {
+  task, onUpdate, onDelete, isDragging, isDragOver, onDragStart, onDragOver, onDragEnd, onDrop,
+}: {
+  task: ProjectTask;
+  onUpdate: (id: string, field: keyof ProjectTask, value: string) => void;
+  onDelete: (id: string) => void;
+  isDragging?: boolean;
+  isDragOver?: boolean;
+  onDragStart?: () => void;
+  onDragOver?: (e: { preventDefault(): void }) => void;
+  onDragEnd?: () => void;
+  onDrop?: () => void;
+}) {
   const done = task.status === "Done";
-  const dueDateState = getDueDateState(task.due_date, done);
 
   return (
     <div
-      className="flex items-center gap-2 px-3 py-2.5 rounded-xl group"
+      draggable={!done}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDragEnd={onDragEnd}
+      onDrop={onDrop}
+      className="flex items-center gap-2 px-3 py-2.5 rounded-xl group transition-opacity"
       style={{
-        background: done ? "rgba(16,185,129,0.04)" : dueDateState === "overdue" ? "rgba(239,68,68,0.04)" : "rgba(255,255,255,0.03)",
-        border: done ? "1px solid rgba(16,185,129,0.1)" : dueDateState === "overdue" ? "1px solid rgba(239,68,68,0.12)" : "1px solid rgba(255,255,255,0.06)",
+        background: done ? "rgba(16,185,129,0.04)" : isDragOver ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.03)",
+        border: done ? "1px solid rgba(16,185,129,0.1)" : isDragOver ? "1px solid rgba(99,102,241,0.2)" : "1px solid rgba(255,255,255,0.06)",
+        opacity: isDragging ? 0.4 : 1,
+        cursor: done ? "default" : "grab",
       }}
     >
+      {/* Drag handle */}
+      {!done ? <DragHandle /> : <div className="shrink-0" style={{ width: 10 }} />}
+
       {/* Status cycle */}
       <button
         onClick={() => {
@@ -396,22 +501,12 @@ function TaskRow({
         style={{ color: PRIORITY_CONFIG[task.priority].color }}
       />
 
-      {/* Due date — colored by urgency */}
-      <div className="shrink-0">
-        {task.due_date && dueDateState === "overdue" && !done ? (
-          <span className="text-[9px] font-bold" style={{ color: "#ef4444" }}>{formatDueDate(task.due_date)}</span>
-        ) : task.due_date && dueDateState === "urgent" && !done ? (
-          <span className="text-[9px] font-semibold" style={{ color: "rgba(245,158,11,0.75)" }}>{formatDueDate(task.due_date)}</span>
-        ) : (
-          <input
-            type="date"
-            value={task.due_date}
-            onChange={(e) => onUpdate(task.id, "due_date", e.target.value)}
-            className="bg-transparent text-[9px] focus:outline-none w-24 text-white/20 cursor-pointer"
-            style={{ colorScheme: "dark" }}
-          />
-        )}
-      </div>
+      {/* Due date */}
+      <TaskDueDate
+        value={task.due_date}
+        onChange={(v) => onUpdate(task.id, "due_date", v)}
+        isComplete={done}
+      />
 
       {/* Delete */}
       <button
@@ -638,7 +733,7 @@ function ProjectAIPanel({
 type ModalTab = "overview" | "tasks" | "ai";
 
 function ProjectModal({
-  project, tasks, onClose, onUpdateProject, onAddTask, onUpdateTask, onDeleteTask, onBatchAddTasks,
+  project, tasks, onClose, onUpdateProject, onAddTask, onUpdateTask, onDeleteTask, onBatchAddTasks, onReorderTasks,
 }: {
   project: Project;
   tasks: ProjectTask[];
@@ -648,15 +743,19 @@ function ProjectModal({
   onUpdateTask: (id: string, field: keyof ProjectTask, value: string) => void;
   onDeleteTask: (id: string) => void;
   onBatchAddTasks: (projectId: string, tasks: ParsedTask[]) => { imported: number; skipped: number };
+  onReorderTasks: (projectId: string, orderedIds: string[]) => void;
 }) {
   const [tab, setTab] = useState<ModalTab>("overview");
   const [newLink, setNewLink] = useState("");
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const projectTasks = tasks.filter((t) => t.project_id === project.id);
-  const doneTasks = projectTasks.filter((t) => t.status === "Done").length;
-  const openTasks = projectTasks.filter((t) => t.status !== "Done");
-  const overdueTasks = openTasks.filter((t) => getDueDateState(t.due_date, false) === "overdue");
+  const openTasksList = projectTasks.filter((t) => t.status !== "Done");
+  const completedTasksList = projectTasks.filter((t) => t.status === "Done");
+  const doneTasks = completedTasksList.length;
+  const overdueTasks = openTasksList.filter((t) => getDueDateState(t.due_date, false) === "overdue");
 
   const complete = isProjectComplete(project.status);
   const projectDueDateState = getDueDateState(project.due_date, complete);
@@ -866,13 +965,41 @@ function ProjectModal({
               )}
 
               <div className="flex flex-col gap-1.5">
-                {projectTasks.filter((t) => t.status !== "Done").map((task) => (
-                  <TaskRow key={task.id} task={task} onUpdate={onUpdateTask} onDelete={onDeleteTask} />
+                {openTasksList.map((task) => (
+                  <div key={task.id} className="relative">
+                    {dragOverId === task.id && dragId !== task.id && (
+                      <div className="absolute -top-px left-0 right-0 h-0.5 rounded-full z-10" style={{ background: "rgba(99,102,241,0.6)" }} />
+                    )}
+                    <TaskRow
+                      task={task}
+                      onUpdate={onUpdateTask}
+                      onDelete={onDeleteTask}
+                      isDragging={dragId === task.id}
+                      isDragOver={dragOverId === task.id}
+                      onDragStart={() => setDragId(task.id)}
+                      onDragOver={(e) => { e.preventDefault(); if (dragId && dragId !== task.id) setDragOverId(task.id); }}
+                      onDragEnd={() => { setDragId(null); setDragOverId(null); }}
+                      onDrop={() => {
+                        if (dragId && dragId !== task.id) {
+                          const from = openTasksList.findIndex((t) => t.id === dragId);
+                          const to = openTasksList.findIndex((t) => t.id === task.id);
+                          if (from !== -1 && to !== -1) {
+                            const reordered = [...openTasksList];
+                            const [moved] = reordered.splice(from, 1);
+                            reordered.splice(to, 0, moved);
+                            onReorderTasks(project.id, [...reordered, ...completedTasksList].map((t) => t.id));
+                          }
+                        }
+                        setDragId(null);
+                        setDragOverId(null);
+                      }}
+                    />
+                  </div>
                 ))}
-                {projectTasks.filter((t) => t.status === "Done").length > 0 && (
+                {completedTasksList.length > 0 && (
                   <>
                     <p className="text-[9px] text-white/15 uppercase tracking-wider mt-2 mb-0.5 pl-1">Completed</p>
-                    {projectTasks.filter((t) => t.status === "Done").map((task) => (
+                    {completedTasksList.map((task) => (
                       <TaskRow key={task.id} task={task} onUpdate={onUpdateTask} onDelete={onDeleteTask} />
                     ))}
                   </>
@@ -1034,6 +1161,345 @@ function ProjectCard({
   );
 }
 
+// ── Weekly Review Prompt Builder ─────────────────────────────────────────────
+
+function buildWeeklyReviewPrompt(projects: Project[], tasks: ProjectTask[]): string {
+  const activeProjects = projects.filter((p) => p.status === "Active");
+  const overdueProjList = activeProjects.filter((p) => getDueDateState(p.due_date, false) === "overdue");
+  const openTasks = tasks.filter((t) => t.status !== "Done");
+  const overdueTaskList = openTasks.filter((t) => getDueDateState(t.due_date, false) === "overdue");
+  const completedTaskList = tasks.filter((t) => t.status === "Done");
+  const projectMap = new Map(projects.map((p) => [p.id, p.title]));
+
+  const projectSummaries = activeProjects.map((p) => {
+    const pTasks = tasks.filter((t) => t.project_id === p.id);
+    const doneCt = pTasks.filter((t) => t.status === "Done").length;
+    return [
+      `• ${p.title} [${p.priority}]`,
+      p.objective ? `  Objective: ${p.objective}` : "",
+      p.next_action ? `  Next Action: ${p.next_action}` : "",
+      p.due_date ? `  Due: ${formatDueDate(p.due_date)}` : "",
+      pTasks.length > 0 ? `  Tasks: ${doneCt}/${pTasks.length} done` : "",
+    ].filter(Boolean).join("\n");
+  }).join("\n\n");
+
+  const overdueLines = [
+    ...overdueProjList.map((p) => `• Project: ${p.title} (${formatDueDate(p.due_date)})`),
+    ...overdueTaskList.map((t) => `• Task: "${t.title}" [${projectMap.get(t.project_id) ?? "Unknown"}] (${formatDueDate(t.due_date)})`),
+  ].join("\n") || "None — all clear.";
+
+  const completedLines = completedTaskList.slice(0, 15)
+    .map((t) => `• ${t.title} [${projectMap.get(t.project_id) ?? "?"}]`)
+    .join("\n") || "None yet.";
+
+  const criticalLines = openTasks
+    .filter((t) => t.priority === "Critical" || t.priority === "High")
+    .slice(0, 8)
+    .map((t) => `• [${t.priority}] ${t.title} [${projectMap.get(t.project_id) ?? "?"}]`)
+    .join("\n") || "None.";
+
+  return `You are a strategic advisor doing a weekly project review. Be direct, specific, and actionable. No generic advice.
+
+## Current Project Data
+
+### Active Projects (${activeProjects.length})
+${projectSummaries || "No active projects."}
+
+### Overdue Items
+${overdueLines}
+
+### Recent Completed Tasks (${completedTaskList.length} total)
+${completedLines}
+
+### High/Critical Priority Open Tasks
+${criticalLines}
+
+---
+
+Generate a focused weekly review with these exact sections:
+
+**Overall Status** — 2-3 honest sentences on where things stand.
+
+**What's Working** — 2-3 bullets on wins, momentum, or positive signals.
+
+**Needs Attention** — 2-3 bullets on blockers, overdue items, or stalling areas. Be specific.
+
+**Top 3 Priorities This Week** — numbered list, specific and actionable, tied to actual projects/tasks above.
+
+**Weekly Focus** — one clear sentence: where to put the most energy this week and why.`;
+}
+
+// ── Today View ────────────────────────────────────────────────────────────────
+
+function TodayTaskRow({
+  task, projectTitle, onToggleDone, onOpenProject,
+}: {
+  task: ProjectTask;
+  projectTitle: string;
+  onToggleDone: () => void;
+  onOpenProject: () => void;
+}) {
+  const done = task.status === "Done";
+  const state = getDueDateState(task.due_date, done);
+
+  return (
+    <div
+      className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all"
+      style={{
+        background: done ? "rgba(16,185,129,0.04)" : state === "overdue" ? "rgba(239,68,68,0.04)" : "rgba(255,255,255,0.025)",
+        border: done ? "1px solid rgba(16,185,129,0.1)" : state === "overdue" ? "1px solid rgba(239,68,68,0.1)" : "1px solid rgba(255,255,255,0.06)",
+        opacity: done ? 0.55 : 1,
+      }}
+    >
+      <button
+        onClick={onToggleDone}
+        className="w-4 h-4 rounded-full shrink-0 flex items-center justify-center transition-all"
+        style={{
+          background: done ? "rgba(16,185,129,0.8)" : "transparent",
+          border: done ? "1px solid rgba(16,185,129,0.8)" : "1px solid rgba(255,255,255,0.2)",
+        }}
+      >
+        {done && (
+          <svg viewBox="0 0 8 8" fill="none" stroke="black" strokeWidth="1.5" className="w-2 h-2">
+            <path d="M1 4l2 2 4-3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        )}
+      </button>
+      <div className="flex-1 min-w-0">
+        <p
+          className="text-sm leading-snug"
+          style={{ color: done ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.7)", textDecoration: done ? "line-through" : "none" }}
+        >
+          {task.title}
+        </p>
+        <button
+          onClick={onOpenProject}
+          className="text-[9px] text-white/25 hover:text-indigo-400/60 transition-colors mt-0.5"
+        >
+          {projectTitle} →
+        </button>
+      </div>
+      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: PRIORITY_CONFIG[task.priority]?.color ?? "#94a3b8" }} />
+      {task.due_date && !done && (
+        <span
+          className="text-[9px] font-semibold shrink-0 whitespace-nowrap"
+          style={{ color: state === "overdue" ? "#ef4444" : state === "urgent" ? "rgba(245,158,11,0.8)" : "rgba(255,255,255,0.25)" }}
+        >
+          {state === "overdue" ? `⚠ ${formatDueDate(task.due_date)}` : formatDueDate(task.due_date)}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function TodayView({
+  projects, tasks, onUpdateTask, onOpenProject,
+}: {
+  projects: Project[];
+  tasks: ProjectTask[];
+  onUpdateTask: (id: string, field: keyof ProjectTask, value: string) => void;
+  onOpenProject: (projectId: string) => void;
+}) {
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todayMs = new Date(todayStr + "T00:00:00").getTime();
+
+  const openTasks = tasks.filter((t) => t.status !== "Done");
+  const projectMap = new Map(projects.map((p) => [p.id, p]));
+
+  const overdueTasks = openTasks.filter((t) => getDueDateState(t.due_date, false) === "overdue");
+  const dueTodayTasks = openTasks.filter((t) => {
+    if (!t.due_date) return false;
+    return new Date(t.due_date + "T00:00:00").getTime() === todayMs && getDueDateState(t.due_date, false) !== "overdue";
+  });
+  const urgentTasks = openTasks.filter((t) => {
+    if (t.priority !== "Critical" && t.priority !== "High") return false;
+    if (getDueDateState(t.due_date, false) === "overdue") return false;
+    if (t.due_date && new Date(t.due_date + "T00:00:00").getTime() === todayMs) return false;
+    return true;
+  });
+  const activeNextActions = projects.filter((p) => p.status === "Active" && p.next_action);
+  const isEmpty = overdueTasks.length === 0 && dueTodayTasks.length === 0 && urgentTasks.length === 0 && activeNextActions.length === 0;
+
+  function renderTaskList(list: ProjectTask[]) {
+    return list.map((task) => {
+      const project = projectMap.get(task.project_id);
+      return (
+        <TodayTaskRow
+          key={task.id}
+          task={task}
+          projectTitle={project?.title ?? "Unknown"}
+          onToggleDone={() => onUpdateTask(task.id, "status", task.status === "Done" ? "Todo" : "Done")}
+          onOpenProject={() => project && onOpenProject(project.id)}
+        />
+      );
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-6 pb-16">
+      {overdueTasks.length > 0 && (
+        <div>
+          <p className="text-[9px] font-bold uppercase tracking-[0.22em] mb-2.5" style={{ color: "rgba(239,68,68,0.7)" }}>Overdue</p>
+          <div className="flex flex-col gap-1.5">{renderTaskList(overdueTasks)}</div>
+        </div>
+      )}
+
+      <div>
+        <p className="text-[9px] font-bold uppercase tracking-[0.22em] mb-2.5" style={{ color: "rgba(245,158,11,0.65)" }}>Due Today</p>
+        <div className="flex flex-col gap-1.5">
+          {dueTodayTasks.length > 0
+            ? renderTaskList(dueTodayTasks)
+            : <p className="text-xs text-white/20 pl-1">Nothing due today.</p>}
+        </div>
+      </div>
+
+      {urgentTasks.length > 0 && (
+        <div>
+          <p className="text-[9px] font-bold uppercase tracking-[0.22em] mb-2.5" style={{ color: "rgba(96,165,250,0.6)" }}>High Priority</p>
+          <div className="flex flex-col gap-1.5">{renderTaskList(urgentTasks)}</div>
+        </div>
+      )}
+
+      {activeNextActions.length > 0 && (
+        <div>
+          <p className="text-[9px] font-bold uppercase tracking-[0.22em] mb-2.5 text-indigo-400/50">Project Next Actions</p>
+          <div className="flex flex-col gap-1.5">
+            {activeNextActions.map((p) => (
+              <div key={p.id} className="flex items-start gap-3 px-4 py-3 rounded-xl" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                <span className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5" style={{ background: PRIORITY_CONFIG[p.priority]?.color ?? "#94a3b8" }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white/65 leading-snug">{p.next_action}</p>
+                  <button onClick={() => onOpenProject(p.id)} className="text-[9px] text-white/25 hover:text-indigo-400/60 transition-colors mt-0.5">
+                    {p.title} →
+                  </button>
+                </div>
+                <span className="text-[9px] font-semibold shrink-0 mt-0.5" style={{ color: STATUS_CONFIG[p.status].color }}>{p.status}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {isEmpty && (
+        <div className="text-center py-16">
+          <p className="text-3xl mb-3" style={{ opacity: 0.3 }}>✓</p>
+          <p className="text-sm text-white/25">All clear. No overdue or high-priority items.</p>
+          <p className="text-xs text-white/12 mt-1">Check back tomorrow or review your project tasks.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Weekly Review Modal ───────────────────────────────────────────────────────
+
+function WeeklyReviewModal({
+  projects, tasks, onClose,
+}: {
+  projects: Project[];
+  tasks: ProjectTask[];
+  onClose: () => void;
+}) {
+  const [response, setResponse] = useState("");
+  const [streaming, setStreaming] = useState(false);
+  const [runCount, setRunCount] = useState(0);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setStreaming(true);
+    setResponse("");
+
+    fetch("/api/project-chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: buildWeeklyReviewPrompt(projects, tasks) }),
+      signal: controller.signal,
+    }).then(async (res) => {
+      if (!isMounted || !res.ok || !res.body) {
+        if (isMounted) { setResponse("AI service error. Try again."); setStreaming(false); }
+        return;
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let acc = "";
+      while (isMounted) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        acc += decoder.decode(value, { stream: true });
+        setResponse(acc);
+      }
+      if (isMounted) setStreaming(false);
+    }).catch((err) => {
+      if (!isMounted || (err instanceof Error && err.name === "AbortError")) return;
+      setResponse("Connection error. Try again.");
+      setStreaming(false);
+    });
+
+    return () => { isMounted = false; controller.abort(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runCount]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center pt-12 pb-8 px-4"
+      style={{ background: "rgba(0,0,0,0.8)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="w-full max-w-2xl flex flex-col rounded-3xl overflow-hidden"
+        style={{ background: "#0d0d14", border: "1px solid rgba(255,255,255,0.09)", boxShadow: "0 32px 80px rgba(0,0,0,0.6)", maxHeight: "calc(100vh - 5rem)" }}
+      >
+        <div className="px-6 pt-6 pb-4 shrink-0 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-indigo-400/50 mb-0.5">AI Analysis</p>
+            <h2 className="text-base font-bold text-white/85">Weekly Project Review</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            {streaming && <span className="text-[9px] font-semibold text-indigo-400/60 animate-pulse">Generating…</span>}
+            {!streaming && response && (
+              <button
+                onClick={() => setRunCount((c) => c + 1)}
+                className="text-[9px] font-semibold px-2.5 py-1 rounded-lg transition-all"
+                style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", color: "rgba(165,180,252,0.7)" }}
+              >
+                Regenerate
+              </button>
+            )}
+            <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-white/30 hover:text-white/60 transition-all text-lg">×</button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          {(response || streaming) ? (
+            <div className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "rgba(255,255,255,0.65)" }}>
+              {response}
+              {streaming && (
+                <span className="inline-block w-[2px] h-[1em] ml-[2px] align-middle bg-indigo-400/70 animate-pulse" style={{ verticalAlign: "text-bottom" }} />
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-12">
+              <span className="flex items-center gap-1.5">
+                {[0, 1, 2].map((i) => (
+                  <span key={i} className="w-1.5 h-1.5 rounded-full bg-indigo-400/50 animate-bounce" style={{ animationDelay: `${i * 150}ms` }} />
+                ))}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 type FilterStatus = ProjectStatus | "All";
@@ -1043,6 +1509,12 @@ export default function ProjectsPage() {
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("All");
+  const [filterCategory, setFilterCategory] = useState<ProjectCategory | "All">("All");
+  const [filterPriority, setFilterPriority] = useState<ProjectPriority | "All">("All");
+  const [overdueOnly, setOverdueOnly] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"projects" | "today">("projects");
+  const [showWeeklyReview, setShowWeeklyReview] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -1098,15 +1570,43 @@ export default function ProjectsPage() {
 
   function deleteTask(id: string) { saveTasksState(tasks.filter((t) => t.id !== id)); }
 
+  function reorderTasks(projectId: string, orderedIds: string[]) {
+    const otherTasks = tasks.filter((t) => t.project_id !== projectId);
+    const projectTasksMap = new Map(tasks.filter((t) => t.project_id === projectId).map((t) => [t.id, t]));
+    const reordered = orderedIds.map((id) => projectTasksMap.get(id)).filter(Boolean) as ProjectTask[];
+    saveTasksState([...reordered, ...otherTasks]);
+  }
+
   const activeProjects = projects.filter((p) => p.status !== "Archived");
   const archivedProjects = projects.filter((p) => p.status === "Archived");
   const showArchived = filterStatus === "Archived";
 
+  const hasActiveFilters = filterStatus !== "All" || searchQuery.trim() !== "" || filterCategory !== "All" || filterPriority !== "All" || overdueOnly;
+
+  function clearFilters() {
+    setSearchQuery("");
+    setFilterCategory("All");
+    setFilterPriority("All");
+    setOverdueOnly(false);
+    setFilterStatus("All");
+  }
+
   const visibleProjects = showArchived
     ? archivedProjects
-    : filterStatus === "All"
-    ? activeProjects
-    : activeProjects.filter((p) => p.status === filterStatus);
+    : activeProjects.filter((p) => {
+        if (filterStatus !== "All" && p.status !== filterStatus) return false;
+        if (filterCategory !== "All" && p.category !== filterCategory) return false;
+        if (filterPriority !== "All" && p.priority !== filterPriority) return false;
+        if (overdueOnly && getDueDateState(p.due_date, isProjectComplete(p.status)) !== "overdue") return false;
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          if (!p.title.toLowerCase().includes(q) &&
+              !p.description.toLowerCase().includes(q) &&
+              !p.objective.toLowerCase().includes(q) &&
+              !p.next_action.toLowerCase().includes(q)) return false;
+        }
+        return true;
+      });
 
   const openProject = projects.find((p) => p.id === openId) ?? null;
 
@@ -1148,6 +1648,15 @@ export default function ProjectsPage() {
           onUpdateTask={updateTask}
           onDeleteTask={deleteTask}
           onBatchAddTasks={batchAddTasks}
+          onReorderTasks={reorderTasks}
+        />
+      )}
+
+      {showWeeklyReview && (
+        <WeeklyReviewModal
+          projects={projects}
+          tasks={tasks}
+          onClose={() => setShowWeeklyReview(false)}
         />
       )}
 
@@ -1191,60 +1700,186 @@ export default function ProjectsPage() {
         </div>
       </section>
 
-      {/* ── Controls ── */}
-      <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-        <div className="flex items-center gap-1 flex-wrap">
-          {(["All", "Active", "Paused", "Idea", "Shipped", "Archived"] as FilterStatus[]).map((s) => (
+      {/* ── View Toggle + Actions ── */}
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <div
+          className="flex items-center gap-1 p-1 rounded-xl"
+          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          {(["projects", "today"] as const).map((mode) => (
             <button
-              key={s}
-              onClick={() => setFilterStatus(s)}
-              className="text-[10px] font-semibold uppercase tracking-[0.15em] px-3 py-1.5 rounded-lg transition-all"
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className="text-[10px] font-semibold px-3 py-1.5 rounded-lg transition-all"
               style={{
-                background: filterStatus === s ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.03)",
-                border: filterStatus === s ? "1px solid rgba(99,102,241,0.25)" : "1px solid rgba(255,255,255,0.06)",
-                color: filterStatus === s ? "rgba(165,180,252,0.9)" : "rgba(255,255,255,0.3)",
+                background: viewMode === mode ? "rgba(99,102,241,0.12)" : "transparent",
+                border: viewMode === mode ? "1px solid rgba(99,102,241,0.22)" : "1px solid transparent",
+                color: viewMode === mode ? "rgba(165,180,252,0.9)" : "rgba(255,255,255,0.3)",
               }}
             >
-              {s}{s === "Archived" && archivedProjects.length > 0 && <span className="ml-1 opacity-60">({archivedProjects.length})</span>}
+              {mode === "today" ? "Today" : "Projects"}
             </button>
           ))}
         </div>
-        <button
-          onClick={addProject}
-          className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl transition-all"
-          style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)", color: "rgba(165,180,252,0.9)" }}
-        >
-          + New Project
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowWeeklyReview(true)}
+            className="flex items-center gap-1.5 text-[10px] font-semibold px-3 py-2 rounded-xl transition-all"
+            style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)", color: "rgba(167,139,250,0.85)" }}
+          >
+            ✦ Weekly Review
+          </button>
+          <button
+            onClick={addProject}
+            className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-xl transition-all"
+            style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)", color: "rgba(165,180,252,0.9)" }}
+          >
+            + New Project
+          </button>
+        </div>
       </div>
 
-      {/* ── Grid ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-16">
-        {visibleProjects.map((project) => (
-          <ProjectCard
-            key={project.id}
-            project={project}
-            taskStats={getTaskStats(project.id)}
-            onOpen={() => setOpenId(project.id)}
-            onUpdateStatus={(id, status) => updateProject(id, { status })}
-            onArchive={archiveProject}
-          />
-        ))}
-        {visibleProjects.length === 0 && (
-          <div className="col-span-full rounded-2xl p-12 text-center" style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.07)" }}>
-            {showArchived ? (
-              <p className="text-sm text-white/20">No archived projects.</p>
-            ) : (
-              <div className="flex flex-col items-center gap-4">
-                <p className="text-sm text-white/25">No projects here yet.</p>
-                <button onClick={addProject} className="text-xs font-semibold px-4 py-2 rounded-xl transition-all" style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", color: "rgba(165,180,252,0.8)" }}>
-                  + Add your first project
-                </button>
-              </div>
+      {/* ── Filters (projects mode only) ── */}
+      {viewMode === "projects" && (
+        <div className="flex flex-col gap-2.5 mb-5">
+          <div
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
+            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+          >
+            <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ color: "rgba(255,255,255,0.2)" }}>
+              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" strokeLinecap="round" />
+            </svg>
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search projects…"
+              className="flex-1 bg-transparent text-xs text-white/60 placeholder:text-white/20 focus:outline-none"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} className="text-white/20 hover:text-white/50 transition-colors text-sm">×</button>
             )}
           </div>
-        )}
-      </div>
+
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {(["All", "Active", "Paused", "Idea", "Shipped", "Archived"] as FilterStatus[]).map((s) => (
+              <button
+                key={s}
+                onClick={() => setFilterStatus(s)}
+                className="text-[10px] font-semibold uppercase tracking-[0.15em] px-3 py-1.5 rounded-lg transition-all"
+                style={{
+                  background: filterStatus === s ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.03)",
+                  border: filterStatus === s ? "1px solid rgba(99,102,241,0.25)" : "1px solid rgba(255,255,255,0.06)",
+                  color: filterStatus === s ? "rgba(165,180,252,0.9)" : "rgba(255,255,255,0.3)",
+                }}
+              >
+                {s}{s === "Archived" && archivedProjects.length > 0 && <span className="ml-1 opacity-60">({archivedProjects.length})</span>}
+              </button>
+            ))}
+
+            <div className="w-px h-4 mx-0.5" style={{ background: "rgba(255,255,255,0.07)" }} />
+
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value as ProjectCategory | "All")}
+              className="bg-transparent text-[10px] font-semibold uppercase tracking-[0.12em] px-2.5 py-1.5 rounded-lg focus:outline-none appearance-none cursor-pointer transition-all"
+              style={{
+                background: filterCategory !== "All" ? "rgba(99,102,241,0.1)" : "rgba(255,255,255,0.03)",
+                border: filterCategory !== "All" ? "1px solid rgba(99,102,241,0.22)" : "1px solid rgba(255,255,255,0.06)",
+                color: filterCategory !== "All" ? "rgba(165,180,252,0.85)" : "rgba(255,255,255,0.3)",
+                colorScheme: "dark",
+              }}
+            >
+              <option value="All">All Categories</option>
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+
+            <select
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value as ProjectPriority | "All")}
+              className="bg-transparent text-[10px] font-semibold uppercase tracking-[0.12em] px-2.5 py-1.5 rounded-lg focus:outline-none appearance-none cursor-pointer transition-all"
+              style={{
+                background: filterPriority !== "All" ? "rgba(99,102,241,0.1)" : "rgba(255,255,255,0.03)",
+                border: filterPriority !== "All" ? "1px solid rgba(99,102,241,0.22)" : "1px solid rgba(255,255,255,0.06)",
+                color: filterPriority !== "All" ? "rgba(165,180,252,0.85)" : "rgba(255,255,255,0.3)",
+                colorScheme: "dark",
+              }}
+            >
+              <option value="All">All Priorities</option>
+              {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
+
+            <button
+              onClick={() => setOverdueOnly(!overdueOnly)}
+              className="text-[10px] font-semibold px-2.5 py-1.5 rounded-lg transition-all"
+              style={{
+                background: overdueOnly ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.03)",
+                border: overdueOnly ? "1px solid rgba(239,68,68,0.22)" : "1px solid rgba(255,255,255,0.06)",
+                color: overdueOnly ? "rgba(239,68,68,0.85)" : "rgba(255,255,255,0.3)",
+              }}
+            >
+              Overdue
+            </button>
+
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="text-[10px] font-semibold px-2.5 py-1.5 rounded-lg transition-all"
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }}
+              >
+                Clear ×
+              </button>
+            )}
+
+            {hasActiveFilters && !showArchived && (
+              <span className="text-[9px] text-white/20 ml-auto">{visibleProjects.length} result{visibleProjects.length !== 1 ? "s" : ""}</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Content ── */}
+      {viewMode === "today" ? (
+        <TodayView
+          projects={projects}
+          tasks={tasks}
+          onUpdateTask={updateTask}
+          onOpenProject={(id) => setOpenId(id)}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-16">
+          {visibleProjects.map((project) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              taskStats={getTaskStats(project.id)}
+              onOpen={() => setOpenId(project.id)}
+              onUpdateStatus={(id, status) => updateProject(id, { status })}
+              onArchive={archiveProject}
+            />
+          ))}
+          {visibleProjects.length === 0 && (
+            <div className="col-span-full rounded-2xl p-12 text-center" style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.07)" }}>
+              {showArchived ? (
+                <p className="text-sm text-white/20">No archived projects.</p>
+              ) : hasActiveFilters ? (
+                <div className="flex flex-col items-center gap-3">
+                  <p className="text-sm text-white/25">No projects match your filters.</p>
+                  <button onClick={clearFilters} className="text-xs font-semibold px-4 py-2 rounded-xl transition-all" style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", color: "rgba(165,180,252,0.8)" }}>
+                    Clear filters
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-4">
+                  <p className="text-sm text-white/25">No projects here yet.</p>
+                  <button onClick={addProject} className="text-xs font-semibold px-4 py-2 rounded-xl transition-all" style={{ background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)", color: "rgba(165,180,252,0.8)" }}>
+                    + Add your first project
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,12 +1,12 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-15_
+_Last updated: 2026-06-17 (v2.2 — Context Budgeting & Source Attribution)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v1.5 (Project Management: Complete)
+**Version:** Sovereign OS v2.2 (Context Budgeting & Source Attribution: Complete)
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
 
@@ -31,6 +31,13 @@ _Last updated: 2026-06-15_
 - Error messages with Retry button — re-sends original prompt
 - Persistent chat history (`sovereign_ai_messages`, last 40 messages)
 - Optional Helicone observability via `HELICONE_API_KEY`
+- **Memory-aware context:** On every send, reads `sovereign_memory_items` + `sovereign_projects` from localStorage, runs `getRelevantMemoryContext()` (top 5 by keyword/tag/people scoring), and injects the formatted context block into the system prompt. If no relevant memories found, context is omitted — normal system prompt is used. Gracefully handles malformed localStorage data.
+- **Planner-aware context:** `lib/memory/context.ts` exports `getPlannerContext(query, plannerData)`. Reads `sovereign_planner_daily`, `sovereign_planner_weekly`, `sovereign_planner_monthly` from localStorage. Triggered when query contains any of 13 keyword patterns (today, focus, priorit, work on, next action, plan my day, plan for, schedule, agenda, weekly, monthly, what should, what to). Formats as `## Relevant Planner Context` with Today's Plan / Weekly Goals / Monthly Focus sections, each item prefixed with `[x]`/`[ ]` done state. Combined with memory context block into single `memoryContext` string sent to `/api/chat`.
+- **Vision context:** `lib/memory/context.ts` exports `getVisionContext(query, visionData)`. Reads `sovereign_planner_1yr`, `sovereign_planner_3yr`, `sovereign_planner_5yr` (stored as raw `string[]` arrays). Triggered by 21 keyword patterns covering long term, vision, goal, goals, direction, roadmap, strategy, year variants (1/one/3/three/5/five/10/ten year), future, north star, where am I going, what should I build, where do I want. Formats as `## Relevant Vision Context` with 1-Year / 3-Year / 5-Year subsections; empty sections are omitted.
+- **Context indicator:** Header shows combinations of `"N memories · planner · vision in context"` — any subset shown when active, nothing when all are idle.
+- **Context budgeting:** `lib/memory/context.ts` exports `trimContextSection(section, maxChars)` — preserves heading lines, trims body at nearest word boundary, appends "…(trimmed for length.)" when cut. `buildCombinedContext({ memoryBlock, plannerBlock, visionBlock })` applies per-section caps (memory 900, planner 700, vision 700) then enforces a 2000-char total cap with priority order memory > planner > vision. Lower-priority sections are dropped if no budget remains.
+- **Source attribution:** `contextSources: string[]` (e.g. `["Memory", "Planner"]`) is sent from `AIPanel` alongside `memoryContext` to `/api/chat`. The route's `buildSystemPrompt()` appends `"Context sources for this response: Memory, Planner."` and instructs the AI to use natural phrases ("based on your saved notes…", "your planner shows…", "according to your vision…") without mentioning localStorage or internal key names.
+- **Save to Memory:** Every completed assistant message shows a subtle "🧠 Save to memory" button. Clicking it opens a metadata modal pre-filled with: auto-generated title (first sentence or first 9 words), type (Note), importance (Medium), and inferred tags (always "ai-response" + keyword-matched tags from the user prompt: bitcoin, focus, wealth, strategy, ai). User can edit all fields before saving. Duplicate detection: checks exact content match against existing `sovereign_memory_items`; shows "Already saved" if duplicate, "✓ Saved to memory" on success. All saved memories use `source: "AI"`.
 
 ### Life Planner (`/planner`)
 - Daily plan card (`sovereign_planner_daily`)
@@ -69,6 +76,11 @@ _Last updated: 2026-06-15_
 - **Overdue alerts:** red badge on cards/modal/tasks for past-due items; amber for due within 3 days
 - **Task progress bar:** on each project card — `done/total` text + mini progress bar
 - **AI → Tasks import:** after any AI response containing a list, "Import as Tasks" button parses and creates tasks; deduplicates against existing; shows imported/skipped count
+- **Drag-to-reorder tasks:** native HTML5 drag/drop on open tasks in modal Tasks tab; 2×2 dot grip handle; order persisted to localStorage
+- **Smart task due date UX:** formatted label with color states (red/amber/muted); click to open native picker; clear button; "Set date" placeholder on hover
+- **Advanced filters + search:** search bar (title/description/objective/next action), status filter tabs, category dropdown, priority dropdown, "Overdue" toggle, active filter count, Clear button
+- **Today View:** toggle between "Projects" and "Today" views; Today shows overdue tasks, tasks due today, high-priority open tasks, and active project next actions — all with toggle-done and click-to-open-project
+- **Weekly Review modal:** AI-powered strategic review; streams analysis of all active projects/tasks including overdue items, completed tasks, and high-priority open tasks; sections: Overall Status, What's Working, Needs Attention, Top 3 Priorities, Weekly Focus; Regenerate button; Escape to close
 - Persisted to `sovereign_projects` + `sovereign_project_tasks`
 
 ### Homepage (`/`) — Projects Widget
@@ -77,11 +89,34 @@ _Last updated: 2026-06-15_
 - Active projects list with priority indicators
 - Links to `/projects`
 
-### Memory / Narrative Bank (`/narrative`)
+### Homepage (`/`) — Overdue Digest
+- Red pulsing dot + "N overdue" link in the Projects section divider
+- Client component (`components/OverdueDigest.tsx`) reads localStorage and counts overdue projects + tasks
+- Only renders when overdue count > 0; routes to `/projects` on click
+
+### Homepage (`/`) — Memory Widget
+- Memory section between Projects and AI sections
+- Shows total memory count and high-priority count
+- Last 4 most recently updated memories with type dot, title, and importance badge
+- Empty state with link to `/memory` for first-time capture
+- Client component (`components/MemoryWidget.tsx`) reads `sovereign_memory_items` from localStorage
+
+### Memory Engine (`/memory`)
+- Quick capture: textarea with Cmd+Enter shortcut, type selector (5 quick + More… dropdown), importance buttons
+- Auto-generates title from first sentence of captured text
+- 9 memory types: Note, Person, Project Context, Meeting, Decision, Idea, Resource, Client, Content
+- 4 importance levels: Low, Medium, High, Critical — with colored badges
+- Search bar + type/importance/tag filters + Clear button + result count
+- 2-column card grid with type accent strips, badges, tag chips, related people
+- Full edit modal: title, content, type, importance, tags (Enter/comma to add), related people, related projects (linked from `sovereign_projects`), delete with confirmation
+- Persisted to `sovereign_memory_items`
+- AI-ready context helper: `lib/memory/context.ts` — `getRelevantMemoryContext(query, items, projects)` keyword/tag/people scoring, returns top 5 with formatted markdown `contextBlock`
+- Homepage widget (`components/MemoryWidget.tsx`): total count, high-priority count, last 4 recent items, link to /memory
+
+### Narrative Bank (`/narrative`)
 - Editable brand narratives and one-liners
 - Copy-to-clipboard on each card
 - Persisted to `sovereign_narratives`
-- `/memory` route aliases to `/narrative`
 
 ### B-Roll Pipeline (`/broll`)
 - Full pipeline: upload video/audio → Whisper transcription → Claude B-roll plan → AI video generation
@@ -123,6 +158,7 @@ All keys use the `sovereign_` prefix. Migration from `signal_*` is handled autom
 | `sovereign_content_ideas` | Content ideas vault |
 | `sovereign_projects` | Project tracker |
 | `sovereign_project_tasks` | Per-project task list |
+| `sovereign_memory_items` | Memory Engine entries |
 | `sovereign_narratives` | Narrative bank |
 | `sovereign_teleprompter_script` | Teleprompter script |
 | `sovereign_brand_*` | Brand plan fields |
