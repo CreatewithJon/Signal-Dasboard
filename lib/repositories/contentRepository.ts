@@ -15,6 +15,7 @@
 import { KEYS } from "@/lib/keys";
 import { getSupabaseStatus } from "@/lib/supabase/status";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { recordSyncResult } from "@/lib/supabase/syncHealth";
 import type { ContentItem } from "@/lib/types/content";
 
 // ── Result type ────────────────────────────────────────────────────────────
@@ -119,13 +120,23 @@ export async function upsertContentItemSupabase(
     const { error } = await sb
       .from("content_items")
       .upsert(toContentItemRow(item), { onConflict: "id" });
-    if (error) {
-      console.warn("[contentRepository] Supabase upsert error:", error.message);
-      return "failed";
-    }
-    return "success";
+    const result = error ? "failed" : "success";
+    if (error) console.warn("[contentRepository] Supabase upsert error:", error.message);
+    recordSyncResult({
+      module: "content", operation: "upsert",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: result,
+      error: error?.message,
+    });
+    return result;
   } catch (err) {
     console.warn("[contentRepository] Supabase upsert threw:", err);
+    recordSyncResult({
+      module: "content", operation: "upsert",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: "failed",
+      error: String(err),
+    });
     return "failed";
   }
 }
@@ -139,13 +150,23 @@ export async function deleteContentItemSupabase(
   if (!sb) return "skipped";
   try {
     const { error } = await sb.from("content_items").delete().eq("id", id);
-    if (error) {
-      console.warn("[contentRepository] Supabase delete error:", error.message);
-      return "failed";
-    }
-    return "success";
+    const result = error ? "failed" : "success";
+    if (error) console.warn("[contentRepository] Supabase delete error:", error.message);
+    recordSyncResult({
+      module: "content", operation: "delete",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: result,
+      error: error?.message,
+    });
+    return result;
   } catch (err) {
     console.warn("[contentRepository] Supabase delete threw:", err);
+    recordSyncResult({
+      module: "content", operation: "delete",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: "failed",
+      error: String(err),
+    });
     return "failed";
   }
 }

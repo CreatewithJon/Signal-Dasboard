@@ -47,6 +47,9 @@ export const KEYS = {
   FOCUS_SESSIONS:    "sovereign_focus_sessions",
   MEMORY_ITEMS:      "sovereign_memory_items",
 
+  // Sync metadata — last Supabase write result per module
+  SYNC_STATUS:       "sovereign_sync_status",
+
   // Migration sentinel — presence means migration has run
   MIGRATION_V1:      "sovereign_migration_v1_complete",
 } as const;

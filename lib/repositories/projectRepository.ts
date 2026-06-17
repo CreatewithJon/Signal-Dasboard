@@ -16,6 +16,7 @@
 import { KEYS } from "@/lib/keys";
 import { getSupabaseStatus } from "@/lib/supabase/status";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { recordSyncResult } from "@/lib/supabase/syncHealth";
 import type { Project, ProjectTask } from "@/lib/types/projects";
 
 // ── Result type ────────────────────────────────────────────────────────────
@@ -200,13 +201,23 @@ export async function upsertProjectSupabase(
     const { error } = await sb
       .from("projects")
       .upsert(toProjectRow(project), { onConflict: "id" });
-    if (error) {
-      console.warn("[projectRepository] Supabase project upsert error:", error.message);
-      return "failed";
-    }
-    return "success";
+    const result = error ? "failed" : "success";
+    if (error) console.warn("[projectRepository] Supabase project upsert error:", error.message);
+    recordSyncResult({
+      module: "projects", operation: "upsert",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: result,
+      error: error?.message,
+    });
+    return result;
   } catch (err) {
     console.warn("[projectRepository] Supabase project upsert threw:", err);
+    recordSyncResult({
+      module: "projects", operation: "upsert",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: "failed",
+      error: String(err),
+    });
     return "failed";
   }
 }
@@ -220,13 +231,23 @@ export async function deleteProjectSupabase(
   if (!sb) return "skipped";
   try {
     const { error } = await sb.from("projects").delete().eq("id", id);
-    if (error) {
-      console.warn("[projectRepository] Supabase project delete error:", error.message);
-      return "failed";
-    }
-    return "success";
+    const result = error ? "failed" : "success";
+    if (error) console.warn("[projectRepository] Supabase project delete error:", error.message);
+    recordSyncResult({
+      module: "projects", operation: "delete",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: result,
+      error: error?.message,
+    });
+    return result;
   } catch (err) {
     console.warn("[projectRepository] Supabase project delete threw:", err);
+    recordSyncResult({
+      module: "projects", operation: "delete",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: "failed",
+      error: String(err),
+    });
     return "failed";
   }
 }
@@ -242,13 +263,23 @@ export async function upsertProjectTaskSupabase(
     const { error } = await sb
       .from("project_tasks")
       .upsert(toProjectTaskRow(task), { onConflict: "id" });
-    if (error) {
-      console.warn("[projectRepository] Supabase task upsert error:", error.message);
-      return "failed";
-    }
-    return "success";
+    const result = error ? "failed" : "success";
+    if (error) console.warn("[projectRepository] Supabase task upsert error:", error.message);
+    recordSyncResult({
+      module: "project_tasks", operation: "upsert",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: result,
+      error: error?.message,
+    });
+    return result;
   } catch (err) {
     console.warn("[projectRepository] Supabase task upsert threw:", err);
+    recordSyncResult({
+      module: "project_tasks", operation: "upsert",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: "failed",
+      error: String(err),
+    });
     return "failed";
   }
 }
@@ -262,13 +293,23 @@ export async function deleteProjectTaskSupabase(
   if (!sb) return "skipped";
   try {
     const { error } = await sb.from("project_tasks").delete().eq("id", id);
-    if (error) {
-      console.warn("[projectRepository] Supabase task delete error:", error.message);
-      return "failed";
-    }
-    return "success";
+    const result = error ? "failed" : "success";
+    if (error) console.warn("[projectRepository] Supabase task delete error:", error.message);
+    recordSyncResult({
+      module: "project_tasks", operation: "delete",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: result,
+      error: error?.message,
+    });
+    return result;
   } catch (err) {
     console.warn("[projectRepository] Supabase task delete threw:", err);
+    recordSyncResult({
+      module: "project_tasks", operation: "delete",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: "failed",
+      error: String(err),
+    });
     return "failed";
   }
 }

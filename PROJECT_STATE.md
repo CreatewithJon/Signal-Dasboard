@@ -1,12 +1,12 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-17 (v4.2 — Dual-Write Expansion)_
+_Last updated: 2026-06-17 (v4.3 — Sync Health + Manual Restore)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v4.2 (Dual-Write Expansion: Complete)
+**Version:** Sovereign OS v4.3 (Sync Health + Manual Restore: Complete)
 **Stable:** Yes — localStorage-first, Supabase write-through enabled
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
@@ -14,6 +14,14 @@ _Last updated: 2026-06-17 (v4.2 — Dual-Write Expansion)_
 ---
 
 ## What's Working
+
+### Sync Health + Manual Restore (`lib/supabase/syncHealth.ts` — v4.3)
+- `lib/supabase/syncHealth.ts` — `recordSyncResult(entry)` persists last Supabase write result per module to `sovereign_sync_status` localStorage key. `getSyncHealth()` returns full report: supabase configured state, per-module local counts + last result, local-only module list (Planner, Habits), export availability.
+- All 4 repositories updated to call `recordSyncResult()` after every Supabase upsert/delete attempt (success, failed, and thrown-error paths).
+- `components/settings/SyncHealth.tsx` — "use client" settings panel: per-module table (label, table name, local count, last sync dot, time-ago), unconfigured Supabase warning, failure detail rows, local-only module pills, export availability hint.
+- `components/settings/StorageExport.tsx` — rewritten to include Export + Import/Restore. Restore flow: file picker → JSON validation → preview (key names + item counts) → confirmation required → pre-restore auto-backup downloaded → localStorage write → reload prompt. Handles malformed JSON, unrecognized format, empty backup, write errors. Never auto-imports.
+- `/settings` — Sync Health section added between Sync Coverage and Memory Store. System version bumped to v4.3. Roadmap updated (v4.3 marked current). "Data Import" removed from Coming Soon.
+- `lib/keys.ts` — `KEYS.SYNC_STATUS = "sovereign_sync_status"` added.
 
 ### Supabase Dual-Write Expansion (`lib/repositories/` — v4.2)
 - `lib/repositories/projectRepository.ts` — dual-write for Projects and ProjectTasks: create, update, archive, batch-add tasks, delete tasks. `upsertProjectSupabase`, `upsertProjectTaskSupabase`, `deleteProjectTaskSupabase`, plus full `saveProjectDual`/`saveProjectTaskDual`/`deleteProjectTaskDual` helpers. Reorder is localStorage-only (no order field in schema).

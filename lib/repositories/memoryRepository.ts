@@ -15,6 +15,7 @@
 import { KEYS } from "@/lib/keys";
 import { getSupabaseStatus } from "@/lib/supabase/status";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { recordSyncResult } from "@/lib/supabase/syncHealth";
 import type { MemoryItem } from "@/lib/types/memory";
 
 // ── Result type ────────────────────────────────────────────────────────────
@@ -118,13 +119,23 @@ export async function upsertMemoryItemSupabase(
       .from("memory_items")
       .upsert(toSupabaseRow(item), { onConflict: "id" });
 
-    if (error) {
-      console.warn("[memoryRepository] Supabase upsert error:", error.message);
-      return "failed";
-    }
-    return "success";
+    const result = error ? "failed" : "success";
+    if (error) console.warn("[memoryRepository] Supabase upsert error:", error.message);
+    recordSyncResult({
+      module: "memory", operation: "upsert",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: result,
+      error: error?.message,
+    });
+    return result;
   } catch (err) {
     console.warn("[memoryRepository] Supabase upsert threw:", err);
+    recordSyncResult({
+      module: "memory", operation: "upsert",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: "failed",
+      error: String(err),
+    });
     return "failed";
   }
 }
@@ -144,13 +155,23 @@ export async function deleteMemoryItemSupabase(
       .delete()
       .eq("id", id);
 
-    if (error) {
-      console.warn("[memoryRepository] Supabase delete error:", error.message);
-      return "failed";
-    }
-    return "success";
+    const result = error ? "failed" : "success";
+    if (error) console.warn("[memoryRepository] Supabase delete error:", error.message);
+    recordSyncResult({
+      module: "memory", operation: "delete",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: result,
+      error: error?.message,
+    });
+    return result;
   } catch (err) {
     console.warn("[memoryRepository] Supabase delete threw:", err);
+    recordSyncResult({
+      module: "memory", operation: "delete",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: "failed",
+      error: String(err),
+    });
     return "failed";
   }
 }

@@ -15,6 +15,7 @@
 import { KEYS } from "@/lib/keys";
 import { getSupabaseStatus } from "@/lib/supabase/status";
 import { getSupabaseClient } from "@/lib/supabase/client";
+import { recordSyncResult } from "@/lib/supabase/syncHealth";
 import type { FocusSession } from "@/lib/types/execution";
 
 // ── Result type ────────────────────────────────────────────────────────────
@@ -116,13 +117,23 @@ export async function upsertFocusSessionSupabase(
     const { error } = await sb
       .from("focus_sessions")
       .upsert(toFocusSessionRow(session), { onConflict: "id" });
-    if (error) {
-      console.warn("[focusSessionRepository] Supabase upsert error:", error.message);
-      return "failed";
-    }
-    return "success";
+    const result = error ? "failed" : "success";
+    if (error) console.warn("[focusSessionRepository] Supabase upsert error:", error.message);
+    recordSyncResult({
+      module: "focus_sessions", operation: "upsert",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: result,
+      error: error?.message,
+    });
+    return result;
   } catch (err) {
     console.warn("[focusSessionRepository] Supabase upsert threw:", err);
+    recordSyncResult({
+      module: "focus_sessions", operation: "upsert",
+      timestamp: new Date().toISOString(),
+      local: "success", supabase: "failed",
+      error: String(err),
+    });
     return "failed";
   }
 }

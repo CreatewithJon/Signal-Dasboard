@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getSupabaseStatus } from "@/lib/supabase/status";
 import StorageExport from "@/components/settings/StorageExport";
 import MemorySyncStatus from "@/components/settings/MemorySyncStatus";
+import SyncHealth from "@/components/settings/SyncHealth";
 
 export const metadata: Metadata = {
   title: "Settings — Sovereign OS",
@@ -177,10 +178,11 @@ export default function SettingsPage() {
           {[
             { version: "v4.0", label: "Foundation", desc: "Supabase client, schema, status", done: true },
             { version: "v4.1", label: "Dual Write — Memory", desc: "Memory writes go to localStorage + Supabase in parallel", done: true },
-            { version: "v4.2", label: "Dual Write — All Modules", desc: "Projects, tasks, content, focus sessions — dual-write enabled — current", done: true },
-            { version: "v4.3", label: "Auth", desc: "User identity; migration endpoint; data scoped per user", done: false },
-            { version: "v4.4", label: "RLS", desc: "Row-level security; data private by default", done: false },
-            { version: "v4.5", label: "Read Shift", desc: "Reads from Supabase; localStorage becomes write-through cache", done: false },
+            { version: "v4.2", label: "Dual Write — All Modules", desc: "Projects, tasks, content, focus sessions — dual-write enabled", done: true },
+            { version: "v4.3", label: "Sync Health + Restore", desc: "Per-module sync status panel, last-write tracking, manual backup restore — current", done: true },
+            { version: "v4.4", label: "Auth", desc: "User identity; migration endpoint; data scoped per user", done: false },
+            { version: "v4.5", label: "RLS", desc: "Row-level security; data private by default", done: false },
+            { version: "v4.6", label: "Read Shift", desc: "Reads from Supabase; localStorage becomes write-through cache", done: false },
           ].map((phase, i, arr) => (
             <div
               key={phase.version}
@@ -196,7 +198,7 @@ export default function SettingsPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold" style={{ color: phase.done ? "rgba(255,255,255,0.65)" : "rgba(255,255,255,0.3)" }}>
                   {phase.label}
-                  {phase.version === "v4.2" && phase.done && <span className="ml-2 text-[8px] text-emerald-400/60">● Current</span>}
+                  {phase.version === "v4.3" && phase.done && <span className="ml-2 text-[8px] text-emerald-400/60">● Current</span>}
                 </p>
                 <p className="text-[10px] text-white/25 mt-0.5 leading-relaxed">{phase.desc}</p>
               </div>
@@ -253,6 +255,14 @@ export default function SettingsPage() {
         </p>
       </section>
 
+      {/* ── Sync Health ─────────────────────────────────────────────────── */}
+      <section className="mb-8">
+        <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-4">
+          Sync Health
+        </p>
+        <SyncHealth />
+      </section>
+
       {/* ── Memory Sync ─────────────────────────────────────────────────── */}
       <section className="mb-8">
         <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-4">
@@ -279,7 +289,7 @@ export default function SettingsPage() {
           style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
         >
           <p className="text-xs text-white/40 mb-4 leading-relaxed">
-            Export all your Sovereign OS data as a JSON backup. This includes projects, tasks, memory, content, planner, habits, and focus sessions.
+            Export all your Sovereign OS data as a JSON backup, or restore from a previous backup. Includes projects, tasks, memory, content, planner, habits, and focus sessions.
           </p>
           {/* Client component handles the export */}
           <StorageExport />
@@ -295,7 +305,7 @@ export default function SettingsPage() {
           className="rounded-2xl px-5 py-1"
           style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
         >
-          <SettingRow label="Version" value="Sovereign OS v4.2" />
+          <SettingRow label="Version" value="Sovereign OS v4.3" />
           <SettingRow label="Persistence" value={supabase.mode === "supabase-ready" ? "Supabase + localStorage" : "localStorage only"} />
           <SettingRow label="AI Model" value="Claude Haiku 4.5" />
           <SettingRow label="Deployment" value="Vercel (auto-deploy from main)" />
@@ -314,7 +324,6 @@ export default function SettingsPage() {
             { label: "Dashboard Password", desc: "Update your Sovereign OS access password in-app" },
             { label: "Theme Customization", desc: "Accent colors, density, and motion preferences" },
             { label: "Module Toggles", desc: "Enable or disable individual OS modules" },
-            { label: "Data Import", desc: "Restore from a JSON backup file" },
             { label: "Usage Stats", desc: "API calls, tokens used, session count history" },
           ].map((s) => (
             <div

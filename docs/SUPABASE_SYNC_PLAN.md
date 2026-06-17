@@ -4,7 +4,7 @@
 > browser-local localStorage to Supabase-backed persistence with cross-device
 > sync, backups, and future workspace support.
 
-_Version: v4.2 (Dual-write active for Memory, Projects, Tasks, Content, Focus Sessions)_
+_Version: v4.3 (Sync Health panel, per-module last-write tracking, manual restore from backup)_
 _Last updated: 2026-06-17_
 
 ---
@@ -18,10 +18,11 @@ loss, broken UX, and cascading bugs across the ~15 components that read from it.
 **The phased approach:**
 - v4.0 — Foundation: install client, define schema, status visibility, docs ✓
 - v4.1 — Dual-write: Memory — localStorage + Supabase in parallel ✓
-- v4.2 — Dual-write: Projects, Tasks, Content, Focus Sessions ✓ (current)
-- v4.3 — Auth: user_id populated; data is scoped per user
-- v4.4 — RLS: row-level security; data is private by default
-- v4.5 — Read shift: components read from Supabase; localStorage becomes cache
+- v4.2 — Dual-write: Projects, Tasks, Content, Focus Sessions ✓
+- v4.3 — Sync Health + Restore: per-module last-write tracking, settings health panel, manual backup restore ✓ (current)
+- v4.4 — Auth: user_id populated; data is scoped per user
+- v4.5 — RLS: row-level security; data is private by default
+- v4.6 — Read shift: components read from Supabase; localStorage becomes cache
 
 At each phase, the system is fully functional and the previous layer remains intact.
 
@@ -82,7 +83,35 @@ sync because the schema has no `sort_order` field. Reorder is localStorage-only.
 `saveToMemory` (ContentAIPanel) now call `saveMemoryItemDual` instead of direct
 `localStorage.setItem`, completing cross-module memory dual-write coverage.
 
-### v4.3 — Auth Integration
+### v4.3 — Sync Health + Manual Restore ✓
+
+New utilities, components, and enhanced StorageExport:
+
+| File | Purpose |
+|---|---|
+| `lib/supabase/syncHealth.ts` | `recordSyncResult()` called by all repos after Supabase writes; `getSyncHealth()` aggregates report |
+| `components/settings/SyncHealth.tsx` | Settings panel — per-module table with local count, last sync result, warnings |
+| `components/settings/StorageExport.tsx` | Enhanced: Export (unchanged) + Restore from backup (new) |
+
+**`sovereign_sync_status` localStorage key** — stores last Supabase write result per module:
+```json
+{
+  "memory":         { "module": "memory", "operation": "upsert", "timestamp": "...", "local": "success", "supabase": "skipped" },
+  "projects":       { "module": "projects", ... },
+  "project_tasks":  { "module": "project_tasks", ... },
+  "content":        { "module": "content", ... },
+  "focus_sessions": { "module": "focus_sessions", ... }
+}
+```
+
+**Restore safety constraints:**
+- File must be valid JSON with at least one recognized `sovereign_*` key
+- Preview screen shows key names + item counts before any write
+- Pre-restore backup is automatically downloaded before overwriting
+- Reload button shown after successful restore (no auto-reload)
+- No auto-import; confirmation button required
+
+### v4.4 — Auth Integration
 
 - Add Supabase Auth (magic link or Google OAuth)
 - On sign-in: associate existing local data with user_id
@@ -90,7 +119,7 @@ sync because the schema has no `sort_order` field. Reorder is localStorage-only.
   upserts all records with the authenticated user_id
 - Session persisted via Supabase Auth cookie
 
-### v4.3 — Row-Level Security
+### v4.5 — Row-Level Security
 
 ```sql
 alter table projects enable row level security;
@@ -101,7 +130,7 @@ create policy "users see own data"
 
 Repeat for all tables. After this phase, data is fully private per user.
 
-### v4.4 — Read Shift
+### v4.6 — Read Shift
 
 - Components read from Supabase on mount
 - localStorage used as a write-through cache (optimistic updates)
