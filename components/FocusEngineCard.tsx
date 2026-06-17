@@ -10,6 +10,7 @@ import type { MemoryItem } from "@/lib/types/memory";
 import type { ContentItem } from "@/lib/types/content";
 import type { HabitEntry } from "@/lib/memory/context";
 import type { PlannerItem, DailyBriefing } from "@/lib/briefing/daily";
+import type { FocusSession } from "@/lib/types/execution";
 
 function safeRead<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -61,8 +62,30 @@ function MiniScoreBar({ value, color }: { value: number; color: string }) {
   );
 }
 
+function ElapsedTimer({ startedAt }: { startedAt: string }) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const start = new Date(startedAt).getTime();
+    const tick = () => setElapsed(Date.now() - start);
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [startedAt]);
+
+  const totalSecs = Math.floor(elapsed / 1000);
+  const m = Math.floor(totalSecs / 60);
+  const s = totalSecs % 60;
+  return (
+    <span className="font-mono tabular-nums text-xs font-bold" style={{ color: "rgba(52,211,153,0.85)" }}>
+      {String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
+    </span>
+  );
+}
+
 export default function FocusEngineCard() {
-  const [result, setResult] = useState<FocusEngineResult | null>(null);
+  const [result, setResult]   = useState<FocusEngineResult | null>(null);
+  const [sessions, setSessions] = useState<FocusSession[]>([]);
 
   useEffect(() => {
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -112,9 +135,17 @@ export default function FocusEngineCard() {
       visionData: { yr1, yr3, yr5 },
       dailyBriefing,
     }));
+
+    setSessions(safeRead<FocusSession[]>(KEYS.FOCUS_SESSIONS, []));
   }, []);
 
   if (!result) return null;
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const activeSession = sessions.find((s) => s.status === "Active") ?? null;
+  const focusedToday = sessions
+    .filter((s) => s.status === "Completed" && s.startedAt.slice(0, 10) === todayStr)
+    .reduce((acc, s) => acc + (s.actualMinutes ?? 0), 0);
 
   const top = result.topThree[0];
   const momentumColor =
@@ -170,61 +201,91 @@ export default function FocusEngineCard() {
         </Link>
       </div>
 
-      {/* Top priority */}
-      {top ? (
+      {/* Active session state */}
+      {activeSession ? (
         <div
           className="rounded-xl p-4 mb-4"
           style={{
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.07)",
+            background: "rgba(16,185,129,0.05)",
+            border: "1px solid rgba(16,185,129,0.18)",
           }}
         >
-          <div className="flex items-center gap-2 mb-2">
-            <span
-              className="text-[8px] font-bold uppercase tracking-[0.14em] px-2 py-0.5 rounded-full"
-              style={{
-                background: `${SOURCE_COLORS[top.source]}18`,
-                color: SOURCE_COLORS[top.source] ?? "rgba(255,255,255,0.6)",
-                border: `1px solid ${SOURCE_COLORS[top.source] ?? "rgba(255,255,255,0.1)"}30`,
-              }}
-            >
-              #{top.rank} · {SOURCE_LABELS[top.source] ?? top.source}
-            </span>
-            {top.daysOverdue !== undefined && (
-              <span className="text-[8px] text-red-400">{top.daysOverdue}d overdue</span>
-            )}
+          <div className="flex items-center justify-between gap-3 mb-1.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="relative shrink-0">
+                <div className="w-2 h-2 rounded-full" style={{ background: "rgba(52,211,153,0.9)" }} />
+                <div className="absolute inset-0 rounded-full animate-ping" style={{ background: "rgba(52,211,153,0.4)" }} />
+              </div>
+              <span
+                className="text-[8px] font-bold uppercase tracking-[0.14em]"
+                style={{ color: "rgba(52,211,153,0.7)" }}
+              >
+                Active Session
+              </span>
+            </div>
+            <ElapsedTimer startedAt={activeSession.startedAt} />
           </div>
-          <p className="text-sm font-semibold text-white/85 leading-snug">{top.text}</p>
-          {top.projectName && (
-            <p className="text-[10px] text-white/30 mt-1">{top.projectName}</p>
-          )}
+          <p className="text-sm font-semibold text-white/80 leading-snug line-clamp-2">{activeSession.title}</p>
         </div>
       ) : (
-        <div
-          className="rounded-xl p-4 mb-4 text-center"
-          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}
-        >
-          <p className="text-xs text-white/30">No priority tasks detected</p>
-        </div>
-      )}
-
-      {/* Priority count row */}
-      {result.topThree.length > 1 && (
-        <div className="flex gap-2 mb-4">
-          {result.topThree.slice(1).map((p, i) => (
+        <>
+          {/* Top priority */}
+          {top ? (
             <div
-              key={i}
-              className="flex-1 rounded-lg p-2.5"
+              className="rounded-xl p-4 mb-4"
               style={{
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.05)",
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.07)",
               }}
             >
-              <p className="text-[8px] font-bold text-white/25 mb-0.5">#{p.rank}</p>
-              <p className="text-[10px] text-white/55 leading-snug line-clamp-2">{p.text}</p>
+              <div className="flex items-center gap-2 mb-2">
+                <span
+                  className="text-[8px] font-bold uppercase tracking-[0.14em] px-2 py-0.5 rounded-full"
+                  style={{
+                    background: `${SOURCE_COLORS[top.source]}18`,
+                    color: SOURCE_COLORS[top.source] ?? "rgba(255,255,255,0.6)",
+                    border: `1px solid ${SOURCE_COLORS[top.source] ?? "rgba(255,255,255,0.1)"}30`,
+                  }}
+                >
+                  #{top.rank} · {SOURCE_LABELS[top.source] ?? top.source}
+                </span>
+                {top.daysOverdue !== undefined && (
+                  <span className="text-[8px] text-red-400">{top.daysOverdue}d overdue</span>
+                )}
+              </div>
+              <p className="text-sm font-semibold text-white/85 leading-snug">{top.text}</p>
+              {top.projectName && (
+                <p className="text-[10px] text-white/30 mt-1">{top.projectName}</p>
+              )}
             </div>
-          ))}
-        </div>
+          ) : (
+            <div
+              className="rounded-xl p-4 mb-4 text-center"
+              style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}
+            >
+              <p className="text-xs text-white/30">No priority tasks detected</p>
+            </div>
+          )}
+
+          {/* Priority count row */}
+          {result.topThree.length > 1 && (
+            <div className="flex gap-2 mb-4">
+              {result.topThree.slice(1).map((p, i) => (
+                <div
+                  key={i}
+                  className="flex-1 rounded-lg p-2.5"
+                  style={{
+                    background: "rgba(255,255,255,0.02)",
+                    border: "1px solid rgba(255,255,255,0.05)",
+                  }}
+                >
+                  <p className="text-[8px] font-bold text-white/25 mb-0.5">#{p.rank}</p>
+                  <p className="text-[10px] text-white/55 leading-snug line-clamp-2">{p.text}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Scores */}
@@ -242,6 +303,21 @@ export default function FocusEngineCard() {
           <MiniScoreBar value={result.alignmentScore} color={alignmentColor} />
         </div>
       </div>
+
+      {/* Focused minutes today */}
+      {focusedToday > 0 && (
+        <div
+          className="mt-3 pt-3 flex items-center gap-2"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
+        >
+          <span
+            className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+            style={{ background: "rgba(16,185,129,0.1)", color: "rgba(52,211,153,0.75)", border: "1px solid rgba(16,185,129,0.15)" }}
+          >
+            {focusedToday} min focused today
+          </span>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,18 +1,30 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-17 (v3.0 — Focus Engine)_
+_Last updated: 2026-06-17 (v3.1 — Execution Engine)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v3.0 (Focus Engine: Complete)
+**Version:** Sovereign OS v3.1 (Execution Engine: Complete)
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
 
 ---
 
 ## What's Working
+
+### Execution Engine (`/focus` — Session Loop)
+- `lib/types/execution.ts` — `FocusSession` type with status (Active/Completed/Abandoned), timing fields (startedAt, endedAt, plannedMinutes, actualMinutes), review fields (completedSummary, blockers, nextAction), and savedToMemory flag
+- `KEYS.FOCUS_SESSIONS: "sovereign_focus_sessions"` — localStorage key for all session records
+- **Start Focus Session** button on each Top 3 priority card (shown when expanded, no active session) — opens `StartSessionModal` with 25/45/60/90 min duration picker
+- **ActiveSessionPanel** — shown at top of /focus when a session is Active; live elapsed timer (HH:MM:SS via setInterval), session title + planned duration + start time, Complete Session / Abandon controls
+- **ReviewModal** — opens on Complete: textarea for completedSummary, blockers, nextAction; Save to Memory toggle (default on); Save & Complete writes session to localStorage
+- **Session → Memory auto-save** — on review save with toggle on, creates a `MemoryItem` (type: Note, importance: Medium, tags: ["focus-session", "execution"]) appended to `sovereign_memory_items`
+- **Today's Sessions** section at bottom of /focus — filters by today's date, shows completed (with actual vs planned mins) and abandoned sessions, total focused minutes badge
+- **FocusEngineCard** (homepage): shows active session state with pulsing green dot + elapsed timer instead of priority tiles when session is active; "N min focused today" stat below score bars
+- **AIRefinePanel**: includes today's completed/abandoned session history in the prompt (title, status, actual mins, blockers)
+- All session state persisted to `sovereign_focus_sessions`
 
 ### Focus Engine (`/focus`)
 - `lib/focus/engine.ts` — pure `computeFocusEngine(FocusEngineInput)` utility; synthesizes all data sources
@@ -194,6 +206,7 @@ All keys use the `sovereign_` prefix. Migration from `signal_*` is handled autom
 | `sovereign_projects` | Project tracker |
 | `sovereign_project_tasks` | Per-project task list |
 | `sovereign_content_items` | Content Pipeline items |
+| `sovereign_focus_sessions` | Focus session records |
 | `sovereign_memory_items` | Memory Engine entries |
 | `sovereign_narratives` | Narrative bank |
 | `sovereign_teleprompter_script` | Teleprompter script |
