@@ -1,19 +1,30 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-17 (v3.1.1 — Stability & Polish)_
+_Last updated: 2026-06-17 (v4.0 — Supabase Foundation)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v3.1.1 (Stability & Polish: Complete)
-**Stable:** Yes — ready for daily personal use
+**Version:** Sovereign OS v4.0 (Supabase Foundation: Complete)
+**Stable:** Yes — localStorage-first, Supabase-ready
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
 
 ---
 
 ## What's Working
+
+### Supabase Foundation (`/settings` + `lib/supabase/`)
+- `lib/supabase/client.ts` — `getSupabaseClient()` singleton; returns `null` if env vars missing; app continues in localStorage-only mode. Auth disabled until v4.2.
+- `lib/supabase/server.ts` — `getSupabaseServer()` for Route Handlers and Server Components; fresh client per request, never at module level.
+- `lib/supabase/status.ts` — `getSupabaseStatus()` returns `{ configured, urlPresent, anonKeyPresent, mode: "local-only" | "supabase-ready" }`. Safe on client or server.
+- `supabase/schema.sql` — 9 tables: `profiles`, `projects`, `project_tasks`, `memory_items`, `content_items`, `focus_sessions`, `planner_entries`, `habits`, `habit_logs`. All include `user_id` (nullable), `created_at`, `updated_at`, `metadata jsonb`. Indexes + `set_updated_at()` trigger. RLS notes included for v4.3.
+- `components/settings/StorageExport.tsx` — client component; exports all `sovereign_*` keys to `sovereign-os-backup-YYYY-MM-DD.json`; handles empty state gracefully.
+- `/settings` page — fully implemented (was placeholder): Persistence Mode panel (Local Only / Supabase Ready with status dots), Supabase setup steps when not configured, Sync Roadmap (v4.0–v4.4), Data Export button, System Info row, Coming Soon grid. Reads Supabase status server-side at render time.
+- `docs/SUPABASE_SYNC_PLAN.md` — architecture document covering sync strategy, conflict handling, migration phases, backup approach, future workspace architecture.
+- **Settings "Soon" badge removed** — `/settings` is now a real page in Sidebar.
+- **No Supabase reads or writes yet** — localStorage remains sole source of truth. v4.1 will add dual-write.
 
 ### Execution Engine (`/focus` — Session Loop)
 - `lib/types/execution.ts` — `FocusSession` type with status (Active/Completed/Abandoned), timing fields (startedAt, endedAt, plannedMinutes, actualMinutes), review fields (completedSummary, blockers, nextAction), and savedToMemory flag

@@ -2,7 +2,49 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-17 (v1.8)_
+_Last updated: 2026-06-17 (v1.9)_
+
+---
+
+## Phase 4.0 — Supabase Foundation (Complete)
+_Install Supabase client, define schema, add status visibility and docs. No data movement yet._
+
+- [x] `npm install @supabase/supabase-js` — package installed
+- [x] `lib/supabase/client.ts` — `getSupabaseClient()` singleton; returns null when env vars missing; app continues in local-only mode unchanged
+- [x] `lib/supabase/server.ts` — `getSupabaseServer()` for Route Handlers and Server Components; created per-request, never at module level
+- [x] `lib/supabase/status.ts` — `getSupabaseStatus()` returns configured/urlPresent/anonKeyPresent/mode; safe on client or server
+- [x] `supabase/schema.sql` — 9 tables: profiles, projects, project_tasks, memory_items, content_items, focus_sessions, planner_entries, habits, habit_logs. jsonb for arrays/metadata. Indexes. `set_updated_at()` trigger. RLS notes for v4.3.
+- [x] `docs/SUPABASE_SYNC_PLAN.md` — architecture doc: sync strategy, conflict handling, migration phases v4.0–v4.4, backup approach, workspace architecture
+- [x] `/settings` page rebuilt from placeholder → real page: Persistence Mode panel, Supabase status, setup steps, Sync Roadmap, Data Export button, System Info
+- [x] `components/settings/StorageExport.tsx` — exports all sovereign_ keys to dated JSON backup file
+- [x] Settings "Soon" badge removed from sidebar; active-state detection extended to system nav
+- [x] **No Supabase reads or writes** — localStorage remains sole source of truth. v4.1 adds dual-write.
+- [x] All lint/typecheck/build clean
+
+## Phase 4.1 — Dual Write (Next)
+_Writes go to localStorage + Supabase in parallel. Reads unchanged. No auth required._
+
+- [ ] Save hooks in Projects, Memory, Content, Focus Sessions, Planner, Habits
+- [ ] Background Supabase upsert after every localStorage write (silent fail)
+- [ ] Settings page shows "Last synced: X min ago" indicator
+- [ ] Manual "Sync Now" button on Settings
+
+## Phase 4.2 — Auth (Planned)
+- [ ] Supabase Auth (magic link or Google OAuth)
+- [ ] `user_id` populated on all records
+- [ ] `/api/v4/migrate` — accepts localStorage dump, upserts with user_id
+- [ ] Session cookie via Supabase Auth
+
+## Phase 4.3 — RLS (Planned)
+- [ ] Row-level security enabled on all tables
+- [ ] Policy: `auth.uid() = user_id` on all tables
+- [ ] Data private by default
+
+## Phase 4.4 — Read Shift (Planned)
+- [ ] Components read from Supabase on mount
+- [ ] localStorage as write-through cache
+- [ ] Conflict resolution: last-write-wins by `updated_at`
+- [ ] Offline: reads from localStorage; queued sync on reconnect
 
 ---
 

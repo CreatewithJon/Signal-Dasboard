@@ -144,7 +144,6 @@ const SYSTEM_NAV: NavItem[] = [
   {
     href: "/settings",
     label: "Settings",
-    soon: true,
     icon: (
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
         <circle cx="10" cy="10" r="2.5" />
@@ -154,7 +153,7 @@ const SYSTEM_NAV: NavItem[] = [
   },
 ];
 
-const FULL_NAV = MODULE_NAV.map((i) => i.href);
+const FULL_NAV = [...MODULE_NAV.map((i) => i.href), ...SYSTEM_NAV.map((i) => i.href)];
 
 function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
   const isActive = FULL_NAV.includes(item.href)
