@@ -17,6 +17,7 @@ import { KEYS } from "@/lib/keys";
 import { getSupabaseStatus } from "@/lib/supabase/status";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { recordSyncResult } from "@/lib/supabase/syncHealth";
+import { getCachedUserId } from "@/lib/supabase/authStatus";
 import type { Project, ProjectTask } from "@/lib/types/projects";
 
 // ── Result type ────────────────────────────────────────────────────────────
@@ -122,7 +123,7 @@ export function deleteProjectTaskLocal(id: string): "success" | "failed" {
 
 interface ProjectRow {
   id:          string;
-  user_id:     null;
+  user_id:     string | null;
   title:       string;
   status:      string;
   category:    string;
@@ -141,7 +142,7 @@ interface ProjectRow {
 function toProjectRow(p: Project): ProjectRow {
   return {
     id:          p.id,
-    user_id:     null,
+    user_id:     getCachedUserId(),
     title:       p.title,
     status:      p.status,
     category:    p.category,
@@ -160,7 +161,7 @@ function toProjectRow(p: Project): ProjectRow {
 
 interface ProjectTaskRow {
   id:         string;
-  user_id:    null;
+  user_id:    string | null;
   project_id: string;
   title:      string;
   status:     string;
@@ -175,7 +176,7 @@ interface ProjectTaskRow {
 function toProjectTaskRow(t: ProjectTask): ProjectTaskRow {
   return {
     id:         t.id,
-    user_id:    null,
+    user_id:    getCachedUserId(),
     project_id: t.project_id,
     title:      t.title,
     status:     t.status,

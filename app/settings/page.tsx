@@ -3,6 +3,7 @@ import { getSupabaseStatus } from "@/lib/supabase/status";
 import StorageExport from "@/components/settings/StorageExport";
 import MemorySyncStatus from "@/components/settings/MemorySyncStatus";
 import SyncHealth from "@/components/settings/SyncHealth";
+import AuthStatus from "@/components/settings/AuthStatus";
 
 export const metadata: Metadata = {
   title: "Settings — Sovereign OS",
@@ -166,6 +167,19 @@ export default function SettingsPage() {
         )}
       </section>
 
+      {/* ── Auth Status ─────────────────────────────────────────────────── */}
+      <section className="mb-8">
+        <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-4">
+          Identity & Auth
+        </p>
+        <AuthStatus />
+        <p className="text-[10px] text-white/20 mt-2 px-1">
+          localStorage is still the active source of truth. Auth is optional and does not
+          migrate or replace local data. Signing in stamps your user ID on future Supabase
+          writes only — nothing else changes.
+        </p>
+      </section>
+
       {/* ── Sync Roadmap ────────────────────────────────────────────────── */}
       <section className="mb-8">
         <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-4">
@@ -179,10 +193,11 @@ export default function SettingsPage() {
             { version: "v4.0", label: "Foundation", desc: "Supabase client, schema, status", done: true },
             { version: "v4.1", label: "Dual Write — Memory", desc: "Memory writes go to localStorage + Supabase in parallel", done: true },
             { version: "v4.2", label: "Dual Write — All Modules", desc: "Projects, tasks, content, focus sessions — dual-write enabled", done: true },
-            { version: "v4.3", label: "Sync Health + Restore", desc: "Per-module sync status panel, last-write tracking, manual backup restore — current", done: true },
-            { version: "v4.4", label: "Auth", desc: "User identity; migration endpoint; data scoped per user", done: false },
-            { version: "v4.5", label: "RLS", desc: "Row-level security; data private by default", done: false },
-            { version: "v4.6", label: "Read Shift", desc: "Reads from Supabase; localStorage becomes write-through cache", done: false },
+            { version: "v4.3", label: "Sync Health + Restore", desc: "Per-module sync status panel, last-write tracking, manual backup restore", done: true },
+            { version: "v4.4", label: "Auth Readiness", desc: "Optional sign-in via magic link; user_id stamped on writes; app stays fully local — current", done: true },
+            { version: "v4.5", label: "Auth + Migration", desc: "Migrate localStorage data to Supabase under user_id; /api/migrate endpoint", done: false },
+            { version: "v4.6", label: "RLS", desc: "Row-level security; data private by default", done: false },
+            { version: "v4.7", label: "Read Shift", desc: "Reads from Supabase; localStorage becomes write-through cache", done: false },
           ].map((phase, i, arr) => (
             <div
               key={phase.version}
@@ -198,7 +213,7 @@ export default function SettingsPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold" style={{ color: phase.done ? "rgba(255,255,255,0.65)" : "rgba(255,255,255,0.3)" }}>
                   {phase.label}
-                  {phase.version === "v4.3" && phase.done && <span className="ml-2 text-[8px] text-emerald-400/60">● Current</span>}
+                  {phase.version === "v4.4" && phase.done && <span className="ml-2 text-[8px] text-emerald-400/60">● Current</span>}
                 </p>
                 <p className="text-[10px] text-white/25 mt-0.5 leading-relaxed">{phase.desc}</p>
               </div>
@@ -305,7 +320,7 @@ export default function SettingsPage() {
           className="rounded-2xl px-5 py-1"
           style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
         >
-          <SettingRow label="Version" value="Sovereign OS v4.3" />
+          <SettingRow label="Version" value="Sovereign OS v4.4" />
           <SettingRow label="Persistence" value={supabase.mode === "supabase-ready" ? "Supabase + localStorage" : "localStorage only"} />
           <SettingRow label="AI Model" value="Claude Haiku 4.5" />
           <SettingRow label="Deployment" value="Vercel (auto-deploy from main)" />

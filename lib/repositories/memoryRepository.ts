@@ -16,6 +16,7 @@ import { KEYS } from "@/lib/keys";
 import { getSupabaseStatus } from "@/lib/supabase/status";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { recordSyncResult } from "@/lib/supabase/syncHealth";
+import { getCachedUserId } from "@/lib/supabase/authStatus";
 import type { MemoryItem } from "@/lib/types/memory";
 
 // ── Result type ────────────────────────────────────────────────────────────
@@ -71,7 +72,7 @@ export function saveMemoryItemLocal(item: MemoryItem): "success" | "failed" {
 
 interface MemoryRow {
   id:                  string;
-  user_id:             null;
+  user_id:             string | null;
   title:               string;
   content:             string;
   type:                string;
@@ -88,7 +89,7 @@ interface MemoryRow {
 function toSupabaseRow(item: MemoryItem): MemoryRow {
   return {
     id:                  item.id,
-    user_id:             null,          // populated in v4.2 when auth lands
+    user_id:             getCachedUserId(), // null when anonymous; populated when signed in
     title:               item.title,
     content:             item.content,
     type:                item.type,

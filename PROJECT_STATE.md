@@ -1,12 +1,12 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-17 (v4.3 — Sync Health + Manual Restore)_
+_Last updated: 2026-06-17 (v4.4 — Auth Readiness)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v4.3 (Sync Health + Manual Restore: Complete)
+**Version:** Sovereign OS v4.4 (Auth Readiness: Complete)
 **Stable:** Yes — localStorage-first, Supabase write-through enabled
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
@@ -14,6 +14,16 @@ _Last updated: 2026-06-17 (v4.3 — Sync Health + Manual Restore)_
 ---
 
 ## What's Working
+
+### Auth Readiness (`lib/supabase/authStatus.ts` — v4.4)
+- `lib/supabase/authStatus.ts` — `getAuthStatus()` (async, returns `AuthStatus` with mode `anonymous-local|supabase-auth-ready|authenticated`); `getCachedUserId()` (sync, used by repositories); `initAuthListener()` (sets up `onAuthStateChange`, seeds cache from `getSession()`); `sendMagicLink(email, redirectTo)`; `signOut()`.
+- `lib/supabase/client.ts` — `persistSession: true`, `autoRefreshToken: true`, `detectSessionInUrl: true` (required for magic link redirect).
+- `components/auth/AuthListener.tsx` — invisible "use client" component mounted in root layout; calls `initAuthListener()` once on mount so `getCachedUserId()` works everywhere immediately.
+- All 4 repositories — `user_id: getCachedUserId()` instead of `user_id: null` in row mappers; `string | null` interface type.
+- `components/settings/AuthStatus.tsx` — "use client" settings panel; renders mode-specific UI: anonymous (gray, shows setup instructions), auth-ready (amber, magic link form → "sent" confirmation), authenticated (green, email + sign-out button).
+- `/settings` — Identity & Auth section added; system version v4.4; roadmap updated (v4.4 current); auth is explicitly labeled optional throughout.
+- `docs/SUPABASE_AUTH_PLAN.md` — full architecture doc: auth modes, sign-in flow, user_id in repositories, migration plan (v4.5), RLS plan (v4.6), anonymous→authenticated merge strategy, workspace architecture, security notes.
+- App remains fully functional in all three auth modes. No login gate. No forced migration. localStorage is unchanged.
 
 ### Sync Health + Manual Restore (`lib/supabase/syncHealth.ts` — v4.3)
 - `lib/supabase/syncHealth.ts` — `recordSyncResult(entry)` persists last Supabase write result per module to `sovereign_sync_status` localStorage key. `getSyncHealth()` returns full report: supabase configured state, per-module local counts + last result, local-only module list (Planner, Habits), export availability.

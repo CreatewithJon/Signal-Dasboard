@@ -16,6 +16,7 @@ import { KEYS } from "@/lib/keys";
 import { getSupabaseStatus } from "@/lib/supabase/status";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { recordSyncResult } from "@/lib/supabase/syncHealth";
+import { getCachedUserId } from "@/lib/supabase/authStatus";
 import type { FocusSession } from "@/lib/types/execution";
 
 // ── Result type ────────────────────────────────────────────────────────────
@@ -59,7 +60,7 @@ export function saveFocusSessionLocal(session: FocusSession): "success" | "faile
 
 interface FocusSessionRow {
   id:                string;
-  user_id:           null;
+  user_id:           string | null;
   title:             string;
   source_type:       string;
   source_id:         string | null;
@@ -83,7 +84,7 @@ function toFocusSessionRow(s: FocusSession): FocusSessionRow {
   const now = new Date().toISOString();
   return {
     id:                s.id,
-    user_id:           null,
+    user_id:           getCachedUserId(),
     title:             s.title,
     source_type:       s.sourceType,
     source_id:         s.sourceId ?? null,

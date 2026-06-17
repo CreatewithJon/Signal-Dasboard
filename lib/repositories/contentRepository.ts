@@ -16,6 +16,7 @@ import { KEYS } from "@/lib/keys";
 import { getSupabaseStatus } from "@/lib/supabase/status";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { recordSyncResult } from "@/lib/supabase/syncHealth";
+import { getCachedUserId } from "@/lib/supabase/authStatus";
 import type { ContentItem } from "@/lib/types/content";
 
 // ── Result type ────────────────────────────────────────────────────────────
@@ -72,7 +73,7 @@ export function deleteContentItemLocal(id: string): "success" | "failed" {
 
 interface ContentItemRow {
   id:                 string;
-  user_id:            null;
+  user_id:            string | null;
   title:              string;
   status:             string;
   platforms:          string[];
@@ -90,7 +91,7 @@ interface ContentItemRow {
 function toContentItemRow(item: ContentItem): ContentItemRow {
   return {
     id:                 item.id,
-    user_id:            null,
+    user_id:            getCachedUserId(),
     title:              item.title,
     status:             item.status,
     platforms:          item.platforms,

@@ -2,7 +2,7 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-17 (v4.2)_
+_Last updated: 2026-06-17 (v4.4)_
 
 ---
 
@@ -41,18 +41,39 @@ _Projects, Tasks, Content, Focus Sessions all dual-write to localStorage + Supab
 - [x] `/focus` page — `persistSessions(updated, changed)` fires background Supabase upsert; `handleSaveReview` memory save uses `saveMemoryItemDual`
 - [x] `/settings` — Sync Coverage table (5 modules covered, Planner/Habits local-only); roadmap v4.2 current; version v4.2
 
-## Phase 4.3 — Auth (Planned)
-- [ ] Supabase Auth (magic link or Google OAuth)
-- [ ] `user_id` populated on all records
-- [ ] `/api/v4/migrate` — accepts localStorage dump, upserts with user_id
-- [ ] Session cookie via Supabase Auth
+## Phase 4.3 — Sync Health + Manual Restore (Complete)
+_Per-module sync status visibility and backup restore in settings._
 
-## Phase 4.4 — RLS (Planned)
+- [x] `lib/supabase/syncHealth.ts` — `recordSyncResult()` + `getSyncHealth()` report
+- [x] All repositories call `recordSyncResult()` after every Supabase write attempt
+- [x] `components/settings/SyncHealth.tsx` — per-module table with local counts + last-sync results
+- [x] `StorageExport.tsx` rewritten — Export (unchanged) + Restore from Backup (new, with preview + confirmation)
+- [x] `lib/keys.ts` — `KEYS.SYNC_STATUS` added
+
+## Phase 4.4 — Auth Readiness (Complete)
+_Optional Supabase auth; user_id prep; app stays fully local._
+
+- [x] `lib/supabase/authStatus.ts` — `getAuthStatus()`, `getCachedUserId()`, `initAuthListener()`, `sendMagicLink()`, `signOut()`
+- [x] `lib/supabase/client.ts` — `persistSession: true`, `autoRefreshToken: true`, `detectSessionInUrl: true`
+- [x] `components/auth/AuthListener.tsx` — invisible layout component; initialises auth state listener on mount
+- [x] All 4 repositories — `user_id: getCachedUserId()` in row mappers (null when anonymous)
+- [x] `components/settings/AuthStatus.tsx` — mode-aware panel with magic link sign-in + sign-out
+- [x] `/settings` — Identity & Auth section; v4.4 current in roadmap
+- [x] `docs/SUPABASE_AUTH_PLAN.md` — auth modes, RLS plan, migration strategy, workspace architecture
+- [x] App works identically for anonymous users — no gating, no forced login
+
+## Phase 4.5 — Auth + Migration (Planned)
+- [ ] `/api/migrate` — accepts localStorage JSON dump, upserts all records with authenticated `user_id`
+- [ ] Settings "Migrate to Cloud" button — opt-in, shows item count before committing
+- [ ] Session cookie via Supabase Auth (already functional from v4.4)
+
+## Phase 4.6 — RLS (Planned)
 - [ ] Row-level security enabled on all tables
 - [ ] Policy: `auth.uid() = user_id` on all tables
+- [ ] Null `user_id` rows claimed or migrated before RLS activation
 - [ ] Data private by default
 
-## Phase 4.4 — Read Shift (Planned)
+## Phase 4.7 — Read Shift (Planned)
 - [ ] Components read from Supabase on mount
 - [ ] localStorage as write-through cache
 - [ ] Conflict resolution: last-write-wins by `updated_at`

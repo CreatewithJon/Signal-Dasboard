@@ -27,10 +27,10 @@ export function getSupabaseClient(): SupabaseClient | null {
   if (!_client) {
     _client = createClient(url, key, {
       auth: {
-        // Disable auto-session management until auth is wired up (v4.2)
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
+        // v4.4: enable session persistence + URL detection for magic link auth
+        persistSession:     true,
+        autoRefreshToken:   true,
+        detectSessionInUrl: true,
       },
     });
   }

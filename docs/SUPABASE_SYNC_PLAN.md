@@ -4,7 +4,7 @@
 > browser-local localStorage to Supabase-backed persistence with cross-device
 > sync, backups, and future workspace support.
 
-_Version: v4.3 (Sync Health panel, per-module last-write tracking, manual restore from backup)_
+_Version: v4.4 (Auth Readiness — optional sign-in, user_id prep, magic link)_
 _Last updated: 2026-06-17_
 
 ---
@@ -19,10 +19,11 @@ loss, broken UX, and cascading bugs across the ~15 components that read from it.
 - v4.0 — Foundation: install client, define schema, status visibility, docs ✓
 - v4.1 — Dual-write: Memory — localStorage + Supabase in parallel ✓
 - v4.2 — Dual-write: Projects, Tasks, Content, Focus Sessions ✓
-- v4.3 — Sync Health + Restore: per-module last-write tracking, settings health panel, manual backup restore ✓ (current)
-- v4.4 — Auth: user_id populated; data is scoped per user
-- v4.5 — RLS: row-level security; data is private by default
-- v4.6 — Read shift: components read from Supabase; localStorage becomes cache
+- v4.3 — Sync Health + Restore: per-module last-write tracking, settings health panel, manual backup restore ✓
+- v4.4 — Auth Readiness: optional magic-link sign-in, user_id cache, getCachedUserId() in repositories ✓ (current)
+- v4.5 — Auth + Migration: /api/migrate; localStorage data migrated to Supabase under user_id
+- v4.6 — RLS: row-level security; data private by default
+- v4.7 — Read shift: components read from Supabase; localStorage becomes write-through cache
 
 At each phase, the system is fully functional and the previous layer remains intact.
 
