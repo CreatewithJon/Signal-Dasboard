@@ -1,12 +1,12 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-17 (v2.5 — Project Context Injection)_
+_Last updated: 2026-06-17 (v2.6 — Content Engine Pipeline)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v2.5 (Project Context Injection: Complete)
+**Version:** Sovereign OS v2.6 (Content Engine Pipeline: Complete)
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
 
@@ -49,6 +49,17 @@ _Last updated: 2026-06-17 (v2.5 — Project Context Injection)_
 - Review & reflection card (`sovereign_planner_review`)
 - AI planner assistant (Claude, via `/api/planner-chat`)
 - Projected outcomes card
+
+### Content Pipeline (`/content` → Pipeline tab)
+- Full content item management: add, edit, archive
+- Schema: title, status (Idea/Drafting/Ready/Published/Archived), platforms[] (YouTube/Instagram/LinkedIn/Blog/Podcast/Newsletter/Crypto Mondays/DWT), priority, format, hook/angle, notes/draft, related project, publish date
+- Filter bar: search (title+description), status tabs, platform dropdown, priority dropdown, archived toggle, clear button
+- Content cards: status badge, format tag, platform chips (max 2 + overflow), priority dot, overdue date flag
+- Add/edit modal with two tabs: **Overview** (all fields, multi-select platform chips, project dropdown) and **AI Tools**
+- AI Tools tab: "Generate Outline" preset, "Repurpose This" preset, custom question input, streaming output via `/api/content-chat`, "Save to Memory" on completed output
+- Overdue detection: alert banner + red card border for past-publish-date non-published items
+- Homepage `ContentWidget`: Ideas/Drafting/Ready counts, overdue alert, upcoming 4 items sorted by date then priority
+- Persisted to `sovereign_content_items`
 
 ### Content Engine (`/content`)
 - YouTube channel search + video grid with outlier scoring
@@ -168,6 +179,7 @@ All keys use the `sovereign_` prefix. Migration from `signal_*` is handled autom
 | `sovereign_content_ideas` | Content ideas vault |
 | `sovereign_projects` | Project tracker |
 | `sovereign_project_tasks` | Per-project task list |
+| `sovereign_content_items` | Content Pipeline items |
 | `sovereign_memory_items` | Memory Engine entries |
 | `sovereign_narratives` | Narrative bank |
 | `sovereign_teleprompter_script` | Teleprompter script |

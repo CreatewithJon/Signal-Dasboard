@@ -37,6 +37,7 @@ export const KEYS = {
   // Content
   TELEPROMPTER:      "sovereign_teleprompter_script",
   CONTENT_IDEAS:     "sovereign_content_ideas",
+  CONTENT_ITEMS:     "sovereign_content_items",
   BRAND_ROADMAP:     "sovereign_brand_roadmap_v1",
 
   // Brand / Projects / Memory

@@ -68,6 +68,24 @@ _Filters, Today view, and AI-powered weekly review_
 
 ---
 
+## Phase 2.6 — Content Engine Pipeline (Complete)
+_Full content management system: ideas → drafts → publishing pipeline with AI tools_
+
+- [x] `lib/types/content.ts` — `ContentItem` type: status, platforms[], priority, format, description, notes, related_project_id, publish_date
+- [x] `KEYS.CONTENT_ITEMS: "sovereign_content_items"` added to key registry
+- [x] `app/api/content-chat/route.ts` — streaming AI route with per-item context, "outline" + "repurpose" presets
+- [x] `components/content/ContentPipeline.tsx` — full CRUD component: filter bar (search/status/platform/priority/archived), content grid with cards, add/edit modal (Overview + AI tabs), overdue alerts
+- [x] Content modal Overview tab: title, status, priority, platforms (multi-select chips), format, publish date, hook/angle, related project, notes/draft
+- [x] Content modal AI tab: "Generate Outline" + "Repurpose This" streaming presets, custom question input, "Save to Memory" on completed output
+- [x] `components/ContentWidget.tsx` — homepage widget: Ideas/Drafting/Ready counts, overdue alert, upcoming 4 items with status badge + platform + date
+- [x] `app/page.tsx` — Content section added between Projects and Memory
+- [x] `app/content/page.tsx` — "Pipeline" tab added as default; existing Research/Draft/Ideas/B-Roll/Brand tabs preserved
+- [x] Platforms: YouTube, Instagram, LinkedIn, Blog, Podcast, Newsletter, Crypto Mondays, DWT
+- [x] Statuses: Idea, Drafting, Ready, Published, Archived
+- [x] All lint/typecheck/build clean
+
+---
+
 ## Phase 2.5 — Project Context Injection (Complete)
 _AI assistant automatically loads full project context when you mention a project by name_
 

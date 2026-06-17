@@ -10,6 +10,7 @@ import SystemStatus from "@/components/SystemStatus";
 import ProjectsWidget from "@/components/ProjectsWidget";
 import OverdueDigest from "@/components/OverdueDigest";
 import MemoryWidget from "@/components/MemoryWidget";
+import ContentWidget from "@/components/ContentWidget";
 import DailyBriefingCard from "@/components/DailyBriefingCard";
 import { fetchBTCData, BTC_FALLBACK } from "@/lib/btc";
 
@@ -154,6 +155,11 @@ export default async function HomePage() {
       <SectionDivider label="Projects" id="projects" accent="rgba(99,102,241,0.55)" extra={<OverdueDigest />} />
 
       <ProjectsWidget />
+
+      {/* ── CONTENT ─────────────────────────────────────────────────── */}
+      <SectionDivider label="Content" id="content" accent="rgba(239,68,68,0.5)" />
+
+      <ContentWidget />
 
       {/* ── MEMORY ──────────────────────────────────────────────────── */}
       <SectionDivider label="Memory" id="memory" accent="rgba(139,92,246,0.55)" />
