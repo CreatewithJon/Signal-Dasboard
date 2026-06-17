@@ -1114,7 +1114,7 @@ export default function FocusPage() {
 
       {/* ── Scores ─────────────────────────────────────────────────────── */}
       <div
-        className="flex items-center justify-center gap-8 p-6 rounded-2xl mb-8"
+        className="flex items-center justify-center gap-4 sm:gap-8 p-4 sm:p-6 rounded-2xl mb-8"
         style={{
           background: "rgba(255,255,255,0.025)",
           border: "1px solid rgba(255,255,255,0.06)",
@@ -1168,11 +1168,27 @@ export default function FocusPage() {
         </p>
         {result.topThree.length === 0 ? (
           <div
-            className="rounded-2xl p-6 text-center"
+            className="rounded-2xl p-8 text-center space-y-3"
             style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
           >
-            <p className="text-sm text-white/35">No priorities detected.</p>
-            <p className="text-xs text-white/20 mt-1">Add tasks to your projects or items to your daily planner.</p>
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto"
+              style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.15)" }}
+            >
+              <svg viewBox="0 0 20 20" fill="none" stroke="rgba(167,139,250,0.6)" strokeWidth="1.4" className="w-5 h-5">
+                <circle cx="10" cy="10" r="8" /><circle cx="10" cy="10" r="3.5" />
+                <circle cx="10" cy="10" r="1" fill="rgba(167,139,250,0.6)" stroke="none" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-white/50">No priorities detected yet</p>
+            <p className="text-xs text-white/25 max-w-xs mx-auto leading-relaxed">
+              The Focus Engine pulls from your projects, tasks, planner, and content pipeline. Add tasks to a project or write today&apos;s plan in the Planner to get started.
+            </p>
+            <div className="flex items-center justify-center gap-3 pt-1">
+              <a href="/projects" className="text-[10px] font-semibold text-indigo-400/70 hover:text-indigo-400 transition-colors">Projects →</a>
+              <span className="text-white/15">·</span>
+              <a href="/planner" className="text-[10px] font-semibold text-violet-400/70 hover:text-violet-400 transition-colors">Planner →</a>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">

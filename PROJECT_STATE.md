@@ -1,12 +1,13 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-17 (v3.1 — Execution Engine)_
+_Last updated: 2026-06-17 (v3.1.1 — Stability & Polish)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v3.1 (Execution Engine: Complete)
+**Version:** Sovereign OS v3.1.1 (Stability & Polish: Complete)
+**Stable:** Yes — ready for daily personal use
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
 
@@ -222,6 +223,19 @@ All keys use the `sovereign_` prefix. Migration from `signal_*` is handled autom
 3. **No OG images** — Pages use default metadata only.
 4. **No Anthropic SDK** — Using raw `fetch` to Anthropic API. Works fine; `@anthropic-ai/sdk` migration is optional.
 5. **AI chat is single-turn** — Chat API sends only the current message, not full conversation history. Multi-turn context is a future improvement.
+6. **localStorage only** — No cross-device sync. All data is browser-local. Supabase persistence is the next major phase.
+7. **`/narrative` route still live** — Narrative Bank still exists at `/narrative` for backwards compatibility; the main Memory Engine is at `/memory`.
+
+---
+
+## Next Major Phase: Supabase Persistence
+
+When ready to add Supabase:
+- Migrate `sovereign_*` localStorage keys → Supabase tables (one per domain: projects, tasks, sessions, memory, content, planner)
+- Use row-level security with user auth (Supabase Auth or JWT cookie)
+- Keep localStorage as offline cache / optimistic write
+- Focus sessions and memory entries are the highest-value tables to migrate first
+- Reference: `lib/keys.ts` maps every key that needs a corresponding table
 
 ---
 

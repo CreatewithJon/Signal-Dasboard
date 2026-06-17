@@ -68,6 +68,19 @@ _Filters, Today view, and AI-powered weekly review_
 
 ---
 
+## Phase 3.1.1 — Stability & Polish (Complete)
+_Full navigation audit, empty states, mobile QA, data safety_
+
+- [x] **Navigation audit** — `/briefing` added to sidebar MODULE_NAV; Memory href fixed `/narrative` → `/memory` in both Sidebar and MobileNav
+- [x] **Mobile nav rebuild** — MobileNav trimmed to 6 items: Home / Focus / Projects / Content / Planner / Memory; removed B-Roll and Brand (accessible via sidebar); fixed overflow-x removed
+- [x] **Empty states** — `/focus` priorities empty state upgraded with icon, description, and CTA links to Projects + Planner; `/briefing` gets a dedicated full-page empty state when no data exists (no projects, tasks, planner items, or habits) with links to all modules
+- [x] **Briefing SSR guard** — `safeRead()` in briefing page now checks `typeof window === "undefined"` for correctness
+- [x] **Mobile score rings** — focus page score row uses `gap-4 sm:gap-8` and `p-4 sm:p-6` to prevent horizontal overflow on small screens
+- [x] **Docs** — PROJECT_STATE.md updated to v3.1.1, Known Technical Debt section expanded with Supabase roadmap note
+- [x] All lint/typecheck/build clean
+
+---
+
 ## Phase 3.1 — Execution Engine (Complete)
 _Focus → Work Session → Review → Memory → Tomorrow's Focus_
 

@@ -68,6 +68,16 @@ const MODULE_NAV: NavItem[] = [
     ),
   },
   {
+    href: "/briefing",
+    label: "Daily Briefing",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <path d="M10 2a7 7 0 00-7 7c0 2.8 1.6 5.2 4 6.4V17h6v-1.6c2.4-1.2 4-3.6 4-6.4a7 7 0 00-7-7z" strokeLinejoin="round" />
+        <path d="M8 17h4" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
     href: "/planner",
     label: "Planner",
     icon: (
@@ -108,7 +118,7 @@ const MODULE_NAV: NavItem[] = [
     ),
   },
   {
-    href: "/narrative",
+    href: "/memory",
     label: "Memory",
     icon: (
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">

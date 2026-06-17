@@ -21,6 +21,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 // ── Safe localStorage read ────────────────────────────────────────────────
 
 function safeRead<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
   try {
     const raw = localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as T) : fallback;
@@ -86,6 +87,7 @@ function SourceBadge({ source }: { source: string }) {
 
 export default function BriefingPage() {
   const [briefing, setBriefing] = useState<DailyBriefing | null>(null);
+  const [isEmpty, setIsEmpty] = useState(false);
   const [aiResponse, setAiResponse]     = useState<string | null>(null);
   const [streaming, setStreaming]       = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -110,6 +112,15 @@ export default function BriefingPage() {
     // Monthly items (string[])
     const rawMonthly = safeRead<{ month?: string; items?: string[] }>(KEYS.PLANNER_MONTHLY, {});
     const monthlyItems: string[] = Array.isArray(rawMonthly.items) ? rawMonthly.items : [];
+
+    // Detect genuinely empty state: no projects, no planner items, no habits
+    const hasData =
+      projects.length > 0 ||
+      projectTasks.length > 0 ||
+      dailyItems.length > 0 ||
+      weeklyItems.length > 0 ||
+      habits.length > 0;
+    setIsEmpty(!hasData);
 
     setBriefing(
       computeDailyBriefing({
@@ -181,6 +192,61 @@ export default function BriefingPage() {
     return (
       <div className="max-w-3xl mx-auto py-20 text-center">
         <p className="text-sm" style={{ color: "rgba(255,255,255,0.2)" }}>Loading briefing…</p>
+      </div>
+    );
+  }
+
+  if (isEmpty) {
+    return (
+      <div className="max-w-3xl mx-auto py-8 md:py-14 px-4">
+        <div className="flex flex-col gap-2 mb-10">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="text-[10px] font-semibold uppercase tracking-[0.18em] transition-colors" style={{ color: "rgba(255,255,255,0.2)" }}>
+              ← Home
+            </Link>
+            <span style={{ color: "rgba(255,255,255,0.1)" }}>·</span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.3em]" style={{ color: "rgba(139,92,246,0.6)" }}>
+              Daily Briefing
+            </span>
+          </div>
+        </div>
+        <div
+          className="rounded-2xl p-10 text-center space-y-4"
+          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto"
+            style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.15)" }}
+          >
+            <svg viewBox="0 0 20 20" fill="none" stroke="rgba(167,139,250,0.7)" strokeWidth="1.4" className="w-6 h-6">
+              <path d="M10 2a7 7 0 00-7 7c0 2.8 1.6 5.2 4 6.4V17h6v-1.6c2.4-1.2 4-3.6 4-6.4a7 7 0 00-7-7z" strokeLinejoin="round" />
+              <path d="M8 17h4" strokeLinecap="round" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-base font-semibold text-white/60 mb-1">Your daily briefing is empty</p>
+            <p className="text-sm text-white/30 max-w-sm mx-auto leading-relaxed">
+              The briefing synthesizes your projects, tasks, planner, habits, and memory into a prioritized daily plan. Start by adding data to any of these modules.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            {[
+              { href: "/projects", label: "Projects" },
+              { href: "/planner", label: "Planner" },
+              { href: "/focus", label: "Focus Engine" },
+              { href: "/memory", label: "Memory" },
+            ].map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="px-4 py-2 rounded-xl text-xs font-semibold transition-all"
+                style={{ background: "rgba(139,92,246,0.1)", color: "rgba(167,139,250,0.8)", border: "1px solid rgba(139,92,246,0.18)" }}
+              >
+                {label} →
+              </Link>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
