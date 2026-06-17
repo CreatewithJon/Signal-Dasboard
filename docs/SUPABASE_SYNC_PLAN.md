@@ -4,7 +4,7 @@
 > browser-local localStorage to Supabase-backed persistence with cross-device
 > sync, backups, and future workspace support.
 
-_Version: v4.0 (Foundation only — no sync active yet)_
+_Version: v4.2 (Dual-write active for Memory, Projects, Tasks, Content, Focus Sessions)_
 _Last updated: 2026-06-17_
 
 ---
@@ -16,11 +16,12 @@ Migrating to Supabase is a multi-step process — doing it all at once risks dat
 loss, broken UX, and cascading bugs across the ~15 components that read from it.
 
 **The phased approach:**
-- v4.0 — Foundation: install client, define schema, status visibility, docs
-- v4.1 — Write sync: writes go to both localStorage AND Supabase in parallel
-- v4.2 — Auth: user_id populated; data is scoped per user
-- v4.3 — RLS: row-level security; data is private by default
-- v4.4 — Read shift: components read from Supabase; localStorage becomes cache
+- v4.0 — Foundation: install client, define schema, status visibility, docs ✓
+- v4.1 — Dual-write: Memory — localStorage + Supabase in parallel ✓
+- v4.2 — Dual-write: Projects, Tasks, Content, Focus Sessions ✓ (current)
+- v4.3 — Auth: user_id populated; data is scoped per user
+- v4.4 — RLS: row-level security; data is private by default
+- v4.5 — Read shift: components read from Supabase; localStorage becomes cache
 
 At each phase, the system is fully functional and the previous layer remains intact.
 
@@ -53,29 +54,35 @@ At each phase, the system is fully functional and the previous layer remains int
 
 ## Proposed Sync Strategy
 
-### v4.1 — Dual Write (parallel, no read shift)
+### v4.1 — Dual Write: Memory ✓
 
-When a user saves any record:
-1. Write to localStorage (existing behavior — unchanged)
-2. If Supabase is configured, write to Supabase in the background
-3. Failures are silent — localStorage remains authoritative
-4. No reads from Supabase yet
+Memory items dual-write via `lib/repositories/memoryRepository.ts`.
+Pattern: `saveMemoryItemDual(item)` — localStorage first, Supabase in background.
+Returns `DualWriteResult { local, supabase, error? }`. UI shows sync status.
 
-Implementation pattern:
-```ts
-async function saveProject(project: Project) {
-  // 1. Always save locally first
-  persist(KEYS.PROJECTS, [...projects]);
+### v4.2 — Dual Write: All Core Modules ✓
 
-  // 2. Background sync to Supabase if available
-  const sb = getSupabaseClient();
-  if (sb) {
-    await sb.from("projects").upsert(toSupabaseProject(project)).catch(console.warn);
-  }
-}
-```
+Repositories created for all remaining core modules:
 
-### v4.2 — Auth Integration
+| Repository | Table | Operations |
+|---|---|---|
+| `lib/repositories/projectRepository.ts` | `projects` | create, update, archive (upsert) |
+| `lib/repositories/projectRepository.ts` | `project_tasks` | create, update, delete, batch |
+| `lib/repositories/contentRepository.ts` | `content_items` | create, update, archive |
+| `lib/repositories/focusSessionRepository.ts` | `focus_sessions` | start, complete, abandon |
+
+**Wiring pattern:** Pages keep their existing full-array localStorage writes unchanged.
+Each mutation function fires `upsertXSupabase(item)` in the background (`void`).
+This avoids seed data regression (projects page seeds) and minimizes diff surface.
+
+**Reorders not synced** — `reorderTasks` in projects page does not have a Supabase
+sync because the schema has no `sort_order` field. Reorder is localStorage-only.
+
+**Memory saves from focus + content** — `handleSaveReview` (focus page) and
+`saveToMemory` (ContentAIPanel) now call `saveMemoryItemDual` instead of direct
+`localStorage.setItem`, completing cross-module memory dual-write coverage.
+
+### v4.3 — Auth Integration
 
 - Add Supabase Auth (magic link or Google OAuth)
 - On sign-in: associate existing local data with user_id

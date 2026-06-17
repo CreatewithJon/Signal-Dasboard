@@ -11,6 +11,8 @@ import type {
 import type { Project } from "@/lib/types/projects";
 import type { MemoryItem } from "@/lib/types/memory";
 import { KEYS } from "@/lib/keys";
+import { upsertContentItemSupabase } from "@/lib/repositories/contentRepository";
+import { getMemoryItemsLocal, saveMemoryItemDual } from "@/lib/repositories/memoryRepository";
 
 // ── Constants ─────────────────────────────────────────────────────────────
 
@@ -207,27 +209,25 @@ function ContentAIPanel({ item }: { item: ContentItem }) {
 
   function saveToMemory() {
     if (!output) return;
-    try {
-      const existing = safeRead<MemoryItem[]>(KEYS.MEMORY_ITEMS, []);
-      const isDuplicate = existing.some((m) => m.content.trim() === output.trim());
-      if (isDuplicate) { setSavedState("duplicate"); return; }
-      const now = new Date().toISOString();
-      const newItem: MemoryItem = {
-        id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-        title: `Content AI: ${item.title}`,
-        content: output,
-        type: "Content",
-        importance: "Medium",
-        tags: ["ai-response", "content"],
-        relatedProjectIds: item.related_project_id ? [item.related_project_id] : [],
-        relatedPeople: [],
-        source: "AI",
-        createdAt: now,
-        updatedAt: now,
-      };
-      localStorage.setItem(KEYS.MEMORY_ITEMS, JSON.stringify([newItem, ...existing]));
-      setSavedState("saved");
-    } catch { /* ignore */ }
+    const existing = getMemoryItemsLocal();
+    const isDuplicate = existing.some((m) => m.content.trim() === output.trim());
+    if (isDuplicate) { setSavedState("duplicate"); return; }
+    const nowIso = new Date().toISOString();
+    const newItem: MemoryItem = {
+      id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      title: `Content AI: ${item.title}`,
+      content: output,
+      type: "Content",
+      importance: "Medium",
+      tags: ["ai-response", "content"],
+      relatedProjectIds: item.related_project_id ? [item.related_project_id] : [],
+      relatedPeople: [],
+      source: "AI",
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    };
+    setSavedState("saved");
+    void saveMemoryItemDual(newItem);
   }
 
   const PRESETS = [
@@ -816,11 +816,15 @@ export default function ContentPipeline() {
     }
     setOpenItem(null);
     setIsNew(false);
+    void upsertContentItemSupabase(updated);
   }
 
   function handleArchive(id: string) {
     const now = new Date().toISOString();
-    save(items.map((i) => i.id === id ? { ...i, status: "Archived" as ContentStatus, updated_at: now } : i));
+    const next = items.map((i) => i.id === id ? { ...i, status: "Archived" as ContentStatus, updated_at: now } : i);
+    save(next);
+    const archived = next.find((i) => i.id === id);
+    if (archived) void upsertContentItemSupabase(archived);
   }
 
   function openNew() {

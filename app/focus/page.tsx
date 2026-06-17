@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { KEYS } from "@/lib/keys";
 import { computeFocusEngine } from "@/lib/focus/engine";
+import { upsertFocusSessionSupabase } from "@/lib/repositories/focusSessionRepository";
+import { saveMemoryItemDual } from "@/lib/repositories/memoryRepository";
 import type { FocusEngineResult, FocusPriority, FocusBlock } from "@/lib/focus/engine";
 import type { Project, ProjectTask } from "@/lib/types/projects";
 import type { MemoryItem } from "@/lib/types/memory";
@@ -939,9 +941,10 @@ export default function FocusPage() {
 
   const activeSession = sessions.find((s) => s.status === "Active") ?? null;
 
-  function persistSessions(updated: FocusSession[]) {
+  function persistSessions(updated: FocusSession[], changed: FocusSession) {
     setSessions(updated);
     safeWrite(KEYS.FOCUS_SESSIONS, updated);
+    void upsertFocusSessionSupabase(changed);
   }
 
   function handleStartSession(priority: FocusPriority, minutes: number) {
@@ -967,7 +970,7 @@ export default function FocusPage() {
       savedToMemory: false,
     };
 
-    persistSessions([...sessions, session]);
+    persistSessions([...sessions, session], session);
     setStartTarget(null);
   }
 
@@ -977,12 +980,14 @@ export default function FocusPage() {
     const actualMinutes = Math.round(
       (now.getTime() - new Date(activeSession.startedAt).getTime()) / 60000
     );
-    const updated = sessions.map((s) =>
-      s.id === activeSession.id
-        ? { ...s, status: "Abandoned" as const, endedAt: now.toISOString(), actualMinutes }
-        : s
-    );
-    persistSessions(updated);
+    const abandoned: FocusSession = {
+      ...activeSession,
+      status: "Abandoned",
+      endedAt: now.toISOString(),
+      actualMinutes,
+    };
+    const updated = sessions.map((s) => s.id === activeSession.id ? abandoned : s);
+    persistSessions(updated, abandoned);
   }
 
   function handleOpenReview() {
@@ -1013,7 +1018,7 @@ export default function FocusPage() {
     };
 
     const updated = sessions.map((s) => (s.id === activeSession.id ? completed : s));
-    persistSessions(updated);
+    persistSessions(updated, completed);
 
     // Save to memory if requested
     if (data.saveToMemory) {
@@ -1023,11 +1028,10 @@ export default function FocusPage() {
       if (data.nextAction) parts.push(`Next action: ${data.nextAction}`);
       parts.push(`Duration: ${actualMinutes} min (${activeSession.plannedMinutes} min planned)`);
 
-      const memoryContent = parts.join("\n");
       const newMemory: MemoryItem = {
         id: crypto.randomUUID(),
         title: `Focus Session: ${activeSession.title}`,
-        content: memoryContent,
+        content: parts.join("\n"),
         type: "Note",
         tags: ["focus-session", "execution"],
         importance: "Medium",
@@ -1038,8 +1042,7 @@ export default function FocusPage() {
         updatedAt: now.toISOString(),
       };
 
-      const existingMemory = safeRead<MemoryItem[]>(KEYS.MEMORY_ITEMS, []);
-      safeWrite(KEYS.MEMORY_ITEMS, [...existingMemory, newMemory]);
+      void saveMemoryItemDual(newMemory);
     }
 
     setShowReview(false);

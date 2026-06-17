@@ -1,19 +1,28 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-17 (v4.0 — Supabase Foundation)_
+_Last updated: 2026-06-17 (v4.2 — Dual-Write Expansion)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v4.0 (Supabase Foundation: Complete)
-**Stable:** Yes — localStorage-first, Supabase-ready
+**Version:** Sovereign OS v4.2 (Dual-Write Expansion: Complete)
+**Stable:** Yes — localStorage-first, Supabase write-through enabled
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
 
 ---
 
 ## What's Working
+
+### Supabase Dual-Write Expansion (`lib/repositories/` — v4.2)
+- `lib/repositories/projectRepository.ts` — dual-write for Projects and ProjectTasks: create, update, archive, batch-add tasks, delete tasks. `upsertProjectSupabase`, `upsertProjectTaskSupabase`, `deleteProjectTaskSupabase`, plus full `saveProjectDual`/`saveProjectTaskDual`/`deleteProjectTaskDual` helpers. Reorder is localStorage-only (no order field in schema).
+- `lib/repositories/contentRepository.ts` — dual-write for ContentItems: create, update, archive. `upsertContentItemSupabase`, `deleteContentItemSupabase`, `saveContentItemDual`, `deleteContentItemDual`.
+- `lib/repositories/focusSessionRepository.ts` — dual-write for FocusSessions: start, complete, abandon all map to upsert. `upsertFocusSessionSupabase`, `saveFocusSessionDual`. Row mapper handles camelCase→snake_case, optional fields → null.
+- `/projects` page — all mutation functions (`addProject`, `updateProject`, `archiveProject`, `addTask`, `batchAddTasks`, `updateTask`, `deleteTask`) fire background Supabase upserts after local writes.
+- `components/content/ContentPipeline.tsx` — `handleSave`, `handleArchive` fire background Supabase upserts. `ContentAIPanel.saveToMemory` updated to use `saveMemoryItemDual`.
+- `/focus` page — `persistSessions(updated, changed)` signature updated to accept the changed session and fire background Supabase upsert. `handleSaveReview` memory save updated to use `saveMemoryItemDual`.
+- `/settings` — Sync Coverage section added showing 5 covered modules (Memory, Projects, Tasks, Content, Focus Sessions) with green status dots; Planner and Habits show "Local only". Roadmap updated to v4.2 current. System version bumped to v4.2.
 
 ### Supabase Foundation (`/settings` + `lib/supabase/`)
 - `lib/supabase/client.ts` — `getSupabaseClient()` singleton; returns `null` if env vars missing; app continues in localStorage-only mode. Auth disabled until v4.2.

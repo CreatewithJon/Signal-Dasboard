@@ -2,7 +2,7 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-17 (v1.9)_
+_Last updated: 2026-06-17 (v4.2)_
 
 ---
 
@@ -21,21 +21,33 @@ _Install Supabase client, define schema, add status visibility and docs. No data
 - [x] **No Supabase reads or writes** — localStorage remains sole source of truth. v4.1 adds dual-write.
 - [x] All lint/typecheck/build clean
 
-## Phase 4.1 — Dual Write (Next)
-_Writes go to localStorage + Supabase in parallel. Reads unchanged. No auth required._
+## Phase 4.1 — Dual Write: Memory (Complete)
+_Memory items write to localStorage + Supabase in parallel._
 
-- [ ] Save hooks in Projects, Memory, Content, Focus Sessions, Planner, Habits
-- [ ] Background Supabase upsert after every localStorage write (silent fail)
-- [ ] Settings page shows "Last synced: X min ago" indicator
-- [ ] Manual "Sync Now" button on Settings
+- [x] `lib/repositories/memoryRepository.ts` — `DualWriteResult`, `saveMemoryItemDual`, `deleteMemoryItemDual`
+- [x] `/memory` page — async capture/save/delete with sync status indicator ("Saving…" / "Synced ✓" / "Saved locally")
+- [x] `AIPanel.tsx` — `commitSave()` async; shows "Saved + synced" vs "Saved locally"
+- [x] `components/settings/MemorySyncStatus.tsx` — live item count + sync mode
+- [x] `/settings` — Memory Store section + roadmap v4.1 marker
 
-## Phase 4.2 — Auth (Planned)
+## Phase 4.2 — Dual Write: All Core Modules (Complete)
+_Projects, Tasks, Content, Focus Sessions all dual-write to localStorage + Supabase._
+
+- [x] `lib/repositories/projectRepository.ts` — Projects + ProjectTasks; `upsertProjectSupabase`, `upsertProjectTaskSupabase`, `deleteProjectTaskSupabase`; full dual-write helpers
+- [x] `lib/repositories/contentRepository.ts` — ContentItems; `upsertContentItemSupabase`; full dual-write helpers
+- [x] `lib/repositories/focusSessionRepository.ts` — FocusSessions; `upsertFocusSessionSupabase`; full dual-write helper; camelCase→snake_case row mapper
+- [x] `/projects` page — all mutations fire background Supabase upserts (reorder excluded — no order field in schema)
+- [x] `ContentPipeline.tsx` — `handleSave`/`handleArchive` fire background upserts; `saveToMemory` uses `saveMemoryItemDual`
+- [x] `/focus` page — `persistSessions(updated, changed)` fires background Supabase upsert; `handleSaveReview` memory save uses `saveMemoryItemDual`
+- [x] `/settings` — Sync Coverage table (5 modules covered, Planner/Habits local-only); roadmap v4.2 current; version v4.2
+
+## Phase 4.3 — Auth (Planned)
 - [ ] Supabase Auth (magic link or Google OAuth)
 - [ ] `user_id` populated on all records
 - [ ] `/api/v4/migrate` — accepts localStorage dump, upserts with user_id
 - [ ] Session cookie via Supabase Auth
 
-## Phase 4.3 — RLS (Planned)
+## Phase 4.4 — RLS (Planned)
 - [ ] Row-level security enabled on all tables
 - [ ] Policy: `auth.uid() = user_id` on all tables
 - [ ] Data private by default

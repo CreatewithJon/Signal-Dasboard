@@ -176,10 +176,11 @@ export default function SettingsPage() {
         >
           {[
             { version: "v4.0", label: "Foundation", desc: "Supabase client, schema, status", done: true },
-            { version: "v4.1", label: "Dual Write", desc: "Memory writes go to localStorage + Supabase in parallel — current", done: true },
-            { version: "v4.2", label: "Auth", desc: "User identity; migration endpoint; data scoped per user", done: false },
-            { version: "v4.3", label: "RLS", desc: "Row-level security; data private by default", done: false },
-            { version: "v4.4", label: "Read Shift", desc: "Reads from Supabase; localStorage becomes write-through cache", done: false },
+            { version: "v4.1", label: "Dual Write — Memory", desc: "Memory writes go to localStorage + Supabase in parallel", done: true },
+            { version: "v4.2", label: "Dual Write — All Modules", desc: "Projects, tasks, content, focus sessions — dual-write enabled — current", done: true },
+            { version: "v4.3", label: "Auth", desc: "User identity; migration endpoint; data scoped per user", done: false },
+            { version: "v4.4", label: "RLS", desc: "Row-level security; data private by default", done: false },
+            { version: "v4.5", label: "Read Shift", desc: "Reads from Supabase; localStorage becomes write-through cache", done: false },
           ].map((phase, i, arr) => (
             <div
               key={phase.version}
@@ -195,7 +196,7 @@ export default function SettingsPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold" style={{ color: phase.done ? "rgba(255,255,255,0.65)" : "rgba(255,255,255,0.3)" }}>
                   {phase.label}
-                  {phase.version === "v4.1" && phase.done && <span className="ml-2 text-[8px] text-emerald-400/60">● Current</span>}
+                  {phase.version === "v4.2" && phase.done && <span className="ml-2 text-[8px] text-emerald-400/60">● Current</span>}
                 </p>
                 <p className="text-[10px] text-white/25 mt-0.5 leading-relaxed">{phase.desc}</p>
               </div>
@@ -204,10 +205,58 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      {/* ── Sync Coverage ────────────────────────────────────────────────── */}
+      <section className="mb-8">
+        <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-4">
+          Sync Coverage
+        </p>
+        <div
+          className="rounded-2xl px-5 py-1"
+          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          {[
+            { label: "Memory",         covered: true,  desc: "Capture, edit, delete — dual-write since v4.1" },
+            { label: "Projects",       covered: true,  desc: "Create, update, archive — dual-write since v4.2" },
+            { label: "Project Tasks",  covered: true,  desc: "Create, update, delete — dual-write since v4.2" },
+            { label: "Content Items",  covered: true,  desc: "Create, update, archive — dual-write since v4.2" },
+            { label: "Focus Sessions", covered: true,  desc: "Start, complete, abandon — dual-write since v4.2" },
+            { label: "Planner",        covered: false, desc: "Local only — planned for v4.3" },
+            { label: "Habits",         covered: false, desc: "Local only — planned for v4.3" },
+          ].map((row, i, arr) => (
+            <div
+              key={row.label}
+              className="flex items-center gap-3 py-3"
+              style={{ borderBottom: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ background: row.covered ? "rgba(52,211,153,0.85)" : "rgba(255,255,255,0.15)" }}
+              />
+              <span
+                className="text-xs font-semibold w-32 shrink-0"
+                style={{ color: row.covered ? "rgba(255,255,255,0.65)" : "rgba(255,255,255,0.25)" }}
+              >
+                {row.label}
+              </span>
+              <span className="text-[10px] text-white/20 flex-1">{row.desc}</span>
+              <span
+                className="text-[9px] font-bold shrink-0"
+                style={{ color: row.covered ? "rgba(52,211,153,0.7)" : "rgba(255,255,255,0.15)" }}
+              >
+                {row.covered ? (isReady ? "Syncing" : "Ready") : "Local only"}
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-white/20 mt-2 px-1">
+          All modules write to localStorage first. Supabase writes happen in the background when configured.
+        </p>
+      </section>
+
       {/* ── Memory Sync ─────────────────────────────────────────────────── */}
       <section className="mb-8">
         <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-4">
-          Memory Sync
+          Memory Store
         </p>
         <div
           className="rounded-2xl p-5"
@@ -215,7 +264,7 @@ export default function SettingsPage() {
         >
           <MemorySyncStatus />
           <p className="text-[10px] text-white/20 mt-3 leading-relaxed">
-            Memory items are saved to localStorage first (always), then synced to Supabase in the background when configured. Reads still come from localStorage.
+            Memory items are saved to localStorage first, then synced to Supabase in the background when configured. Reads still come from localStorage.
           </p>
         </div>
       </section>
@@ -246,7 +295,7 @@ export default function SettingsPage() {
           className="rounded-2xl px-5 py-1"
           style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
         >
-          <SettingRow label="Version" value="Sovereign OS v4.1" />
+          <SettingRow label="Version" value="Sovereign OS v4.2" />
           <SettingRow label="Persistence" value={supabase.mode === "supabase-ready" ? "Supabase + localStorage" : "localStorage only"} />
           <SettingRow label="AI Model" value="Claude Haiku 4.5" />
           <SettingRow label="Deployment" value="Vercel (auto-deploy from main)" />

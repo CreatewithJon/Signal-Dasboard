@@ -9,6 +9,11 @@ import type {
   ProjectPriority,
   TaskStatus,
 } from "@/lib/types/projects";
+import {
+  upsertProjectSupabase,
+  upsertProjectTaskSupabase,
+  deleteProjectTaskSupabase,
+} from "@/lib/repositories/projectRepository";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -1533,10 +1538,14 @@ export default function ProjectsPage() {
     };
     saveProjectsState([p, ...projects]);
     setOpenId(p.id);
+    void upsertProjectSupabase(p);
   }
 
   function updateProject(id: string, patch: Partial<Project>) {
-    saveProjectsState(projects.map((p) => p.id === id ? { ...p, ...patch, updated_at: now() } : p));
+    const next = projects.map((p) => p.id === id ? { ...p, ...patch, updated_at: now() } : p);
+    saveProjectsState(next);
+    const updated = next.find((p) => p.id === id);
+    if (updated) void upsertProjectSupabase(updated);
   }
 
   function archiveProject(id: string) {
@@ -1550,6 +1559,7 @@ export default function ProjectsPage() {
       due_date: "", notes: "", created_at: now(), updated_at: now(),
     };
     saveTasksState([t, ...tasks]);
+    void upsertProjectTaskSupabase(t);
   }
 
   function batchAddTasks(projectId: string, parsed: ParsedTask[]): { imported: number; skipped: number } {
@@ -1561,20 +1571,28 @@ export default function ProjectsPage() {
     }));
 
     saveTasksState([...newTasks, ...tasks]);
+    void Promise.all(newTasks.map((t) => upsertProjectTaskSupabase(t)));
     return { imported: newTasks.length, skipped: 0 };
   }
 
   function updateTask(id: string, field: keyof ProjectTask, value: string) {
-    saveTasksState(tasks.map((t) => t.id === id ? { ...t, [field]: value, updated_at: now() } : t));
+    const next = tasks.map((t) => t.id === id ? { ...t, [field]: value, updated_at: now() } : t);
+    saveTasksState(next);
+    const updated = next.find((t) => t.id === id);
+    if (updated) void upsertProjectTaskSupabase(updated);
   }
 
-  function deleteTask(id: string) { saveTasksState(tasks.filter((t) => t.id !== id)); }
+  function deleteTask(id: string) {
+    saveTasksState(tasks.filter((t) => t.id !== id));
+    void deleteProjectTaskSupabase(id);
+  }
 
   function reorderTasks(projectId: string, orderedIds: string[]) {
     const otherTasks = tasks.filter((t) => t.project_id !== projectId);
     const projectTasksMap = new Map(tasks.filter((t) => t.project_id === projectId).map((t) => [t.id, t]));
     const reordered = orderedIds.map((id) => projectTasksMap.get(id)).filter(Boolean) as ProjectTask[];
     saveTasksState([...reordered, ...otherTasks]);
+    // No Supabase sync for reorders — schema has no order field
   }
 
   const activeProjects = projects.filter((p) => p.status !== "Archived");
