@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Card } from "./Card";
-import { getRelevantMemoryContext, getPlannerContext, getVisionContext, buildCombinedContext } from "@/lib/memory/context";
-import type { PlannerData, VisionData } from "@/lib/memory/context";
+import { getRelevantMemoryContext, getPlannerContext, getVisionContext, getHabitContext, buildCombinedContext } from "@/lib/memory/context";
+import type { PlannerData, VisionData, HabitEntry } from "@/lib/memory/context";
 import type { MemoryItem, MemoryType, MemoryImportance } from "@/lib/types/memory";
 import type { Project } from "@/lib/types/projects";
 import { KEYS } from "@/lib/keys";
@@ -96,6 +96,8 @@ export default function AIPanel() {
   const [plannerIncluded, setPlannerIncluded] = useState(false);
   // Whether long-term vision context was included for the most recent request
   const [visionIncluded, setVisionIncluded] = useState(false);
+  // Whether habit context was included for the most recent request
+  const [habitsIncluded, setHabitsIncluded] = useState(false);
   // Save states per message index: "saved" | "duplicate" | undefined (idle)
   const [savedStates, setSavedStates] = useState<Record<number, "saved" | "duplicate">>({});
   // Active save modal
@@ -141,6 +143,7 @@ export default function AIPanel() {
     setActiveMemoryCount(0);
     setPlannerIncluded(false);
     setVisionIncluded(false);
+    setHabitsIncluded(false);
   }, []);
 
   const send = useCallback(async (text: string) => {
@@ -152,6 +155,7 @@ export default function AIPanel() {
     setActiveMemoryCount(0);
     setPlannerIncluded(false);
     setVisionIncluded(false);
+    setHabitsIncluded(false);
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setStreamingContent(""); // start streaming state
 
@@ -161,6 +165,7 @@ export default function AIPanel() {
     let memoryCount = 0;
     let plannerUsed = false;
     let visionUsed = false;
+    let habitsUsed = false;
 
     try {
       // Memory items
@@ -244,16 +249,28 @@ export default function AIPanel() {
 
       const visionBlock = getVisionContext(userMessage, visionData);
 
-      // Apply budget caps and combine — memory > planner > vision priority
+      // Habit data — sovereign_habits: HabitEntry[], sovereign_habit_log: Record<string, string[]>
+      let habitBlock = "";
+      try {
+        const rawHabits  = localStorage.getItem(KEYS.HABITS);
+        const rawHabitLog = localStorage.getItem(KEYS.HABIT_LOG);
+        const habits: HabitEntry[] = rawHabits   ? (JSON.parse(rawHabits)   as HabitEntry[])              : [];
+        const habitLog: Record<string, string[]>  = rawHabitLog ? (JSON.parse(rawHabitLog) as Record<string, string[]>) : {};
+        habitBlock = getHabitContext(userMessage, habits, habitLog);
+      } catch { /* ignore */ }
+
+      // Apply budget caps and combine — memory > planner > vision > habits
       const { combined, sources } = buildCombinedContext({
         memoryBlock:  memResult.contextBlock,
         plannerBlock,
         visionBlock,
+        habitBlock,
       });
 
       if (combined) memoryContext = combined;
       plannerUsed = sources.includes("Planner");
       visionUsed  = sources.includes("Vision");
+      habitsUsed  = sources.includes("Habits");
       // memoryCount already set above; reconcile with budget result
       if (!sources.includes("Memory")) memoryCount = 0;
 
@@ -265,6 +282,7 @@ export default function AIPanel() {
     setActiveMemoryCount(memoryCount);
     setPlannerIncluded(plannerUsed);
     setVisionIncluded(visionUsed);
+    setHabitsIncluded(habitsUsed);
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -414,7 +432,7 @@ export default function AIPanel() {
               "Bitcoin · Focus · Wealth strategy"
             )}
           </p>
-          {(activeMemoryCount > 0 || plannerIncluded || visionIncluded) && (
+          {(activeMemoryCount > 0 || plannerIncluded || visionIncluded || habitsIncluded) && (
             <p
               className="text-[10px] mt-0.5 flex items-center gap-1.5 flex-wrap"
               style={{ color: "rgba(139,92,246,0.6)" }}
@@ -423,17 +441,19 @@ export default function AIPanel() {
                 className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
                 style={{ background: "rgba(139,92,246,0.7)" }}
               />
-              {activeMemoryCount > 0 && (
-                <span>{activeMemoryCount} {activeMemoryCount === 1 ? "memory" : "memories"}</span>
-              )}
-              {activeMemoryCount > 0 && (plannerIncluded || visionIncluded) && (
-                <span style={{ color: "rgba(139,92,246,0.3)" }}>·</span>
-              )}
-              {plannerIncluded && <span>planner</span>}
-              {plannerIncluded && visionIncluded && (
-                <span style={{ color: "rgba(139,92,246,0.3)" }}>·</span>
-              )}
-              {visionIncluded && <span>vision</span>}
+              {(() => {
+                const parts: string[] = [];
+                if (activeMemoryCount > 0) parts.push(`${activeMemoryCount} ${activeMemoryCount === 1 ? "memory" : "memories"}`);
+                if (plannerIncluded) parts.push("planner");
+                if (visionIncluded)  parts.push("vision");
+                if (habitsIncluded)  parts.push("habits");
+                return parts.map((p, i) => (
+                  <span key={p} className="flex items-center gap-1.5">
+                    {i > 0 && <span style={{ color: "rgba(139,92,246,0.3)" }}>·</span>}
+                    {p}
+                  </span>
+                ));
+              })()}
               <span style={{ color: "rgba(139,92,246,0.4)" }}>in context</span>
             </p>
           )}

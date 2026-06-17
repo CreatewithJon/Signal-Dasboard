@@ -12,6 +12,7 @@ const SECTION_CAPS = {
   memory:  900,
   planner: 700,
   vision:  700,
+  habits:  500,
 } as const;
 
 const MAX_TOTAL_CHARS = 2000;
@@ -65,6 +66,7 @@ interface CombinedContextInput {
   memoryBlock:  string;
   plannerBlock: string;
   visionBlock:  string;
+  habitBlock?:  string;
   maxTotalChars?: number;
 }
 
@@ -72,7 +74,7 @@ interface CombinedContextInput {
  * buildCombinedContext
  *
  * Applies per-section caps, then enforces a total character budget.
- * Priority order: memory > planner > vision.
+ * Priority order: memory > planner > vision > habits.
  * Lower-priority sections are dropped (not trimmed further) when budget runs out.
  */
 export function buildCombinedContext(input: CombinedContextInput): CombinedContextResult {
@@ -80,6 +82,7 @@ export function buildCombinedContext(input: CombinedContextInput): CombinedConte
     memoryBlock,
     plannerBlock,
     visionBlock,
+    habitBlock  = "",
     maxTotalChars = MAX_TOTAL_CHARS,
   } = input;
 
@@ -88,6 +91,7 @@ export function buildCombinedContext(input: CombinedContextInput): CombinedConte
     { key: "memory",  label: "Memory",  block: memoryBlock  ? trimContextSection(memoryBlock,  SECTION_CAPS.memory)  : "" },
     { key: "planner", label: "Planner", block: plannerBlock ? trimContextSection(plannerBlock, SECTION_CAPS.planner) : "" },
     { key: "vision",  label: "Vision",  block: visionBlock  ? trimContextSection(visionBlock,  SECTION_CAPS.vision)  : "" },
+    { key: "habits",  label: "Habits",  block: habitBlock   ? trimContextSection(habitBlock,   SECTION_CAPS.habits)  : "" },
   ];
 
   const parts: string[] = [];
@@ -268,6 +272,84 @@ export function getVisionContext(
     sections.push("**5-Year Vision:**");
     for (const item of vision.yr5) sections.push(`- ${item}`);
     sections.push("");
+  }
+
+  return sections.join("\n").trimEnd();
+}
+
+// ── Habit context ──────────────────────────────────────────────────────────
+
+export interface HabitEntry {
+  id:   string;
+  name: string;
+  icon: string;
+}
+
+const HABIT_TRIGGERS = [
+  "habit",
+  "habits",
+  "streak",
+  "consistent",
+  "consistency",
+  "discipline",
+  "routine",
+  "routines",
+  "daily",
+  "momentum",
+  "accountability",
+];
+
+/**
+ * getHabitContext
+ *
+ * Returns a formatted habit context block when the query matches habit-related
+ * trigger words. Includes each habit's current streak and today's completion state.
+ *
+ * Returns an empty string when no habit context is relevant or habits list is empty.
+ */
+export function getHabitContext(
+  query: string,
+  habits: HabitEntry[],
+  habitLog: Record<string, string[]>
+): string {
+  const q = query.toLowerCase();
+  const triggered = HABIT_TRIGGERS.some((t) => q.includes(t));
+  if (!triggered || habits.length === 0) return "";
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayDone = habitLog[todayKey] ?? [];
+
+  // Compute consecutive-day streak for a habit (same logic as HabitPanel)
+  function computeStreak(habitId: string): number {
+    let streak = 0;
+    const d = new Date();
+    d.setDate(d.getDate() - 1); // start from yesterday
+    for (let i = 0; i < 90; i++) {
+      const key = d.toISOString().slice(0, 10);
+      if (habitLog[key]?.includes(habitId)) {
+        streak++;
+        d.setDate(d.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }
+
+  const sections: string[] = ["## Relevant Habit Context", ""];
+
+  sections.push("**Tracked Habits:**");
+  for (const habit of habits) {
+    const streak = computeStreak(habit.id);
+    const streakNote = streak > 0 ? ` — ${streak}d streak 🔥` : "";
+    sections.push(`- ${habit.icon} ${habit.name}${streakNote}`);
+  }
+  sections.push("");
+
+  sections.push("**Today's Status:**");
+  for (const habit of habits) {
+    const done = todayDone.includes(habit.id);
+    sections.push(`- ${done ? "✓" : "○"} ${habit.name}`);
   }
 
   return sections.join("\n").trimEnd();

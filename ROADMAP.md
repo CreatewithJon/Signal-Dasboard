@@ -68,6 +68,20 @@ _Filters, Today view, and AI-powered weekly review_
 
 ---
 
+## Phase 2.3 — Habit Context Layer (Complete)
+_AI assistant now reads habit list and today's completion state on habit/discipline queries_
+
+- [x] `HabitEntry` interface exported from `lib/memory/context.ts`: `{ id, name, icon }`
+- [x] `getHabitContext(query, habits, habitLog)` — 11 trigger keywords, streak computation (mirrors HabitPanel logic, checks consecutive days backwards from yesterday up to 90 days)
+- [x] Formats as `## Relevant Habit Context` with Tracked Habits (streak note) + Today's Status (✓/○)
+- [x] `buildCombinedContext()` extended with optional `habitBlock`, capped at 500 chars, priority 4 (lowest)
+- [x] `AIPanel.tsx` reads `sovereign_habits` + `sovereign_habit_log` in isolated try/catch, passes to `getHabitContext()`
+- [x] `habitsIncluded` state added; cleared on new send and stop
+- [x] Header indicator refactored to a mapped array — cleanly handles any combination of memory / planner / vision / habits
+- [x] `contextSources` correctly includes "Habits" when habit block is present
+
+---
+
 ## Phase 2.2 — Context Budgeting & Source Attribution (Complete)
 _Prevent context overflow and give the AI explicit source labels for grounded responses_
 
