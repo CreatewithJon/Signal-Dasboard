@@ -68,6 +68,19 @@ _Filters, Today view, and AI-powered weekly review_
 
 ---
 
+## Phase 2.5 — Project Context Injection (Complete)
+_AI assistant automatically loads full project context when you mention a project by name_
+
+- [x] `getProjectContext(query, projects, projectTasks, memoryItems)` added to `lib/memory/context.ts`
+- [x] Matches projects by title (≥50% word overlap) then falls back to category keyword aliases
+- [x] Context includes: status, priority, category, due date (with overdue flag), objective, next action, description, task progress (done/total), overdue tasks, open tasks, notes, related memories
+- [x] `projectBlock` added as highest priority in `buildCombinedContext()` (project > memory > planner > vision > habits), cap 900 chars
+- [x] `AIPanel.tsx` reads `sovereign_project_tasks`, calls `getProjectContext()`, passes `projectBlock` to combiner
+- [x] `projectIncluded` state added; "project" appears in context indicator header alongside other sources
+- [x] TypeScript strict — no `any`, `npx tsc --noEmit` clean, `npm run build` clean
+
+---
+
 ## Phase 2.4 — Daily Briefing Engine (Complete)
 _Proactive daily synthesis: projects, tasks, planner, memory, habits → actionable briefing_
 

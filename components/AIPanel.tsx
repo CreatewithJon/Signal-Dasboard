@@ -2,10 +2,10 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Card } from "./Card";
-import { getRelevantMemoryContext, getPlannerContext, getVisionContext, getHabitContext, buildCombinedContext } from "@/lib/memory/context";
+import { getRelevantMemoryContext, getPlannerContext, getVisionContext, getHabitContext, getProjectContext, buildCombinedContext } from "@/lib/memory/context";
 import type { PlannerData, VisionData, HabitEntry } from "@/lib/memory/context";
 import type { MemoryItem, MemoryType, MemoryImportance } from "@/lib/types/memory";
-import type { Project } from "@/lib/types/projects";
+import type { Project, ProjectTask } from "@/lib/types/projects";
 import { KEYS } from "@/lib/keys";
 
 interface Message {
@@ -98,6 +98,8 @@ export default function AIPanel() {
   const [visionIncluded, setVisionIncluded] = useState(false);
   // Whether habit context was included for the most recent request
   const [habitsIncluded, setHabitsIncluded] = useState(false);
+  // Whether project context was included for the most recent request
+  const [projectIncluded, setProjectIncluded] = useState(false);
   // Save states per message index: "saved" | "duplicate" | undefined (idle)
   const [savedStates, setSavedStates] = useState<Record<number, "saved" | "duplicate">>({});
   // Active save modal
@@ -144,6 +146,7 @@ export default function AIPanel() {
     setPlannerIncluded(false);
     setVisionIncluded(false);
     setHabitsIncluded(false);
+    setProjectIncluded(false);
   }, []);
 
   const send = useCallback(async (text: string) => {
@@ -156,6 +159,7 @@ export default function AIPanel() {
     setPlannerIncluded(false);
     setVisionIncluded(false);
     setHabitsIncluded(false);
+    setProjectIncluded(false);
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setStreamingContent(""); // start streaming state
 
@@ -166,13 +170,19 @@ export default function AIPanel() {
     let plannerUsed = false;
     let visionUsed = false;
     let habitsUsed = false;
+    let projectUsed = false;
 
     try {
-      // Memory items
+      // Memory items + projects + project tasks
       const rawMemory = localStorage.getItem(KEYS.MEMORY_ITEMS);
       const rawProjects = localStorage.getItem(KEYS.PROJECTS);
+      const rawProjectTasks = localStorage.getItem(KEYS.PROJECT_TASKS);
       const memoryItems: MemoryItem[] = rawMemory ? (JSON.parse(rawMemory) as MemoryItem[]) : [];
       const projects: Project[] = rawProjects ? (JSON.parse(rawProjects) as Project[]) : [];
+      const projectTasks: ProjectTask[] = rawProjectTasks ? (JSON.parse(rawProjectTasks) as ProjectTask[]) : [];
+
+      // Project context — highest priority, matched by name/category
+      const projectBlock = getProjectContext(userMessage, projects, projectTasks, memoryItems);
 
       const memResult =
         memoryItems.length > 0
@@ -259,8 +269,9 @@ export default function AIPanel() {
         habitBlock = getHabitContext(userMessage, habits, habitLog);
       } catch { /* ignore */ }
 
-      // Apply budget caps and combine — memory > planner > vision > habits
+      // Apply budget caps and combine — project > memory > planner > vision > habits
       const { combined, sources } = buildCombinedContext({
+        projectBlock,
         memoryBlock:  memResult.contextBlock,
         plannerBlock,
         visionBlock,
@@ -268,6 +279,7 @@ export default function AIPanel() {
       });
 
       if (combined) memoryContext = combined;
+      projectUsed = sources.includes("Project");
       plannerUsed = sources.includes("Planner");
       visionUsed  = sources.includes("Vision");
       habitsUsed  = sources.includes("Habits");
@@ -283,6 +295,7 @@ export default function AIPanel() {
     setPlannerIncluded(plannerUsed);
     setVisionIncluded(visionUsed);
     setHabitsIncluded(habitsUsed);
+    setProjectIncluded(projectUsed);
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -432,7 +445,7 @@ export default function AIPanel() {
               "Bitcoin · Focus · Wealth strategy"
             )}
           </p>
-          {(activeMemoryCount > 0 || plannerIncluded || visionIncluded || habitsIncluded) && (
+          {(projectIncluded || activeMemoryCount > 0 || plannerIncluded || visionIncluded || habitsIncluded) && (
             <p
               className="text-[10px] mt-0.5 flex items-center gap-1.5 flex-wrap"
               style={{ color: "rgba(139,92,246,0.6)" }}
@@ -443,6 +456,7 @@ export default function AIPanel() {
               />
               {(() => {
                 const parts: string[] = [];
+                if (projectIncluded)  parts.push("project");
                 if (activeMemoryCount > 0) parts.push(`${activeMemoryCount} ${activeMemoryCount === 1 ? "memory" : "memories"}`);
                 if (plannerIncluded) parts.push("planner");
                 if (visionIncluded)  parts.push("vision");

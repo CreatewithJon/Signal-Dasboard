@@ -1,5 +1,5 @@
 import type { MemoryItem } from "@/lib/types/memory";
-import type { Project } from "@/lib/types/projects";
+import type { Project, ProjectTask } from "@/lib/types/projects";
 
 export interface MemoryContextResult {
   items: MemoryItem[];
@@ -9,6 +9,7 @@ export interface MemoryContextResult {
 // ── Context budgeting ──────────────────────────────────────────────────────
 
 const SECTION_CAPS = {
+  project: 900,
   memory:  900,
   planner: 700,
   vision:  700,
@@ -63,6 +64,7 @@ export interface CombinedContextResult {
 }
 
 interface CombinedContextInput {
+  projectBlock?: string;
   memoryBlock:  string;
   plannerBlock: string;
   visionBlock:  string;
@@ -79,6 +81,7 @@ interface CombinedContextInput {
  */
 export function buildCombinedContext(input: CombinedContextInput): CombinedContextResult {
   const {
+    projectBlock = "",
     memoryBlock,
     plannerBlock,
     visionBlock,
@@ -86,8 +89,9 @@ export function buildCombinedContext(input: CombinedContextInput): CombinedConte
     maxTotalChars = MAX_TOTAL_CHARS,
   } = input;
 
-  // Apply per-section caps first
+  // Apply per-section caps first — priority: project > memory > planner > vision > habits
   const sections: Array<{ key: string; label: string; block: string }> = [
+    { key: "project", label: "Project", block: projectBlock ? trimContextSection(projectBlock, SECTION_CAPS.project) : "" },
     { key: "memory",  label: "Memory",  block: memoryBlock  ? trimContextSection(memoryBlock,  SECTION_CAPS.memory)  : "" },
     { key: "planner", label: "Planner", block: plannerBlock ? trimContextSection(plannerBlock, SECTION_CAPS.planner) : "" },
     { key: "vision",  label: "Vision",  block: visionBlock  ? trimContextSection(visionBlock,  SECTION_CAPS.vision)  : "" },
@@ -353,6 +357,132 @@ export function getHabitContext(
   }
 
   return sections.join("\n").trimEnd();
+}
+
+// ── Project context ────────────────────────────────────────────────────────
+
+/**
+ * getProjectContext
+ *
+ * When the user's query mentions a project by name (or category/alias),
+ * returns a structured context block with that project's full details:
+ * status, priority, objective, next action, open tasks, overdue tasks,
+ * and related memories.
+ *
+ * Matches the first project whose title words substantially appear in the query.
+ * Falls back to category keyword matching when no title matches.
+ * Returns empty string when no project can be matched.
+ */
+export function getProjectContext(
+  query: string,
+  projects: Project[],
+  projectTasks: ProjectTask[],
+  memoryItems: MemoryItem[]
+): string {
+  if (projects.length === 0) return "";
+
+  const q = query.toLowerCase();
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  // Try to match a project by title — all significant words must appear
+  let matched: Project | undefined;
+  for (const project of projects) {
+    const words = project.title.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+    if (words.length === 0) continue;
+    const matchCount = words.filter((w) => q.includes(w)).length;
+    // Require at least half the title words to match, or full single-word title
+    if (matchCount >= Math.max(1, Math.ceil(words.length * 0.5))) {
+      matched = project;
+      break;
+    }
+  }
+
+  // Fallback: match by category keywords
+  if (!matched) {
+    const CATEGORY_ALIASES: Record<string, string[]> = {
+      "AI / Automation":  ["ai", "automation", "aigentic"],
+      "Bitcoin / Crypto":  ["bitcoin", "btc", "crypto", "sats"],
+      "Real Estate":      ["real estate", "realty", "property"],
+      "Content / Brand":  ["content", "brand", "youtube", "podcast"],
+      "Business Ops":     ["business", "ops", "operations", "admin"],
+      "Software":         ["software", "app", "dashboard", "sovereign"],
+      "Education":        ["education", "course", "learning", "class", "gh600", "unlv"],
+      "Health / Fitness": ["health", "fitness", "workout", "gym"],
+    };
+    for (const [cat, aliases] of Object.entries(CATEGORY_ALIASES)) {
+      if (aliases.some((a) => q.includes(a))) {
+        matched = projects.find((p) => p.category === cat && p.status === "Active");
+        if (matched) break;
+      }
+    }
+  }
+
+  if (!matched) return "";
+
+  const tasks = projectTasks.filter((t) => t.project_id === matched!.id);
+  const openTasks = tasks.filter((t) => t.status !== "Done");
+  const overdueTasks = openTasks.filter(
+    (t) => t.due_date && t.due_date < todayStr
+  );
+  const doneTasks = tasks.filter((t) => t.status === "Done");
+
+  // Related memories — exact project id match
+  const relatedMemories = memoryItems.filter((m) =>
+    m.relatedProjectIds.includes(matched!.id)
+  );
+
+  const lines: string[] = [
+    `## Project Context: ${matched.title}`,
+    "",
+    `**Status:** ${matched.status} | **Priority:** ${matched.priority} | **Category:** ${matched.category}`,
+  ];
+
+  if (matched.due_date) {
+    const overdue = matched.due_date < todayStr;
+    lines.push(`**Due:** ${matched.due_date}${overdue ? " ⚠️ OVERDUE" : ""}`);
+  }
+
+  if (matched.objective) {
+    lines.push("", `**Objective:** ${matched.objective}`);
+  }
+
+  if (matched.next_action) {
+    lines.push(`**Next Action:** ${matched.next_action}`);
+  }
+
+  if (matched.description) {
+    lines.push(`**Description:** ${matched.description}`);
+  }
+
+  // Task summary
+  lines.push("", `**Tasks:** ${doneTasks.length}/${tasks.length} done`);
+
+  if (overdueTasks.length > 0) {
+    lines.push("", "**Overdue Tasks:**");
+    for (const t of overdueTasks.slice(0, 5)) {
+      lines.push(`- ⚠️ [${t.priority}] ${t.title} (due ${t.due_date})`);
+    }
+  }
+
+  if (openTasks.length > 0) {
+    lines.push("", "**Open Tasks:**");
+    for (const t of openTasks.filter((t) => !overdueTasks.includes(t)).slice(0, 5)) {
+      lines.push(`- [${t.status}] [${t.priority}] ${t.title}`);
+    }
+  }
+
+  if (matched.notes) {
+    lines.push("", `**Notes:** ${matched.notes}`);
+  }
+
+  if (relatedMemories.length > 0) {
+    lines.push("", "**Related Memories:**");
+    for (const m of relatedMemories.slice(0, 3)) {
+      lines.push(`- [${m.importance}] ${m.title}`);
+    }
+  }
+
+  return lines.join("\n");
 }
 
 // ── Memory context ─────────────────────────────────────────────────────────
