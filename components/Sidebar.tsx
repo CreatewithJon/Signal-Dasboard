@@ -57,6 +57,15 @@ const PRIMARY_NAV: NavItem[] = [
 
 const MODULE_NAV: NavItem[] = [
   {
+    href: "/chief",
+    label: "Chief of Staff",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" className="w-4 h-4">
+        <path d="M10 2L12.5 7H18L13.5 10.5L15 16L10 13L5 16L6.5 10.5L2 7H7.5L10 2Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
     href: "/focus",
     label: "Focus Engine",
     icon: (

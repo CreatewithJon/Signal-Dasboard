@@ -1,12 +1,12 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-18 (v4.8 — Supabase Read Mode Toggle)_
+_Last updated: 2026-06-18 (v5.0 — Chief of Staff Engine)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v4.8 (Supabase Read Mode Toggle: Complete)
+**Version:** Sovereign OS v5.0 (Chief of Staff Engine: Complete)
 **Stable:** Yes — localStorage-first, Supabase write-through enabled
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
@@ -14,6 +14,15 @@ _Last updated: 2026-06-18 (v4.8 — Supabase Read Mode Toggle)_
 ---
 
 ## What's Working
+
+### Chief of Staff Engine (`lib/chiefOfStaff/engine.ts` — v5.0)
+- `lib/chiefOfStaff/engine.ts` — `computeChiefOfStaffBrief(input)`: pure deterministic synthesis layer above Focus Engine and Daily Briefing. Computes: Executive Summary (narrative from active projects, overdue count, ready content), Highest Leverage Action (ready content > focus engine top priority > overdue critical task), Biggest Risk (critical overdue tasks > stalled high-priority project > stale ready content > overload), Blocked/Stalled items (paused projects + long-overdue tasks), Opportunities (up to 3: publish ready content, case studies for shipped projects, relationship follow-ups, video repurposing, schedule high-priority ideas), Recommended Schedule (3 blocks using topThree as input), Weekly Momentum score (habit completion 40pts + focus sessions 25pts + done tasks 20pts - overdue penalty + base 15), Strategic Alignment score (vision depth 30pts + weekly goals 20pts + vision keyword match 25pts + active high-priority project 15pts + content 10pts), Reasoning (structured explanation of every score and decision).
+- `app/chief/page.tsx` — full "Executive Brief" page: hero, Executive Summary card, Scores (dual ring), Highest Leverage Action, Biggest Risk, Opportunities (icon-tagged list), Blocked/Stalled, Recommended Schedule (3 time blocks with color-coded focus bars), Reasoning (parsed markdown), AI Challenge panel.
+- `app/api/chief-chat/route.ts` — "Challenge This Plan" AI endpoint: uses `callClaude()` with chief-of-staff advisor system prompt; accepts `{ message, context }` where context is a pre-formatted brief summary; returns `{ reply }`.
+- `components/ChiefOfStaffCard.tsx` — homepage widget: ScoreRing pair (Momentum/Alignment), Highest Leverage Action, Biggest Risk with severity badge, "Full brief →" link to `/chief`. Loads via async useEffect from localStorage.
+- `app/page.tsx` — `ChiefOfStaffCard` added above `DailyBriefingCard` in the "Today" section.
+- `components/Sidebar.tsx` — `/chief` nav item added first in `MODULE_NAV` with star icon.
+- `components/MobileNav.tsx` — `/chief` nav item added first with star icon.
 
 ### Supabase Read Mode Toggle (`lib/supabase/readMode.ts` — v4.8)
 - `lib/supabase/readMode.ts` — `getReadModeConfig()`: reads `sovereign_read_mode_config` from localStorage, merges with defaults so new keys are always present; `setReadMode(module, mode)`: persists a single module change; `isSupabaseReadEnabled(module)`: sync check used by repositories; `resetReadModeToLocal()`: resets all to "local". All default to "local" — never auto-enabled.

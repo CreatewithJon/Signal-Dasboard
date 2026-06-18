@@ -2,7 +2,7 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-18 (v4.8)_
+_Last updated: 2026-06-18 (v5.0)_
 
 ---
 
@@ -113,6 +113,18 @@ _Module-by-module opt-in to Supabase as the read source, with localStorage fallb
 - [x] `components/MemoryWidget.tsx` — uses `getMemoryItems()` in async useEffect
 - [x] `components/settings/ReadModeSettings.tsx` — 5-module toggle panel; confirmation checkbox for Supabase; "UI pending" badge for non-wired modules; Reset all button; auth/config warnings
 - [x] `/settings` — Read Mode section; version v4.8; roadmap updated
+
+## Phase 5.0 — Chief of Staff Engine (Complete)
+_Transform Sovereign OS from an intelligent dashboard into a proactive executive assistant._
+
+- [x] `lib/chiefOfStaff/engine.ts` — `computeChiefOfStaffBrief(input)`: deterministic synthesis; Executive Summary, Highest Leverage Action, Biggest Risk, Blocked Items, Opportunities (3), Recommended Schedule (3 blocks), Weekly Momentum score, Strategic Alignment score, Reasoning
+- [x] `app/chief/page.tsx` — full Executive Brief page with all 7 sections + AI Challenge panel
+- [x] `app/api/chief-chat/route.ts` — "Challenge This Plan" AI endpoint with chief-of-staff advisor persona
+- [x] `components/ChiefOfStaffCard.tsx` — homepage widget: Highest Leverage Action, Biggest Risk, Momentum/Alignment score rings
+- [x] `app/page.tsx` — ChiefOfStaffCard added above DailyBriefingCard in "Today" section
+- [x] `components/Sidebar.tsx` — `/chief` nav item first in MODULE_NAV
+- [x] `components/MobileNav.tsx` — `/chief` nav item added
+- [x] Build clean, lint clean, type-check clean
 
 ## Phase 4.9 — RLS (Planned)
 - [ ] Row-level security enabled on all tables
