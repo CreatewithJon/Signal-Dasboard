@@ -1,12 +1,12 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-18 (v4.5 — Migration Assistant)_
+_Last updated: 2026-06-18 (v4.6 — Supabase Read Preview)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v4.5 (Migration Assistant: Complete)
+**Version:** Sovereign OS v4.6 (Supabase Read Preview: Complete)
 **Stable:** Yes — localStorage-first, Supabase write-through enabled
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
@@ -14,6 +14,12 @@ _Last updated: 2026-06-18 (v4.5 — Migration Assistant)_
 ---
 
 ## What's Working
+
+### Supabase Read Preview (`lib/supabase/readPreview.ts` — v4.6)
+- `lib/supabase/readPreview.ts` — `fetchSupabasePreview()`: requires auth; runs count query + latest-5 query per module (5 tables); reads local counts from repository functions; returns `SupabasePreviewResult` with per-module `ModulePreview` (localCount, supabaseCount, difference, latestRecords). Module-level errors are non-fatal.
+- `components/settings/SupabaseReadPreview.tsx` — 4-phase UI: idle (fetch button), loading (pulse), error (reset), loaded (comparison table + expandable record rows + refresh). Click-to-expand rows show latest 5 Supabase records with id prefix, title, time-ago. DiffBadge: ✓ (in sync), +N local (needs migration), N remote (more in Supabase). Persistent amber "Verification only" banner. Auth gate shows sign-in prompt.
+- `/settings` — Supabase Inspection section added after Migration Assistant; version v4.6; roadmap updated (v4.6 current, v4.7 RLS, v4.8 Read Shift).
+- No writes, merges, or deletes at any point. Purely observational.
 
 ### Migration Assistant (`lib/supabase/localMigration.ts` — v4.5)
 - `lib/supabase/localMigration.ts` — `analyzeLocalDataForMigration()`: pure dry-run; reads all 5 module localStorage keys; filters items with missing ids; returns `MigrationAnalysis` with per-module counts, skipped counts, warnings. `migrateLocalDataToSupabase()`: requires `getCachedUserId() !== null`; calls existing `upsertXSupabase()` functions per item; continues on failure; returns `MigrationResult` with per-module succeeded/failed/errors.

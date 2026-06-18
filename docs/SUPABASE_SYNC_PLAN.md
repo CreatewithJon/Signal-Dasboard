@@ -4,7 +4,7 @@
 > browser-local localStorage to Supabase-backed persistence with cross-device
 > sync, backups, and future workspace support.
 
-_Version: v4.5 (Migration Assistant — dry-run preview + manual push to Supabase)_
+_Version: v4.6 (Read Preview — read-only Supabase inspection with local vs remote comparison)_
 _Last updated: 2026-06-18_
 
 ---
@@ -21,9 +21,10 @@ loss, broken UX, and cascading bugs across the ~15 components that read from it.
 - v4.2 — Dual-write: Projects, Tasks, Content, Focus Sessions ✓
 - v4.3 — Sync Health + Restore: per-module last-write tracking, settings health panel, manual backup restore ✓
 - v4.4 — Auth Readiness: optional magic-link sign-in, user_id cache, getCachedUserId() in repositories ✓
-- v4.5 — Migration Assistant: dry-run preview + manual push of localStorage data to Supabase ✓ (current)
-- v4.6 — RLS: row-level security; data private by default
-- v4.7 — Read shift: components read from Supabase; localStorage becomes write-through cache
+- v4.5 — Migration Assistant: dry-run preview + manual push of localStorage data to Supabase ✓
+- v4.6 — Read Preview: read-only Supabase inspection, local vs remote count comparison ✓ (current)
+- v4.7 — RLS: row-level security; data private by default
+- v4.8 — Read shift: components read from Supabase; localStorage becomes write-through cache
 
 At each phase, the system is fully functional and the previous layer remains intact.
 
@@ -111,6 +112,33 @@ New utilities, components, and enhanced StorageExport:
 - Pre-restore backup is automatically downloaded before overwriting
 - Reload button shown after successful restore (no auto-reload)
 - No auto-import; confirmation button required
+
+### v4.6 — Read Preview ✓
+
+Read-only Supabase inspection for post-migration verification:
+
+| File | Purpose |
+|---|---|
+| `lib/supabase/readPreview.ts` | `fetchSupabasePreview()` — counts + latest 5 records per module |
+| `components/settings/SupabaseReadPreview.tsx` | Settings panel with comparison table and expandable record previews |
+
+**Fetch behavior:**
+- `fetchSupabasePreview()` requires `getCachedUserId() !== null`
+- Runs a count query (`select id, { count: exact, head: true }`) per table
+- Runs a latest-5 query (`select id, title, updated_at order by updated_at desc limit 5`) per table
+- Compares Supabase counts against local counts from repository read functions
+- Module-level errors are non-fatal; other modules still load
+
+**Comparison table:** Module | Local | Supabase | Diff
+- Diff `✓` = counts match
+- Diff `+N local` = N more items in localStorage than Supabase (migration needed)
+- Diff `N remote` = more items in Supabase than local (unusual; worth investigating)
+
+**Expandable rows:** Click any module row to see the latest 5 Supabase records (id prefix, title, time-ago)
+
+**Safety:** No writes, merges, or deletes. Persistent warning banner: "Verification only. Supabase is not yet the source of truth."
+
+**RLS note:** Until v4.7, all table rows are returned (no user_id filter). This is expected for single-user personal use.
 
 ### v4.5 — Migration Assistant ✓
 

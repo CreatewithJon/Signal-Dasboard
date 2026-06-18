@@ -2,7 +2,7 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-18 (v4.5)_
+_Last updated: 2026-06-18 (v4.6)_
 
 ---
 
@@ -75,13 +75,23 @@ _Manual opt-in migration of localStorage data to Supabase._
 - [x] localStorage never modified at any step
 - [x] Upserts use existing item ids — idempotent; safe to re-run
 
-## Phase 4.6 — RLS (Planned)
+## Phase 4.6 — Supabase Read Preview (Complete)
+_Read-only inspection of Supabase data for post-migration verification._
+
+- [x] `lib/supabase/readPreview.ts` — `fetchSupabasePreview()`: count + latest-5 per module; local vs Supabase comparison
+- [x] `components/settings/SupabaseReadPreview.tsx` — 4-phase UI; expandable module rows; DiffBadge; persistent verification warning
+- [x] Auth gate: shows sign-in prompt when unauthenticated
+- [x] No writes, merges, or deletes at any step
+- [x] Amber "Verification only" banner always visible when data is loaded
+- [x] Refresh button for re-fetching without reset
+
+## Phase 4.7 — RLS (Planned)
 - [ ] Row-level security enabled on all tables
 - [ ] Policy: `auth.uid() = user_id` on all tables
 - [ ] Null `user_id` rows claimed or migrated before RLS activation
 - [ ] Data private by default
 
-## Phase 4.7 — Read Shift (Planned)
+## Phase 4.8 — Read Shift (Planned)
 - [ ] Components read from Supabase on mount
 - [ ] localStorage as write-through cache
 - [ ] Conflict resolution: last-write-wins by `updated_at`
