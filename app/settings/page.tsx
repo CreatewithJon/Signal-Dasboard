@@ -7,6 +7,7 @@ import AuthStatus from "@/components/settings/AuthStatus";
 import MigrationAssistant from "@/components/settings/MigrationAssistant";
 import SupabaseReadPreview from "@/components/settings/SupabaseReadPreview";
 import SupabaseRestore from "@/components/settings/SupabaseRestore";
+import ReadModeSettings from "@/components/settings/ReadModeSettings";
 
 export const metadata: Metadata = {
   title: "Settings — Sovereign OS",
@@ -206,6 +207,18 @@ export default function SettingsPage() {
         </p>
       </section>
 
+      {/* ── Read Mode ───────────────────────────────────────────────────── */}
+      <section className="mb-8">
+        <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-4">
+          Read Mode
+        </p>
+        <ReadModeSettings />
+        <p className="text-[10px] text-white/20 mt-2 px-1">
+          Memory is fully wired. Projects, tasks, content, and focus sessions are
+          prepared — UI wiring ships in the next phase. Config is saved regardless.
+        </p>
+      </section>
+
       {/* ── Data Recovery ───────────────────────────────────────────────── */}
       <section className="mb-8">
         <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-4">
@@ -236,9 +249,10 @@ export default function SettingsPage() {
             { version: "v4.4", label: "Auth Readiness", desc: "Optional sign-in via magic link; user_id stamped on writes; app stays fully local", done: true },
             { version: "v4.5", label: "Migration Assistant", desc: "Dry-run preview + manual push of localStorage data to Supabase", done: true },
             { version: "v4.6", label: "Read Preview", desc: "Read-only Supabase inspection with local vs remote count comparison", done: true },
-            { version: "v4.7", label: "Controlled Restore", desc: "Manual Supabase → localStorage restore, module-by-module with backup — current", done: true },
-            { version: "v4.8", label: "RLS", desc: "Row-level security; data private by default", done: false },
-            { version: "v4.9", label: "Read Shift", desc: "Reads from Supabase; localStorage becomes write-through cache", done: false },
+            { version: "v4.7", label: "Controlled Restore", desc: "Manual Supabase → localStorage restore, module-by-module with backup", done: true },
+            { version: "v4.8", label: "Read Mode Toggle", desc: "Module-by-module opt-in Supabase read with localStorage fallback — current", done: true },
+            { version: "v4.9", label: "RLS", desc: "Row-level security; data private by default", done: false },
+            { version: "v4.10", label: "Read Shift", desc: "Full read shift; localStorage becomes write-through cache", done: false },
           ].map((phase, i, arr) => (
             <div
               key={phase.version}
@@ -254,7 +268,7 @@ export default function SettingsPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold" style={{ color: phase.done ? "rgba(255,255,255,0.65)" : "rgba(255,255,255,0.3)" }}>
                   {phase.label}
-                  {phase.version === "v4.7" && phase.done && <span className="ml-2 text-[8px] text-emerald-400/60">● Current</span>}
+                  {phase.version === "v4.8" && phase.done && <span className="ml-2 text-[8px] text-emerald-400/60">● Current</span>}
                 </p>
                 <p className="text-[10px] text-white/25 mt-0.5 leading-relaxed">{phase.desc}</p>
               </div>
@@ -361,7 +375,7 @@ export default function SettingsPage() {
           className="rounded-2xl px-5 py-1"
           style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
         >
-          <SettingRow label="Version" value="Sovereign OS v4.7" />
+          <SettingRow label="Version" value="Sovereign OS v4.8" />
           <SettingRow label="Persistence" value={supabase.mode === "supabase-ready" ? "Supabase + localStorage" : "localStorage only"} />
           <SettingRow label="AI Model" value="Claude Haiku 4.5" />
           <SettingRow label="Deployment" value="Vercel (auto-deploy from main)" />

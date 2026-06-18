@@ -17,6 +17,7 @@ import { getSupabaseStatus } from "@/lib/supabase/status";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { recordSyncResult } from "@/lib/supabase/syncHealth";
 import { getCachedUserId } from "@/lib/supabase/authStatus";
+import { isSupabaseReadEnabled } from "@/lib/supabase/readMode";
 import type { FocusSession } from "@/lib/types/execution";
 
 // ── Result type ────────────────────────────────────────────────────────────
@@ -154,4 +155,81 @@ export async function saveFocusSessionDual(
       : supabase === "failed" ? "Supabase sync failed — saved locally"
       : undefined,
   };
+}
+
+// ── Supabase read helpers ──────────────────────────────────────────────────
+
+export interface FocusReadResult {
+  items:    FocusSession[];
+  source:   "local" | "supabase";
+  fallback: boolean;
+  error?:   string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function supabaseRowToFocusSession(row: Record<string, any>): FocusSession | null {
+  if (typeof row.id !== "string" || !row.id) return null;
+  if (typeof row.started_at !== "string" || !row.started_at) return null;
+  return {
+    id:               row.id,
+    title:            row.title          ?? "",
+    sourceType:       row.source_type    ?? "Custom",
+    sourceId:         row.source_id      ?? undefined,
+    projectId:        row.project_id     ?? undefined,
+    startedAt:        row.started_at,
+    endedAt:          row.ended_at       ?? undefined,
+    plannedMinutes:   row.planned_minutes ?? 25,
+    actualMinutes:    row.actual_minutes  ?? undefined,
+    status:           row.status         ?? "Completed",
+    notes:            row.notes          ?? undefined,
+    completedSummary: row.completed_summary ?? undefined,
+    blockers:         row.blockers       ?? undefined,
+    nextAction:       row.next_action    ?? undefined,
+    savedToMemory:    row.saved_to_memory ?? false,
+  };
+}
+
+/**
+ * getFocusSessions
+ * Reads focus sessions from localStorage or Supabase based on read mode config.
+ * Falls back to localStorage on auth/config/fetch failure.
+ * Not yet wired to the focus page UI — prepared for future wiring.
+ */
+export async function getFocusSessions(): Promise<FocusReadResult> {
+  const localItems = getFocusSessionsLocal();
+
+  if (!isSupabaseReadEnabled("focusSessions")) {
+    return { items: localItems, source: "local", fallback: false };
+  }
+
+  const userId = getCachedUserId();
+  if (!userId) {
+    return { items: localItems, source: "local", fallback: true, error: "Not authenticated." };
+  }
+
+  const sb = getSupabaseClient();
+  if (!sb) {
+    return { items: localItems, source: "local", fallback: true, error: "Supabase not configured." };
+  }
+
+  try {
+    const { data, error } = await sb
+      .from("focus_sessions")
+      .select("*")
+      .order("started_at", { ascending: false });
+
+    if (error) throw new Error(error.message);
+
+    const converted = (data ?? [])
+      .map(supabaseRowToFocusSession)
+      .filter(Boolean) as FocusSession[];
+
+    return { items: converted, source: "supabase", fallback: false };
+  } catch (err) {
+    console.warn("[focusSessionRepository] Supabase read failed:", err);
+    return {
+      items: localItems, source: "local", fallback: true,
+      error: err instanceof Error ? err.message : "Supabase read failed.",
+    };
+  }
 }

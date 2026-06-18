@@ -17,6 +17,7 @@ import { getSupabaseStatus } from "@/lib/supabase/status";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { recordSyncResult } from "@/lib/supabase/syncHealth";
 import { getCachedUserId } from "@/lib/supabase/authStatus";
+import { isSupabaseReadEnabled } from "@/lib/supabase/readMode";
 import type { ContentItem } from "@/lib/types/content";
 
 // ── Result type ────────────────────────────────────────────────────────────
@@ -198,4 +199,78 @@ export async function deleteContentItemDual(id: string): Promise<DualWriteResult
       : supabase === "failed" ? "Supabase delete failed — removed locally"
       : undefined,
   };
+}
+
+// ── Supabase read helpers ──────────────────────────────────────────────────
+
+export interface ContentReadResult {
+  items:    ContentItem[];
+  source:   "local" | "supabase";
+  fallback: boolean;
+  error?:   string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function supabaseRowToContentItem(row: Record<string, any>): ContentItem | null {
+  if (typeof row.id !== "string" || !row.id) return null;
+  if (typeof row.title !== "string" || !row.title) return null;
+  return {
+    id:                 row.id,
+    title:              row.title,
+    status:             row.status      ?? "Idea",
+    platforms:          Array.isArray(row.platforms) ? row.platforms : [],
+    priority:           row.priority    ?? "Medium",
+    format:             row.format      ?? "Other",
+    description:        row.description ?? "",
+    notes:              row.notes       ?? "",
+    related_project_id: row.related_project_id ?? "",
+    publish_date:       row.publish_date ?? "",
+    created_at:         row.created_at  ?? new Date().toISOString(),
+    updated_at:         row.updated_at  ?? new Date().toISOString(),
+  };
+}
+
+/**
+ * getContentItems
+ * Reads content items from localStorage or Supabase based on read mode config.
+ * Falls back to localStorage on auth/config/fetch failure.
+ * Not yet wired to the content page UI — prepared for future wiring.
+ */
+export async function getContentItems(): Promise<ContentReadResult> {
+  const localItems = getContentItemsLocal();
+
+  if (!isSupabaseReadEnabled("content")) {
+    return { items: localItems, source: "local", fallback: false };
+  }
+
+  const userId = getCachedUserId();
+  if (!userId) {
+    return { items: localItems, source: "local", fallback: true, error: "Not authenticated." };
+  }
+
+  const sb = getSupabaseClient();
+  if (!sb) {
+    return { items: localItems, source: "local", fallback: true, error: "Supabase not configured." };
+  }
+
+  try {
+    const { data, error } = await sb
+      .from("content_items")
+      .select("*")
+      .order("updated_at", { ascending: false });
+
+    if (error) throw new Error(error.message);
+
+    const converted = (data ?? [])
+      .map(supabaseRowToContentItem)
+      .filter(Boolean) as ContentItem[];
+
+    return { items: converted, source: "supabase", fallback: false };
+  } catch (err) {
+    console.warn("[contentRepository] Supabase read failed:", err);
+    return {
+      items: localItems, source: "local", fallback: true,
+      error: err instanceof Error ? err.message : "Supabase read failed.",
+    };
+  }
 }

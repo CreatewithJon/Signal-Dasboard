@@ -2,7 +2,7 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-18 (v4.7)_
+_Last updated: 2026-06-18 (v4.8)_
 
 ---
 
@@ -100,17 +100,32 @@ _Manual, module-by-module recovery of Supabase data into localStorage. Two merge
 - [x] Done phase: full result detail (fetched, valid, invalid, new/updated/kept, total written)
 - [x] Data Recovery section added to `/settings`; version bumped to v4.7
 
-## Phase 4.8 — RLS (Planned)
+## Phase 4.8 — Read Mode Toggle (Complete)
+_Module-by-module opt-in to Supabase as the read source, with localStorage fallback._
+
+- [x] `lib/supabase/readMode.ts` — `getReadModeConfig()`, `setReadMode()`, `isSupabaseReadEnabled()`, `resetReadModeToLocal()`
+- [x] `lib/keys.ts` — `KEYS.READ_MODE_CONFIG` added (`sovereign_read_mode_config`)
+- [x] `lib/repositories/memoryRepository.ts` — `getMemoryItems()`: checks read mode, fetches from Supabase, falls back to local; `supabaseRowToMemoryItem()` reverse mapper
+- [x] `lib/repositories/projectRepository.ts` — `getProjects()`, `getProjectTasks()`: prepared, not yet wired to projects page UI
+- [x] `lib/repositories/contentRepository.ts` — `getContentItems()`: prepared, not yet wired to content page UI
+- [x] `lib/repositories/focusSessionRepository.ts` — `getFocusSessions()`: prepared, not yet wired to focus page UI
+- [x] `app/memory/page.tsx` — uses `getMemoryItems()` instead of `getMemoryItemsLocal()`; shows read source indicator + fallback notice
+- [x] `components/MemoryWidget.tsx` — uses `getMemoryItems()` in async useEffect
+- [x] `components/settings/ReadModeSettings.tsx` — 5-module toggle panel; confirmation checkbox for Supabase; "UI pending" badge for non-wired modules; Reset all button; auth/config warnings
+- [x] `/settings` — Read Mode section; version v4.8; roadmap updated
+
+## Phase 4.9 — RLS (Planned)
 - [ ] Row-level security enabled on all tables
 - [ ] Policy: `auth.uid() = user_id` on all tables
 - [ ] Null `user_id` rows claimed or migrated before RLS activation
 - [ ] Data private by default
 
-## Phase 4.9 — Read Shift (Planned)
-- [ ] Components read from Supabase on mount
+## Phase 4.10 — Read Shift (Planned)
+- [ ] Wire remaining modules to Supabase read (projects, tasks, content, focus sessions)
 - [ ] localStorage as write-through cache
 - [ ] Conflict resolution: last-write-wins by `updated_at`
 - [ ] Offline: reads from localStorage; queued sync on reconnect
+
 
 
 ---

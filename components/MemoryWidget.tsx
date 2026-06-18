@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import type { MemoryItem, MemoryType } from "@/lib/types/memory";
-import { KEYS } from "@/lib/keys";
+import { getMemoryItems } from "@/lib/repositories/memoryRepository";
 
 const TYPE_DOT: Record<MemoryType, string> = {
   Note:              "bg-blue-400",
@@ -28,12 +28,10 @@ export default function MemoryWidget() {
   const [items, setItems] = useState<MemoryItem[]>([]);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEYS.MEMORY_ITEMS);
-      if (raw) setItems(JSON.parse(raw));
-    } catch {
-      // ignore
-    }
+    (async () => {
+      const result = await getMemoryItems();
+      setItems(result.items);
+    })();
   }, []);
 
   const totalCount = items.length;

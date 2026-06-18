@@ -6,7 +6,7 @@ import type { Project } from "@/lib/types/projects";
 import {
   saveMemoryItemDual,
   deleteMemoryItemDual,
-  getMemoryItemsLocal,
+  getMemoryItems,
 } from "@/lib/repositories/memoryRepository";
 
 const PROJECTS_KEY = "sovereign_projects";
@@ -494,6 +494,8 @@ export default function MemoryPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(null);
+  const [readSource, setReadSource] = useState<"local" | "supabase">("local");
+  const [readFallback, setReadFallback] = useState<string | null>(null);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Quick capture
@@ -511,9 +513,14 @@ export default function MemoryPage() {
   const [editItem, setEditItem] = useState<MemoryItem | null>(null);
 
   useEffect(() => {
-    setItems(getMemoryItemsLocal());
-    setProjects(loadProjects());
-    setLoaded(true);
+    (async () => {
+      const result = await getMemoryItems();
+      setItems(result.items);
+      setReadSource(result.source);
+      if (result.fallback && result.error) setReadFallback(result.error);
+      setProjects(loadProjects());
+      setLoaded(true);
+    })();
   }, []);
 
   function showSync(status: SyncStatus) {
@@ -645,6 +652,33 @@ export default function MemoryPage() {
           ))}
         </div>
       </section>
+
+      {/* ── Read source / fallback notice ── */}
+      {(readSource === "supabase" || readFallback) && (
+        <div
+          className="rounded-xl px-4 py-2.5 mb-5 flex items-center gap-2"
+          style={{
+            background: readFallback
+              ? "rgba(245,158,11,0.05)"
+              : "rgba(52,211,153,0.04)",
+            border: readFallback
+              ? "1px solid rgba(245,158,11,0.15)"
+              : "1px solid rgba(52,211,153,0.12)",
+          }}
+        >
+          <span
+            className="text-xs shrink-0"
+            style={{ color: readFallback ? "rgba(245,158,11,0.6)" : "rgba(52,211,153,0.6)" }}
+          >
+            {readFallback ? "⚠" : "✓"}
+          </span>
+          <p className="text-[10px] leading-relaxed" style={{ color: "rgba(255,255,255,0.35)" }}>
+            {readFallback
+              ? `Supabase read failed, showing local data — ${readFallback}`
+              : "Reading from Supabase. Local data is preserved as fallback."}
+          </p>
+        </div>
+      )}
 
       {/* ── Quick Capture ── */}
       <div

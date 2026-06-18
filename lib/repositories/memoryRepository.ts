@@ -17,6 +17,7 @@ import { getSupabaseStatus } from "@/lib/supabase/status";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { recordSyncResult } from "@/lib/supabase/syncHealth";
 import { getCachedUserId } from "@/lib/supabase/authStatus";
+import { isSupabaseReadEnabled } from "@/lib/supabase/readMode";
 import type { MemoryItem } from "@/lib/types/memory";
 
 // ── Result type ────────────────────────────────────────────────────────────
@@ -203,6 +204,89 @@ export async function saveMemoryItemDual(item: MemoryItem): Promise<DualWriteRes
           ? "Supabase sync failed — saved locally"
           : undefined,
   };
+}
+
+// ── Supabase read helpers ──────────────────────────────────────────────────
+
+export interface MemoryReadResult {
+  items:    MemoryItem[];
+  source:   "local" | "supabase";
+  fallback: boolean;
+  error?:   string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function supabaseRowToMemoryItem(row: Record<string, any>): MemoryItem | null {
+  if (typeof row.id !== "string" || !row.id) return null;
+  if (typeof row.title !== "string" || !row.title) return null;
+  return {
+    id:                row.id,
+    title:             row.title,
+    content:           typeof row.content === "string" ? row.content : "",
+    type:              row.type       ?? "Note",
+    importance:        row.importance ?? "Medium",
+    source:            row.source     ?? "Imported",
+    tags:              Array.isArray(row.tags)                 ? row.tags                : [],
+    relatedProjectIds: Array.isArray(row.related_project_ids) ? row.related_project_ids : [],
+    relatedPeople:     Array.isArray(row.related_people)      ? row.related_people      : [],
+    createdAt:         row.created_at ?? new Date().toISOString(),
+    updatedAt:         row.updated_at ?? new Date().toISOString(),
+  };
+}
+
+/**
+ * getMemoryItems
+ *
+ * Reads memory items from the configured source (local or Supabase).
+ * - "local" mode: returns localStorage data immediately (synchronous under the hood).
+ * - "supabase" mode: fetches from Supabase; falls back to localStorage if
+ *   not authenticated, Supabase is unconfigured, or the fetch fails.
+ *
+ * Never modifies localStorage.
+ */
+export async function getMemoryItems(): Promise<MemoryReadResult> {
+  const localItems = getMemoryItemsLocal();
+
+  if (!isSupabaseReadEnabled("memory")) {
+    return { items: localItems, source: "local", fallback: false };
+  }
+
+  const userId = getCachedUserId();
+  if (!userId) {
+    return {
+      items: localItems, source: "local", fallback: true,
+      error: "Not authenticated — reading from local storage.",
+    };
+  }
+
+  const sb = getSupabaseClient();
+  if (!sb) {
+    return {
+      items: localItems, source: "local", fallback: true,
+      error: "Supabase not configured.",
+    };
+  }
+
+  try {
+    const { data, error } = await sb
+      .from("memory_items")
+      .select("*")
+      .order("updated_at", { ascending: false });
+
+    if (error) throw new Error(error.message);
+
+    const converted = (data ?? [])
+      .map(supabaseRowToMemoryItem)
+      .filter(Boolean) as MemoryItem[];
+
+    return { items: converted, source: "supabase", fallback: false };
+  } catch (err) {
+    console.warn("[memoryRepository] Supabase read failed:", err);
+    return {
+      items: localItems, source: "local", fallback: true,
+      error: err instanceof Error ? err.message : "Supabase read failed.",
+    };
+  }
 }
 
 /**

@@ -4,7 +4,7 @@
 > browser-local localStorage to Supabase-backed persistence with cross-device
 > sync, backups, and future workspace support.
 
-_Version: v4.7 (Controlled Restore — manual Supabase → localStorage recovery, module-by-module)_
+_Version: v4.8 (Read Mode Toggle — module-by-module opt-in Supabase reads with localStorage fallback)_
 _Last updated: 2026-06-18_
 
 ---
@@ -23,9 +23,10 @@ loss, broken UX, and cascading bugs across the ~15 components that read from it.
 - v4.4 — Auth Readiness: optional magic-link sign-in, user_id cache, getCachedUserId() in repositories ✓
 - v4.5 — Migration Assistant: dry-run preview + manual push of localStorage data to Supabase ✓
 - v4.6 — Read Preview: read-only Supabase inspection, local vs remote count comparison ✓
-- v4.7 — Controlled Restore: manual Supabase → localStorage recovery, module-by-module ✓ (current)
-- v4.8 — RLS: row-level security; data private by default
-- v4.9 — Read shift: components read from Supabase; localStorage becomes write-through cache
+- v4.7 — Controlled Restore: manual Supabase → localStorage recovery, module-by-module ✓
+- v4.8 — Read Mode Toggle: module-by-module opt-in Supabase reads with localStorage fallback ✓ (current)
+- v4.9 — RLS: row-level security; data private by default
+- v4.10 — Read Shift: full migration; localStorage becomes write-through cache
 
 At each phase, the system is fully functional and the previous layer remains intact.
 
@@ -140,6 +141,40 @@ Read-only Supabase inspection for post-migration verification:
 **Safety:** No writes, merges, or deletes. Persistent warning banner: "Verification only. Supabase is not yet the source of truth."
 
 **RLS note:** Until v4.7, all table rows are returned (no user_id filter). This is expected for single-user personal use.
+
+### v4.8 — Read Mode Toggle ✓
+
+Module-by-module opt-in to Supabase as the read source, with localStorage as permanent fallback:
+
+| File | Purpose |
+|---|---|
+| `lib/supabase/readMode.ts` | `getReadModeConfig()`, `setReadMode()`, `isSupabaseReadEnabled()`, `resetReadModeToLocal()` |
+| `lib/keys.ts` | `KEYS.READ_MODE_CONFIG` (`sovereign_read_mode_config`) |
+| `lib/repositories/*/getXxx()` | Async read methods; check read mode, fetch Supabase, fall back to local |
+| `components/settings/ReadModeSettings.tsx` | 5-module toggle panel with confirmation, "UI pending" badges, auth/config warnings |
+
+**Read flow (Supabase mode):**
+1. `isSupabaseReadEnabled(module)` — checks localStorage config
+2. `getCachedUserId()` — requires active session; falls back if null
+3. `getSupabaseClient()` — falls back if unconfigured
+4. Supabase fetch — falls back with error message if fetch fails
+5. Returns `{ items, source, fallback, error? }` — UI shows source badge
+
+**Wired modules:** Memory (`/memory` page + `MemoryWidget`)
+**Prepared modules:** Projects, Project Tasks, Content, Focus Sessions — repositories ready, UI wiring in v4.10
+
+**Config shape** (`sovereign_read_mode_config`):
+```json
+{
+  "memory":        "local" | "supabase",
+  "projects":      "local" | "supabase",
+  "projectTasks":  "local" | "supabase",
+  "content":       "local" | "supabase",
+  "focusSessions": "local" | "supabase"
+}
+```
+
+**Safety:** Config defaults all to "local". localStorage never modified during reads. Confirmation required before switching any module to Supabase. Switching back to local is immediate. Reset all button available.
 
 ### v4.7 — Controlled Supabase → localStorage Restore ✓
 

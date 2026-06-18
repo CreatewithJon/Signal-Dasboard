@@ -18,6 +18,7 @@ import { getSupabaseStatus } from "@/lib/supabase/status";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { recordSyncResult } from "@/lib/supabase/syncHealth";
 import { getCachedUserId } from "@/lib/supabase/authStatus";
+import { isSupabaseReadEnabled } from "@/lib/supabase/readMode";
 import type { Project, ProjectTask } from "@/lib/types/projects";
 
 // ── Result type ────────────────────────────────────────────────────────────
@@ -367,4 +368,148 @@ export async function deleteProjectTaskDual(id: string): Promise<DualWriteResult
       : supabase === "failed" ? "Supabase delete failed — removed locally"
       : undefined,
   };
+}
+
+// ── Supabase read helpers ──────────────────────────────────────────────────
+
+export interface ProjectReadResult {
+  items:    Project[];
+  source:   "local" | "supabase";
+  fallback: boolean;
+  error?:   string;
+}
+
+export interface ProjectTaskReadResult {
+  items:    ProjectTask[];
+  source:   "local" | "supabase";
+  fallback: boolean;
+  error?:   string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function supabaseRowToProject(row: Record<string, any>): Project | null {
+  if (typeof row.id !== "string" || !row.id) return null;
+  if (typeof row.title !== "string" || !row.title) return null;
+  return {
+    id:          row.id,
+    title:       row.title,
+    status:      row.status      ?? "Active",
+    category:    row.category    ?? "Other",
+    priority:    row.priority    ?? "Medium",
+    description: row.description ?? "",
+    objective:   row.objective   ?? "",
+    next_action: row.next_action ?? "",
+    due_date:    row.due_date    ?? "",
+    links:       Array.isArray(row.links) ? row.links : [],
+    notes:       row.notes       ?? "",
+    created_at:  row.created_at  ?? new Date().toISOString(),
+    updated_at:  row.updated_at  ?? new Date().toISOString(),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function supabaseRowToProjectTask(row: Record<string, any>): ProjectTask | null {
+  if (typeof row.id !== "string" || !row.id) return null;
+  if (typeof row.project_id !== "string" || !row.project_id) return null;
+  return {
+    id:         row.id,
+    project_id: row.project_id,
+    title:      row.title      ?? "",
+    status:     row.status     ?? "Todo",
+    priority:   row.priority   ?? "Medium",
+    due_date:   row.due_date   ?? "",
+    notes:      row.notes      ?? "",
+    created_at: row.created_at ?? new Date().toISOString(),
+    updated_at: row.updated_at ?? new Date().toISOString(),
+  };
+}
+
+/**
+ * getProjects
+ * Reads projects from localStorage or Supabase based on read mode config.
+ * Falls back to localStorage on auth/config/fetch failure.
+ * Not yet wired to the projects page UI — prepared for future wiring.
+ */
+export async function getProjects(): Promise<ProjectReadResult> {
+  const localItems = getProjectsLocal();
+
+  if (!isSupabaseReadEnabled("projects")) {
+    return { items: localItems, source: "local", fallback: false };
+  }
+
+  const userId = getCachedUserId();
+  if (!userId) {
+    return { items: localItems, source: "local", fallback: true, error: "Not authenticated." };
+  }
+
+  const sb = getSupabaseClient();
+  if (!sb) {
+    return { items: localItems, source: "local", fallback: true, error: "Supabase not configured." };
+  }
+
+  try {
+    const { data, error } = await sb
+      .from("projects")
+      .select("*")
+      .order("updated_at", { ascending: false });
+
+    if (error) throw new Error(error.message);
+
+    const converted = (data ?? [])
+      .map(supabaseRowToProject)
+      .filter(Boolean) as Project[];
+
+    return { items: converted, source: "supabase", fallback: false };
+  } catch (err) {
+    console.warn("[projectRepository] Supabase read failed:", err);
+    return {
+      items: localItems, source: "local", fallback: true,
+      error: err instanceof Error ? err.message : "Supabase read failed.",
+    };
+  }
+}
+
+/**
+ * getProjectTasks
+ * Reads project tasks from localStorage or Supabase based on read mode config.
+ * Falls back to localStorage on auth/config/fetch failure.
+ * Not yet wired to the projects page UI — prepared for future wiring.
+ */
+export async function getProjectTasks(): Promise<ProjectTaskReadResult> {
+  const localItems = getProjectTasksLocal();
+
+  if (!isSupabaseReadEnabled("projectTasks")) {
+    return { items: localItems, source: "local", fallback: false };
+  }
+
+  const userId = getCachedUserId();
+  if (!userId) {
+    return { items: localItems, source: "local", fallback: true, error: "Not authenticated." };
+  }
+
+  const sb = getSupabaseClient();
+  if (!sb) {
+    return { items: localItems, source: "local", fallback: true, error: "Supabase not configured." };
+  }
+
+  try {
+    const { data, error } = await sb
+      .from("project_tasks")
+      .select("*")
+      .order("updated_at", { ascending: false });
+
+    if (error) throw new Error(error.message);
+
+    const converted = (data ?? [])
+      .map(supabaseRowToProjectTask)
+      .filter(Boolean) as ProjectTask[];
+
+    return { items: converted, source: "supabase", fallback: false };
+  } catch (err) {
+    console.warn("[projectRepository] Supabase task read failed:", err);
+    return {
+      items: localItems, source: "local", fallback: true,
+      error: err instanceof Error ? err.message : "Supabase read failed.",
+    };
+  }
 }

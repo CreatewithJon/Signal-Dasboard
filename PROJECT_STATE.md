@@ -1,12 +1,12 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-18 (v4.7 — Controlled Supabase → localStorage Restore)_
+_Last updated: 2026-06-18 (v4.8 — Supabase Read Mode Toggle)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v4.7 (Controlled Supabase → localStorage Restore: Complete)
+**Version:** Sovereign OS v4.8 (Supabase Read Mode Toggle: Complete)
 **Stable:** Yes — localStorage-first, Supabase write-through enabled
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
@@ -14,6 +14,19 @@ _Last updated: 2026-06-18 (v4.7 — Controlled Supabase → localStorage Restore
 ---
 
 ## What's Working
+
+### Supabase Read Mode Toggle (`lib/supabase/readMode.ts` — v4.8)
+- `lib/supabase/readMode.ts` — `getReadModeConfig()`: reads `sovereign_read_mode_config` from localStorage, merges with defaults so new keys are always present; `setReadMode(module, mode)`: persists a single module change; `isSupabaseReadEnabled(module)`: sync check used by repositories; `resetReadModeToLocal()`: resets all to "local". All default to "local" — never auto-enabled.
+- `lib/keys.ts` — `KEYS.READ_MODE_CONFIG = "sovereign_read_mode_config"` added.
+- All 4 repositories — new async `getXxx()` read methods: check `isSupabaseReadEnabled()`, require `getCachedUserId()`, fetch from Supabase, fall back to localStorage on failure. Return `{ items, source, fallback, error? }`. localStorage never modified.
+  - `memoryRepository.getMemoryItems()` — wired to `/memory` page and `MemoryWidget`
+  - `projectRepository.getProjects()`, `getProjectTasks()` — prepared, not yet wired to UI
+  - `contentRepository.getContentItems()` — prepared, not yet wired to UI
+  - `focusSessionRepository.getFocusSessions()` — prepared, not yet wired to UI
+- `app/memory/page.tsx` — async useEffect with `getMemoryItems()`; shows amber fallback notice if Supabase was requested but failed; shows green "Reading from Supabase" badge when active.
+- `components/MemoryWidget.tsx` — async useEffect with `getMemoryItems()`.
+- `components/settings/ReadModeSettings.tsx` — 5-module read source panel: Local/Supabase segmented toggle per module; inline confirmation checkbox required before switching to Supabase; "UI pending" badge for non-wired modules; "Reset all to Local" button with confirm step; auth + config warnings in header.
+- `/settings` — Read Mode section added between Supabase Inspection and Data Recovery; version v4.8; roadmap updated (v4.8 current, v4.9 RLS, v4.10 Read Shift).
 
 ### Controlled Supabase → localStorage Restore (`lib/supabase/restoreFromSupabase.ts` — v4.7)
 - `lib/supabase/restoreFromSupabase.ts` — `previewSupabaseRestore()`: requires auth; fetches counts + latest-5 records per module from Supabase; reads current local counts; returns `RestorePreview` with per-module `RestoreModulePreview`. `restoreModuleFromSupabase(module, { mode })`: auth gate; fetches up to 1000 rows; validates via per-module reverse mappers; triggers `backupLocalModule()` download before any write; applies `replace_local_module` (discard + overwrite) or `merge_by_id` (last-write-wins by `updated_at`); returns detailed `RestoreResult`. `backupLocalModule(module)`: downloads current localStorage module as dated JSON file; returns false if module is empty.
