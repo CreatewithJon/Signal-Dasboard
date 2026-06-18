@@ -4,7 +4,7 @@
 > browser-local localStorage to Supabase-backed persistence with cross-device
 > sync, backups, and future workspace support.
 
-_Version: v4.6 (Read Preview — read-only Supabase inspection with local vs remote comparison)_
+_Version: v4.7 (Controlled Restore — manual Supabase → localStorage recovery, module-by-module)_
 _Last updated: 2026-06-18_
 
 ---
@@ -22,9 +22,10 @@ loss, broken UX, and cascading bugs across the ~15 components that read from it.
 - v4.3 — Sync Health + Restore: per-module last-write tracking, settings health panel, manual backup restore ✓
 - v4.4 — Auth Readiness: optional magic-link sign-in, user_id cache, getCachedUserId() in repositories ✓
 - v4.5 — Migration Assistant: dry-run preview + manual push of localStorage data to Supabase ✓
-- v4.6 — Read Preview: read-only Supabase inspection, local vs remote count comparison ✓ (current)
-- v4.7 — RLS: row-level security; data private by default
-- v4.8 — Read shift: components read from Supabase; localStorage becomes write-through cache
+- v4.6 — Read Preview: read-only Supabase inspection, local vs remote count comparison ✓
+- v4.7 — Controlled Restore: manual Supabase → localStorage recovery, module-by-module ✓ (current)
+- v4.8 — RLS: row-level security; data private by default
+- v4.9 — Read shift: components read from Supabase; localStorage becomes write-through cache
 
 At each phase, the system is fully functional and the previous layer remains intact.
 
@@ -139,6 +140,30 @@ Read-only Supabase inspection for post-migration verification:
 **Safety:** No writes, merges, or deletes. Persistent warning banner: "Verification only. Supabase is not yet the source of truth."
 
 **RLS note:** Until v4.7, all table rows are returned (no user_id filter). This is expected for single-user personal use.
+
+### v4.7 — Controlled Supabase → localStorage Restore ✓
+
+Manual, module-by-module recovery of Supabase data into localStorage:
+
+| File | Purpose |
+|---|---|
+| `lib/supabase/restoreFromSupabase.ts` | `previewSupabaseRestore()` (counts + latest-5), `restoreModuleFromSupabase(module, { mode })` (fetch + validate + write), `backupLocalModule(module)` (browser download) |
+| `components/settings/SupabaseRestore.tsx` | Settings panel with 6-phase UI: idle → preview → module select → confirm → restoring → done/error |
+
+**Restore modes:**
+- `replace_local_module` — discard current local array; write all valid Supabase rows
+- `merge_by_id` — merge Supabase rows into local; newer `updated_at` wins
+
+**Safety constraints:**
+- Requires `getCachedUserId() !== null` (auth gate)
+- `backupLocalModule()` triggers browser download before any write; returns false if module is empty (no backup needed)
+- Row validation per module via `rowToX()` mappers; malformed rows skipped and counted
+- Supabase data is never modified or deleted
+- All other modules are untouched
+- Explicit confirmation checkbox required before any write
+- Never auto-runs
+
+**Fetch:** Up to 1000 rows per module — sufficient for personal use. Rows are validated and converted before write.
 
 ### v4.5 — Migration Assistant ✓
 

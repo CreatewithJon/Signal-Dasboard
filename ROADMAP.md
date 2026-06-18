@@ -2,7 +2,7 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-18 (v4.6)_
+_Last updated: 2026-06-18 (v4.7)_
 
 ---
 
@@ -85,17 +85,33 @@ _Read-only inspection of Supabase data for post-migration verification._
 - [x] Amber "Verification only" banner always visible when data is loaded
 - [x] Refresh button for re-fetching without reset
 
-## Phase 4.7 — RLS (Planned)
+## Phase 4.7 — Controlled Supabase → localStorage Restore (Complete)
+_Manual, module-by-module recovery of Supabase data into localStorage. Two merge strategies. Backup before every write._
+
+- [x] `lib/supabase/restoreFromSupabase.ts` — `previewSupabaseRestore()`, `restoreModuleFromSupabase(module, { mode })`, `backupLocalModule(module)`
+- [x] Reverse row mappers for all 5 modules: camelCase local types ↔ snake_case Supabase rows
+- [x] Two restore modes: `replace_local_module` (discard local, write Supabase) + `merge_by_id` (last-write-wins by `updated_at`)
+- [x] Backup: `backupLocalModule()` triggers browser download of current localStorage module before any write
+- [x] Validation: `isNonEmptyString()` guards; invalid rows skipped and counted, never written
+- [x] Auth required: `getCachedUserId() !== null` gate
+- [x] Supabase rows never modified or deleted at any step
+- [x] `components/settings/SupabaseRestore.tsx` — 6-phase UI: idle → previewing → preview (module cards) → confirm (mode picker + checkbox) → restoring → done/error
+- [x] ModuleCard: click-to-select; shows local/Supabase counts and diff label
+- [x] Done phase: full result detail (fetched, valid, invalid, new/updated/kept, total written)
+- [x] Data Recovery section added to `/settings`; version bumped to v4.7
+
+## Phase 4.8 — RLS (Planned)
 - [ ] Row-level security enabled on all tables
 - [ ] Policy: `auth.uid() = user_id` on all tables
 - [ ] Null `user_id` rows claimed or migrated before RLS activation
 - [ ] Data private by default
 
-## Phase 4.8 — Read Shift (Planned)
+## Phase 4.9 — Read Shift (Planned)
 - [ ] Components read from Supabase on mount
 - [ ] localStorage as write-through cache
 - [ ] Conflict resolution: last-write-wins by `updated_at`
 - [ ] Offline: reads from localStorage; queued sync on reconnect
+
 
 ---
 

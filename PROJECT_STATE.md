@@ -1,12 +1,12 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-18 (v4.6 — Supabase Read Preview)_
+_Last updated: 2026-06-18 (v4.7 — Controlled Supabase → localStorage Restore)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v4.6 (Supabase Read Preview: Complete)
+**Version:** Sovereign OS v4.7 (Controlled Supabase → localStorage Restore: Complete)
 **Stable:** Yes — localStorage-first, Supabase write-through enabled
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
@@ -14,6 +14,13 @@ _Last updated: 2026-06-18 (v4.6 — Supabase Read Preview)_
 ---
 
 ## What's Working
+
+### Controlled Supabase → localStorage Restore (`lib/supabase/restoreFromSupabase.ts` — v4.7)
+- `lib/supabase/restoreFromSupabase.ts` — `previewSupabaseRestore()`: requires auth; fetches counts + latest-5 records per module from Supabase; reads current local counts; returns `RestorePreview` with per-module `RestoreModulePreview`. `restoreModuleFromSupabase(module, { mode })`: auth gate; fetches up to 1000 rows; validates via per-module reverse mappers; triggers `backupLocalModule()` download before any write; applies `replace_local_module` (discard + overwrite) or `merge_by_id` (last-write-wins by `updated_at`); returns detailed `RestoreResult`. `backupLocalModule(module)`: downloads current localStorage module as dated JSON file; returns false if module is empty.
+- Reverse row mappers for all 5 modules — `rowToMemoryItem`, `rowToProject`, `rowToProjectTask`, `rowToContentItem`, `rowToFocusSession` — handle snake_case Supabase → camelCase/snake_case local types. `isNonEmptyString()` validation on required fields; invalid rows skipped and counted.
+- `components/settings/SupabaseRestore.tsx` — 6-phase UI: idle (preview button), previewing (loading), preview (module cards — click-to-select), confirm (mode picker radio + confirmation checkbox), restoring (loading), done (result detail) / error (message + retry). `ModuleCard`: click-to-select toggle; local count, Supabase count, diff label. Done phase: fetched, valid, invalid, new added, updated, kept, total written. Reload App button.
+- `/settings` — Data Recovery section added between Supabase Inspection and Sync Roadmap; version v4.7; roadmap updated (v4.7 current, v4.8 RLS, v4.9 Read Shift).
+- Safety: Supabase data never modified or deleted. localStorage never touched before explicit confirmation + backup download. Auth required. Never auto-runs.
 
 ### Supabase Read Preview (`lib/supabase/readPreview.ts` — v4.6)
 - `lib/supabase/readPreview.ts` — `fetchSupabasePreview()`: requires auth; runs count query + latest-5 query per module (5 tables); reads local counts from repository functions; returns `SupabasePreviewResult` with per-module `ModulePreview` (localCount, supabaseCount, difference, latestRecords). Module-level errors are non-fatal.
