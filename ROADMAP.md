@@ -2,7 +2,7 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-18 (v5.0)_
+_Last updated: 2026-06-18 (v5.1)_
 
 ---
 
@@ -113,6 +113,23 @@ _Module-by-module opt-in to Supabase as the read source, with localStorage fallb
 - [x] `components/MemoryWidget.tsx` — uses `getMemoryItems()` in async useEffect
 - [x] `components/settings/ReadModeSettings.tsx` — 5-module toggle panel; confirmation checkbox for Supabase; "UI pending" badge for non-wired modules; Reset all button; auth/config warnings
 - [x] `/settings` — Read Mode section; version v4.8; roadmap updated
+
+## Phase 5.1 — Opportunity Engine (Complete)
+_Turn Chief of Staff opportunities into a tracked, scored, convertible system._
+
+- [x] `lib/types/opportunities.ts` — `Opportunity` schema: 8 types, 5 statuses, score 0–100, conversions, related context (people/projects/memories)
+- [x] `lib/keys.ts` — `KEYS.OPPORTUNITIES` added
+- [x] `lib/opportunities/score.ts` — `scoreOpportunity()`: type weight + status momentum + context depth + description richness + action defined + recency bonus
+- [x] `lib/opportunities/store.ts` — CRUD: `loadOpportunities`, `createOpportunity`, `updateOpportunity`, `deleteOpportunity`, `setOpportunityStatus`, `markConverted`. Score auto-recomputed on every save.
+- [x] `app/opportunities/page.tsx` — full management page: filter/sort, expand cards, Develop AI modal, Convert modal (4 targets), New/Edit form with project+memory multi-select
+- [x] Convert to Project — creates `Project` in `sovereign_projects`
+- [x] Convert to Content Item — creates `ContentItem` in `sovereign_content_items`
+- [x] Convert to Task — creates `ProjectTask` in `sovereign_project_tasks`
+- [x] Convert to Memory — creates `MemoryItem` in `sovereign_memory_items`
+- [x] AI "Develop" — sends opportunity context to `/api/chief-chat` for advisor dialogue
+- [x] `app/chief/page.tsx` — top 3 stored opps by score + "View all" link; falls back to detected opps
+- [x] `components/Sidebar.tsx` + `MobileNav.tsx` — `/opportunities` nav added
+- [x] Build clean, lint clean, type-check clean
 
 ## Phase 5.0 — Chief of Staff Engine (Complete)
 _Transform Sovereign OS from an intelligent dashboard into a proactive executive assistant._

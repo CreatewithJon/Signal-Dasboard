@@ -3,19 +3,22 @@
 /**
  * app/chief/page.tsx
  *
- * Chief of Staff — Sovereign OS v5.0
+ * Chief of Staff — Sovereign OS v5.1
  *
  * Full executive brief: Executive Summary, Highest Leverage Action,
- * Biggest Risk, Blocked Items, Opportunities, Recommended Schedule,
- * Metrics, Reasoning, and AI Challenge panel.
+ * Biggest Risk, Blocked Items, Opportunities (top 3 stored + detected),
+ * Recommended Schedule, Metrics, Reasoning, and AI Challenge panel.
  */
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { KEYS } from "@/lib/keys";
 import { computeFocusEngine } from "@/lib/focus/engine";
 import { computeDailyBriefing } from "@/lib/briefing/daily";
 import { computeChiefOfStaffBrief } from "@/lib/chiefOfStaff/engine";
-import type { ChiefOfStaffBrief, ScheduleBlock, Opportunity, BlockedItem, RiskSeverity } from "@/lib/chiefOfStaff/engine";
+import { loadOpportunities } from "@/lib/opportunities/store";
+import type { ChiefOfStaffBrief, ScheduleBlock, Opportunity as ChiefOpportunity, BlockedItem, RiskSeverity } from "@/lib/chiefOfStaff/engine";
+import type { Opportunity as StoredOpportunity } from "@/lib/types/opportunities";
 import type { Project, ProjectTask } from "@/lib/types/projects";
 import type { MemoryItem } from "@/lib/types/memory";
 import type { ContentItem } from "@/lib/types/content";
@@ -311,9 +314,21 @@ function AIChallengePanel({ brief }: { brief: ChiefOfStaffBrief }) {
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
+const OPP_TYPE_COLORS: Record<string, string> = {
+  Revenue:     "rgba(52,211,153,0.85)",
+  Client:      "rgba(59,130,246,0.85)",
+  Partnership: "rgba(245,158,11,0.85)",
+  Product:     "rgba(167,139,250,0.85)",
+  Content:     "rgba(251,113,133,0.85)",
+  Event:       "rgba(251,191,36,0.85)",
+  Education:   "rgba(129,140,248,0.85)",
+  Personal:    "rgba(156,163,175,0.7)",
+};
+
 export default function ChiefPage() {
-  const [brief,  setBrief]  = useState<ChiefOfStaffBrief | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [brief,      setBrief]      = useState<ChiefOfStaffBrief | null>(null);
+  const [storedOpps, setStoredOpps] = useState<StoredOpportunity[]>([]);
+  const [loaded,     setLoaded]     = useState(false);
 
   useEffect(() => {
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -357,6 +372,7 @@ export default function ChiefPage() {
     });
 
     setBrief(result);
+    setStoredOpps(loadOpportunities().filter((o) => o.status !== "Archived" && o.status !== "Converted"));
     setLoaded(true);
   }, []);
 
@@ -486,11 +502,66 @@ export default function ChiefPage() {
           </Card>
 
           {/* ── Opportunities ────────────────────────────────────────────── */}
-          {brief.opportunities.length > 0 && (
+          {(storedOpps.length > 0 || brief.opportunities.length > 0) && (
             <div>
-              <SectionLabel>Opportunities</SectionLabel>
+              <div className="flex items-center justify-between mb-3">
+                <SectionLabel>Top Opportunities</SectionLabel>
+                <Link
+                  href="/opportunities"
+                  className="text-[9px] font-semibold px-2.5 py-1 rounded-lg transition-all"
+                  style={{
+                    background: "rgba(52,211,153,0.07)",
+                    border: "1px solid rgba(52,211,153,0.18)",
+                    color: "rgba(52,211,153,0.7)",
+                  }}
+                >
+                  View all →
+                </Link>
+              </div>
               <div className="space-y-2">
-                {brief.opportunities.map((opp: Opportunity, i: number) => (
+                {/* Stored opportunities — top 3 by score */}
+                {storedOpps
+                  .sort((a, b) => b.score - a.score)
+                  .slice(0, 3)
+                  .map((opp: StoredOpportunity) => {
+                    const typeColor = OPP_TYPE_COLORS[opp.type] ?? "rgba(156,163,175,0.7)";
+                    return (
+                      <div
+                        key={opp.id}
+                        className="rounded-xl px-4 py-3"
+                        style={{
+                          background: "rgba(255,255,255,0.015)",
+                          border: "1px solid rgba(255,255,255,0.07)",
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold mt-0.5"
+                            style={{ background: `${typeColor.replace("0.85", "0.08").replace("0.7", "0.06")}`, border: `1px solid ${typeColor.replace("0.85", "0.18").replace("0.7", "0.14")}`, color: typeColor }}
+                          >
+                            {opp.score}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-baseline gap-2 flex-wrap">
+                              <p className="text-xs font-semibold text-white/75 leading-snug">{opp.title}</p>
+                              <span
+                                className="text-[8px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md"
+                                style={{ color: typeColor, background: `${typeColor.replace("0.85", "0.07").replace("0.7", "0.05")}`, border: `1px solid ${typeColor.replace("0.85", "0.15").replace("0.7", "0.1")}` }}
+                              >
+                                {opp.type}
+                              </span>
+                            </div>
+                            {opp.suggested_action && (
+                              <p className="text-[10px] text-white/40 mt-0.5">→ {opp.suggested_action}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                {/* Detected brief opportunities (when no stored opps yet) */}
+                {storedOpps.length === 0 && brief.opportunities.map((opp: ChiefOpportunity, i: number) => (
                   <div
                     key={i}
                     className="rounded-xl px-4 py-3"
@@ -517,6 +588,19 @@ export default function ChiefPage() {
                     </div>
                   </div>
                 ))}
+
+                {/* CTA to opportunities page */}
+                <Link
+                  href="/opportunities"
+                  className="flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 transition-all"
+                  style={{
+                    background: "rgba(255,255,255,0.01)",
+                    border: "1px dashed rgba(255,255,255,0.07)",
+                  }}
+                >
+                  <span className="text-[10px] text-white/25">Manage all opportunities in the Opportunity Engine</span>
+                  <span className="text-[10px] text-white/20">→</span>
+                </Link>
               </div>
             </div>
           )}

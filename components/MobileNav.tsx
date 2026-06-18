@@ -76,9 +76,19 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    href: "/opportunities",
+    label: "Opps",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-5 h-5">
+        <circle cx="10" cy="10" r="7" />
+        <path d="M10 7v3l2 2" strokeLinecap="round" />
+      </svg>
+    ),
+  },
 ];
 
-const EXACT_ROUTES = ["/focus", "/planner", "/content", "/projects", "/memory"];
+const EXACT_ROUTES = ["/focus", "/planner", "/content", "/projects", "/memory", "/opportunities"];
 
 export default function MobileNav() {
   const pathname = usePathname();

@@ -1,12 +1,12 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-18 (v5.0 — Chief of Staff Engine)_
+_Last updated: 2026-06-18 (v5.1 — Opportunity Engine)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v5.0 (Chief of Staff Engine: Complete)
+**Version:** Sovereign OS v5.1 (Opportunity Engine: Complete)
 **Stable:** Yes — localStorage-first, Supabase write-through enabled
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
@@ -14,6 +14,16 @@ _Last updated: 2026-06-18 (v5.0 — Chief of Staff Engine)_
 ---
 
 ## What's Working
+
+### Opportunity Engine (`lib/types/opportunities.ts` + `/opportunities` page — v5.1)
+- `lib/types/opportunities.ts` — `Opportunity` type: id, title, description, type (Partnership|Content|Client|Product|Event|Education|Revenue|Personal), status (Detected|Reviewing|Active|Converted|Archived), score (0–100), score_reasoning, suggested_action, related_people, related_project_ids, related_memory_ids, source (detected|manual), conversion (target + target_id + converted_at), notes, created_at, updated_at.
+- `lib/keys.ts` — `KEYS.OPPORTUNITIES = "sovereign_opportunities"` added.
+- `lib/opportunities/score.ts` — `scoreOpportunity(opp)`: Type weight (Revenue 35pts, Client 32pts, Partnership 28pts … Personal 12pts) + Status momentum (Active 20, Reviewing 14, Detected 10) + Context depth (people 4pts each max 8, projects 4pts each max 8, memories 2pts each max 4) + Description richness (10/6/3) + Next action defined (10) + Recency bonus (5 if updated within 7 days). Returns `{ score, reasoning }`.
+- `lib/opportunities/store.ts` — `loadOpportunities()`, `createOpportunity()`, `updateOpportunity()`, `deleteOpportunity()`, `setOpportunityStatus()`, `markConverted()`. Score is auto-recomputed on every save. Reads/writes localStorage key `sovereign_opportunities`.
+- `app/opportunities/page.tsx` — Full opportunity management page: filter by status + type, sort by score descending, show/hide archived. Per-card: score circle, type badge, status badge, auto badge, score bar, expand for description/action/people/projects/notes/conversion. Actions: Develop (AI modal) / Convert → (Project|ContentItem|Task|Memory modal) / → Reviewing / → Active / Archive / Delete. Convert modal: tab-switched form per target type with pre-filled fields from opportunity; creates item in localStorage and calls `markConverted()`. AI Develop panel: sends opportunity context to `/api/chief-chat`, suggestion prompts. New/Edit form modal: all fields, project + memory multi-select, full CRUD.
+- `app/chief/page.tsx` — Opportunities section updated: shows top 3 stored opportunities by score (with score circle + type badge + next action); falls back to detected brief opportunities when no stored opps; "View all →" link to `/opportunities`; "Manage all opportunities" footer CTA.
+- `components/Sidebar.tsx` — `/opportunities` nav added after Chief of Staff.
+- `components/MobileNav.tsx` — `/opportunities` nav added as "Opps".
 
 ### Chief of Staff Engine (`lib/chiefOfStaff/engine.ts` — v5.0)
 - `lib/chiefOfStaff/engine.ts` — `computeChiefOfStaffBrief(input)`: pure deterministic synthesis layer above Focus Engine and Daily Briefing. Computes: Executive Summary (narrative from active projects, overdue count, ready content), Highest Leverage Action (ready content > focus engine top priority > overdue critical task), Biggest Risk (critical overdue tasks > stalled high-priority project > stale ready content > overload), Blocked/Stalled items (paused projects + long-overdue tasks), Opportunities (up to 3: publish ready content, case studies for shipped projects, relationship follow-ups, video repurposing, schedule high-priority ideas), Recommended Schedule (3 blocks using topThree as input), Weekly Momentum score (habit completion 40pts + focus sessions 25pts + done tasks 20pts - overdue penalty + base 15), Strategic Alignment score (vision depth 30pts + weekly goals 20pts + vision keyword match 25pts + active high-priority project 15pts + content 10pts), Reasoning (structured explanation of every score and decision).

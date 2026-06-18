@@ -53,6 +53,9 @@ export const KEYS = {
   // Read mode config — which modules read from Supabase vs localStorage
   READ_MODE_CONFIG:  "sovereign_read_mode_config",
 
+  // Opportunities
+  OPPORTUNITIES:     "sovereign_opportunities",
+
   // Migration sentinel — presence means migration has run
   MIGRATION_V1:      "sovereign_migration_v1_complete",
 } as const;
