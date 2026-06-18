@@ -1,12 +1,12 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-17 (v4.4 — Auth Readiness)_
+_Last updated: 2026-06-18 (v4.5 — Migration Assistant)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v4.4 (Auth Readiness: Complete)
+**Version:** Sovereign OS v4.5 (Migration Assistant: Complete)
 **Stable:** Yes — localStorage-first, Supabase write-through enabled
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
@@ -14,6 +14,14 @@ _Last updated: 2026-06-17 (v4.4 — Auth Readiness)_
 ---
 
 ## What's Working
+
+### Migration Assistant (`lib/supabase/localMigration.ts` — v4.5)
+- `lib/supabase/localMigration.ts` — `analyzeLocalDataForMigration()`: pure dry-run; reads all 5 module localStorage keys; filters items with missing ids; returns `MigrationAnalysis` with per-module counts, skipped counts, warnings. `migrateLocalDataToSupabase()`: requires `getCachedUserId() !== null`; calls existing `upsertXSupabase()` functions per item; continues on failure; returns `MigrationResult` with per-module succeeded/failed/errors.
+- `components/settings/MigrationAssistant.tsx` — 6-state UI: idle → analyzing → preview (dry-run table + confirmation checkbox) → migrating → done (result table) → error. Not-authenticated state shows sign-in prompt. Confirmation checkbox disabled until analysis completes. "Run Migration" disabled until checkbox checked. localStorage never touched.
+- `/settings` — Data Migration section added between Identity & Auth and Sync Roadmap; system version bumped to v4.5.
+- All 5 modules covered: Memory, Projects, Project Tasks, Content Items, Focus Sessions.
+- Duplicate protection: upserts use existing item `id` — idempotent; safe to run multiple times.
+- Failure handling: `continue-on-error` per item; failed count + error messages shown per module; no rollback.
 
 ### Auth Readiness (`lib/supabase/authStatus.ts` — v4.4)
 - `lib/supabase/authStatus.ts` — `getAuthStatus()` (async, returns `AuthStatus` with mode `anonymous-local|supabase-auth-ready|authenticated`); `getCachedUserId()` (sync, used by repositories); `initAuthListener()` (sets up `onAuthStateChange`, seeds cache from `getSession()`); `sendMagicLink(email, redirectTo)`; `signOut()`.

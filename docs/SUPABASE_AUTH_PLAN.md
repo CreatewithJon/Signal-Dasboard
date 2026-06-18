@@ -2,8 +2,8 @@
 
 > Architecture and policy decisions for authentication and per-user data scoping.
 
-_Version: v4.4 (Auth Readiness — optional sign-in, user_id prep)_
-_Last updated: 2026-06-17_
+_Version: v4.5 (Migration Assistant — manual push from localStorage to Supabase)_
+_Last updated: 2026-06-18_
 
 ---
 
@@ -79,24 +79,24 @@ the column is nullable. When auth is enabled, the value will be a valid UUID.
 
 ---
 
-## Future: Data Migration (v4.5)
+## Data Migration (v4.5 — Complete)
 
-When the user signs in for the first time on a device that has existing localStorage
-data, we will offer to migrate that data to their Supabase account:
+Migration is available via the **Data Migration** section in Settings (`/settings`).
 
-```
-POST /api/migrate
-Authorization: Bearer <supabase-session-token>
-Body: { data: { sovereign_projects: [...], sovereign_memory_items: [...], ... } }
-```
+**How it works:**
+1. User must be signed in (auth gate in the UI)
+2. Click **Analyze Local Data** — dry-run reads localStorage; returns counts per module
+3. Review the preview table (local count, eligible, skipped)
+4. Check the confirmation checkbox
+5. Click **Run Migration** — upserts each item via existing repository functions
+6. Result table shows succeeded/failed per module; errors listed by item ID
 
-The endpoint:
-1. Reads the authenticated user's ID from the session
-2. Upserts all provided records with `user_id = auth.uid()`
-3. Returns a count of migrated records per table
+**Implementation:** `lib/supabase/localMigration.ts`
+- `analyzeLocalDataForMigration()` — pure, no writes, no Supabase calls
+- `migrateLocalDataToSupabase()` — requires `getCachedUserId() !== null`; calls existing `upsertXSupabase()` functions; continue-on-error; localStorage never touched
 
-**This is opt-in** — the user chooses when to migrate. The app continues working
-from localStorage before and after migration.
+**This is opt-in** — user chooses when to migrate. App continues working from
+localStorage before and after migration. Safe to run multiple times (idempotent upserts).
 
 ---
 

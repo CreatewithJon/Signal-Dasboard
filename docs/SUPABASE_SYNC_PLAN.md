@@ -4,8 +4,8 @@
 > browser-local localStorage to Supabase-backed persistence with cross-device
 > sync, backups, and future workspace support.
 
-_Version: v4.4 (Auth Readiness — optional sign-in, user_id prep, magic link)_
-_Last updated: 2026-06-17_
+_Version: v4.5 (Migration Assistant — dry-run preview + manual push to Supabase)_
+_Last updated: 2026-06-18_
 
 ---
 
@@ -20,8 +20,8 @@ loss, broken UX, and cascading bugs across the ~15 components that read from it.
 - v4.1 — Dual-write: Memory — localStorage + Supabase in parallel ✓
 - v4.2 — Dual-write: Projects, Tasks, Content, Focus Sessions ✓
 - v4.3 — Sync Health + Restore: per-module last-write tracking, settings health panel, manual backup restore ✓
-- v4.4 — Auth Readiness: optional magic-link sign-in, user_id cache, getCachedUserId() in repositories ✓ (current)
-- v4.5 — Auth + Migration: /api/migrate; localStorage data migrated to Supabase under user_id
+- v4.4 — Auth Readiness: optional magic-link sign-in, user_id cache, getCachedUserId() in repositories ✓
+- v4.5 — Migration Assistant: dry-run preview + manual push of localStorage data to Supabase ✓ (current)
 - v4.6 — RLS: row-level security; data private by default
 - v4.7 — Read shift: components read from Supabase; localStorage becomes write-through cache
 
@@ -111,6 +111,31 @@ New utilities, components, and enhanced StorageExport:
 - Pre-restore backup is automatically downloaded before overwriting
 - Reload button shown after successful restore (no auto-reload)
 - No auto-import; confirmation button required
+
+### v4.5 — Migration Assistant ✓
+
+New utility and settings panel for manually pushing localStorage data to Supabase:
+
+| File | Purpose |
+|---|---|
+| `lib/supabase/localMigration.ts` | `analyzeLocalDataForMigration()` (dry run) + `migrateLocalDataToSupabase()` (write) |
+| `components/settings/MigrationAssistant.tsx` | Settings panel with analyze → preview → confirm → migrate → result flow |
+
+**Migration flow:**
+1. User clicks Analyze — reads localStorage, counts eligible items per module, shows dry-run table
+2. User reviews preview, checks confirmation checkbox
+3. User clicks Run Migration — upserts each eligible item via existing repository functions
+4. Result table shows succeeded / failed counts per module
+
+**Safety constraints:**
+- Requires authenticated user (`getCachedUserId() !== null`)
+- localStorage is never read for auth gate — uses `getCachedUserId()` sync check
+- All upserts use the item's existing `id` → idempotent; safe to run multiple times
+- Individual item failures do not abort migration; continue-on-error
+- localStorage is NEVER modified at any point
+- `analyzeLocalDataForMigration()` is pure — no writes, no Supabase calls
+
+**Modules covered:** Memory, Projects, Project Tasks, Content Items, Focus Sessions
 
 ### v4.4 — Auth Integration
 

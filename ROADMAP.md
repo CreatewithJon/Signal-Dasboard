@@ -2,7 +2,7 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-17 (v4.4)_
+_Last updated: 2026-06-18 (v4.5)_
 
 ---
 
@@ -62,10 +62,18 @@ _Optional Supabase auth; user_id prep; app stays fully local._
 - [x] `docs/SUPABASE_AUTH_PLAN.md` — auth modes, RLS plan, migration strategy, workspace architecture
 - [x] App works identically for anonymous users — no gating, no forced login
 
-## Phase 4.5 — Auth + Migration (Planned)
-- [ ] `/api/migrate` — accepts localStorage JSON dump, upserts all records with authenticated `user_id`
-- [ ] Settings "Migrate to Cloud" button — opt-in, shows item count before committing
-- [ ] Session cookie via Supabase Auth (already functional from v4.4)
+## Phase 4.5 — Migration Assistant (Complete)
+_Manual opt-in migration of localStorage data to Supabase._
+
+- [x] `lib/supabase/localMigration.ts` — `analyzeLocalDataForMigration()` (dry run) + `migrateLocalDataToSupabase()` (write, requires auth)
+- [x] `components/settings/MigrationAssistant.tsx` — analyze → preview → confirm → migrate → result flow; 6 UI phases
+- [x] Auth gate: shows "Sign in first" message when not authenticated
+- [x] Dry-run table: local count, eligible count, skipped count, warnings per module
+- [x] Confirmation checkbox required before migration runs
+- [x] Continue-on-error: individual item failures tracked, migration continues
+- [x] Result table: succeeded/failed per module with error messages
+- [x] localStorage never modified at any step
+- [x] Upserts use existing item ids — idempotent; safe to re-run
 
 ## Phase 4.6 — RLS (Planned)
 - [ ] Row-level security enabled on all tables
