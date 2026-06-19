@@ -29,6 +29,7 @@ import type { Person } from "@/lib/types/relationships";
 import { isFollowUpDue } from "@/lib/relationships/store";
 import { computeKnowledgeGraph } from "@/lib/knowledgeGraph/engine";
 import type { GraphInsight } from "@/lib/knowledgeGraph/engine";
+import { computeActionEngine } from "@/lib/actionEngine/engine";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -380,11 +381,23 @@ export default function ChiefPage() {
       memoryItems,
     });
 
+    // Action Engine — computed after graph, feeds top action into Chief brief
+    const actionResult = computeActionEngine({
+      graphInsights: graph.insights,
+      opportunities: allOpps,
+      people:        loadedPeople,
+      projects,
+      projectTasks,
+      contentItems,
+      todayStr:      today,
+    });
+
     const result = computeChiefOfStaffBrief({
       todayStr: today, projects, projectTasks, memoryItems, contentItems,
       dailyItems, weeklyItems, monthlyItems, habits, habitLog,
       visionData, focusEngine, dailyBriefing, people: loadedPeople,
       graphInsights: graph.insights,
+      topAction:     actionResult.actions[0],
       focusSessions: focusSessions.map((s: FocusSession) => ({
         date:        s.startedAt?.slice(0, 10) ?? today,
         completedAt: s.endedAt,

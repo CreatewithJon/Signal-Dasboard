@@ -66,6 +66,16 @@ const MODULE_NAV: NavItem[] = [
     ),
   },
   {
+    href: "/actions",
+    label: "Actions",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <path d="M10 2l1.5 3.5 3.5.5-2.5 2.5.5 3.5L10 10.5 7 12l.5-3.5L5 6l3.5-.5L10 2z" strokeLinejoin="round" />
+        <path d="M4 16h12" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
     href: "/opportunities",
     label: "Opportunities",
     icon: (

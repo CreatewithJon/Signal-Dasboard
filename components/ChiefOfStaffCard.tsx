@@ -24,6 +24,7 @@ import type { FocusSession } from "@/lib/types/execution";
 import type { Person } from "@/lib/types/relationships";
 import type { Opportunity } from "@/lib/types/opportunities";
 import { computeKnowledgeGraph } from "@/lib/knowledgeGraph/engine";
+import { computeActionEngine } from "@/lib/actionEngine/engine";
 
 function safeRead<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -109,11 +110,22 @@ export default function ChiefOfStaffCard() {
       people, projects, opportunities, contentItems, memoryItems,
     });
 
+    const actionResult = computeActionEngine({
+      graphInsights: graph.insights,
+      opportunities,
+      people,
+      projects,
+      projectTasks,
+      contentItems,
+      todayStr,
+    });
+
     const result = computeChiefOfStaffBrief({
       todayStr, projects, projectTasks, memoryItems, contentItems,
       dailyItems, weeklyItems, monthlyItems, habits, habitLog,
       visionData, focusEngine, dailyBriefing, people,
       graphInsights: graph.insights,
+      topAction:     actionResult.actions[0],
       focusSessions: focusSessions.map((s: FocusSession) => ({
         date:        s.startedAt?.slice(0, 10) ?? todayStr,
         completedAt: s.endedAt,

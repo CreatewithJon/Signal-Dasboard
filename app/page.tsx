@@ -15,6 +15,7 @@ import ContentWidget from "@/components/ContentWidget";
 import DailyBriefingCard from "@/components/DailyBriefingCard";
 import FocusEngineCard from "@/components/FocusEngineCard";
 import ChiefOfStaffCard from "@/components/ChiefOfStaffCard";
+import ActionEngineCard from "@/components/ActionEngineCard";
 import { fetchBTCData, BTC_FALLBACK } from "@/lib/btc";
 
 export const metadata: Metadata = {
@@ -129,6 +130,10 @@ export default async function HomePage() {
       <SectionDivider label="Today" id="briefing" accent="rgba(139,92,246,0.5)" />
 
       <ChiefOfStaffCard />
+
+      <div className="mt-4">
+        <ActionEngineCard />
+      </div>
 
       <div className="mt-4">
         <DailyBriefingCard />

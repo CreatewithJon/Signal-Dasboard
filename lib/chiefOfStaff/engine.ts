@@ -17,6 +17,7 @@ import type { FocusEngineResult } from "@/lib/focus/engine";
 import type { Person } from "@/lib/types/relationships";
 import { isFollowUpDue } from "@/lib/relationships/store";
 import type { GraphInsight } from "@/lib/knowledgeGraph/engine";
+import type { Action } from "@/lib/actionEngine/engine";
 
 // ── Input ──────────────────────────────────────────────────────────────────
 
@@ -37,6 +38,7 @@ export interface ChiefInput {
   focusSessions: Array<{ date: string; completedAt?: string; abandoned?: boolean }>;
   people:        Person[];               // v5.2 — relationship contacts
   graphInsights?: GraphInsight[];        // v5.4 — knowledge graph insights (optional)
+  topAction?:    Action;                 // v5.5 — action engine's top recommendation (optional)
 }
 
 // ── Output ─────────────────────────────────────────────────────────────────
@@ -284,7 +286,16 @@ function buildExecutiveSummary(
 // ── Highest Leverage Action ────────────────────────────────────────────────
 
 function findHighestLeverageAction(input: ChiefInput): LeverageAction {
-  const { focusEngine, contentItems, projects, projectTasks } = input;
+  const { focusEngine, contentItems, projects, projectTasks, topAction } = input;
+
+  // Priority 0: Action Engine top recommendation (if critical or high)
+  if (topAction && (topAction.priority === "critical" || topAction.priority === "high")) {
+    return {
+      title:  topAction.title,
+      reason: topAction.reason,
+      impact: `${topAction.estimatedImpact} impact · ${topAction.estimatedEffort} effort · score ${topAction.score}/100`,
+    };
+  }
 
   // Priority 1: Ready-to-publish content with no publish date (fastest win)
   const readyNow = contentItems.find(
