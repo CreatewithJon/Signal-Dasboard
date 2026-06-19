@@ -76,6 +76,19 @@ const MODULE_NAV: NavItem[] = [
     ),
   },
   {
+    href: "/graph",
+    label: "Knowledge Graph",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <circle cx="3" cy="10" r="2" />
+        <circle cx="17" cy="5" r="2" />
+        <circle cx="17" cy="15" r="2" />
+        <circle cx="10" cy="3" r="1.5" />
+        <path d="M5 10h5M15 5.5L10 4M15 14.5L5 10.5" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
     href: "/relationships",
     label: "Relationships",
     icon: (

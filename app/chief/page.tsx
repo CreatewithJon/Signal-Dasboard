@@ -27,6 +27,8 @@ import type { PlannerItem } from "@/lib/briefing/daily";
 import type { FocusSession } from "@/lib/types/execution";
 import type { Person } from "@/lib/types/relationships";
 import { isFollowUpDue } from "@/lib/relationships/store";
+import { computeKnowledgeGraph } from "@/lib/knowledgeGraph/engine";
+import type { GraphInsight } from "@/lib/knowledgeGraph/engine";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -328,11 +330,12 @@ const OPP_TYPE_COLORS: Record<string, string> = {
 };
 
 export default function ChiefPage() {
-  const [brief,      setBrief]      = useState<ChiefOfStaffBrief | null>(null);
-  const [storedOpps, setStoredOpps] = useState<StoredOpportunity[]>([]);
-  const [people,     setPeople]     = useState<Person[]>([]);
-  const [todayStr,   setTodayStr]   = useState("");
-  const [loaded,     setLoaded]     = useState(false);
+  const [brief,        setBrief]        = useState<ChiefOfStaffBrief | null>(null);
+  const [storedOpps,   setStoredOpps]   = useState<StoredOpportunity[]>([]);
+  const [people,       setPeople]       = useState<Person[]>([]);
+  const [graphInsights, setGraphInsights] = useState<GraphInsight[]>([]);
+  const [todayStr,     setTodayStr]     = useState("");
+  const [loaded,       setLoaded]       = useState(false);
 
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -366,10 +369,22 @@ export default function ChiefPage() {
       visionData, dailyBriefing,
     });
 
+    const allOpps = loadOpportunities();
+
+    // Knowledge Graph — computed before brief so insights can feed Chief of Staff risk/opps
+    const graph = computeKnowledgeGraph({
+      people:        loadedPeople,
+      projects,
+      opportunities: allOpps,
+      contentItems,
+      memoryItems,
+    });
+
     const result = computeChiefOfStaffBrief({
       todayStr: today, projects, projectTasks, memoryItems, contentItems,
       dailyItems, weeklyItems, monthlyItems, habits, habitLog,
       visionData, focusEngine, dailyBriefing, people: loadedPeople,
+      graphInsights: graph.insights,
       focusSessions: focusSessions.map((s: FocusSession) => ({
         date:        s.startedAt?.slice(0, 10) ?? today,
         completedAt: s.endedAt,
@@ -379,7 +394,8 @@ export default function ChiefPage() {
 
     setBrief(result);
     setPeople(loadedPeople);
-    setStoredOpps(loadOpportunities().filter((o) => o.status !== "Archived" && o.status !== "Converted"));
+    setGraphInsights(graph.insights);
+    setStoredOpps(allOpps.filter((o) => o.status !== "Archived" && o.status !== "Converted"));
     setLoaded(true);
   }, []);
 
@@ -685,6 +701,50 @@ export default function ChiefPage() {
               </Card>
             );
           })()}
+
+          {/* ── Graph Intelligence ───────────────────────────────────────── */}
+          {graphInsights.length > 0 && (
+            <Card>
+              <div className="flex items-center justify-between mb-3">
+                <SectionLabel>Graph Intelligence</SectionLabel>
+                <Link
+                  href="/graph"
+                  className="text-[9px] font-semibold px-2.5 py-1 rounded-lg transition-all"
+                  style={{
+                    background: "rgba(99,102,241,0.07)",
+                    border: "1px solid rgba(99,102,241,0.18)",
+                    color: "rgba(165,180,252,0.65)",
+                  }}
+                >
+                  Full graph →
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {graphInsights.slice(0, 3).map((insight) => {
+                  const severityColor =
+                    insight.priority === "critical" ? "rgba(239,68,68,0.8)" :
+                    insight.priority === "high"     ? "rgba(245,158,11,0.8)" :
+                    "rgba(167,139,250,0.65)";
+                  return (
+                    <div
+                      key={insight.id}
+                      className="flex items-start gap-2.5 pb-2"
+                      style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
+                    >
+                      <div
+                        className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5"
+                        style={{ background: severityColor }}
+                      />
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-white/70 leading-snug">{insight.title}</p>
+                        <p className="text-[10px] text-white/35 mt-0.5">{insight.action}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
 
           {/* ── Blocked Items ─────────────────────────────────────────────── */}
           {brief.blockedItems.length > 0 && (

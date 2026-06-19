@@ -16,6 +16,7 @@ import type { PlannerItem, DailyBriefing } from "@/lib/briefing/daily";
 import type { FocusEngineResult } from "@/lib/focus/engine";
 import type { Person } from "@/lib/types/relationships";
 import { isFollowUpDue } from "@/lib/relationships/store";
+import type { GraphInsight } from "@/lib/knowledgeGraph/engine";
 
 // ── Input ──────────────────────────────────────────────────────────────────
 
@@ -35,6 +36,7 @@ export interface ChiefInput {
   dailyBriefing: DailyBriefing | null;
   focusSessions: Array<{ date: string; completedAt?: string; abandoned?: boolean }>;
   people:        Person[];               // v5.2 — relationship contacts
+  graphInsights?: GraphInsight[];        // v5.4 — knowledge graph insights (optional)
 }
 
 // ── Output ─────────────────────────────────────────────────────────────────
@@ -341,7 +343,17 @@ function findHighestLeverageAction(input: ChiefInput): LeverageAction {
 // ── Biggest Risk ───────────────────────────────────────────────────────────
 
 function findBiggestRisk(input: ChiefInput): RiskSignal {
-  const { projectTasks, projects, contentItems, todayStr, people } = input;
+  const { projectTasks, projects, contentItems, todayStr, people, graphInsights } = input;
+
+  // Graph-derived critical insights surface first
+  const criticalGraphInsight = (graphInsights ?? []).find((g) => g.priority === "critical");
+  if (criticalGraphInsight) {
+    return {
+      title:          criticalGraphInsight.title,
+      severity:       "critical",
+      recommendation: criticalGraphInsight.action,
+    };
+  }
   const today = new Date(todayStr + "T00:00:00");
 
   // Critical overdue tasks
@@ -551,8 +563,21 @@ function findOpportunities(input: ChiefInput): Opportunity[] {
     });
   }
 
-  // 6. High-priority prospect or client with no linked opportunity
-  const { people } = input;
+  // 6. Graph insight: relationship leverage or orphaned opportunity
+  const { people, graphInsights } = input;
+  const graphOpp = (graphInsights ?? []).find(
+    (g) => g.type === "relationship_leverage" || g.type === "orphaned_opportunity"
+  );
+  if (graphOpp && opportunities.length < 3) {
+    opportunities.push({
+      title:       graphOpp.title,
+      type:        "relationship",
+      description: graphOpp.description,
+      action:      graphOpp.action,
+    });
+  }
+
+  // 7. High-priority prospect or client with no linked opportunity
   const relOpps = (people ?? []).filter(
     (p) =>
       p.status !== "Archived" &&

@@ -22,6 +22,8 @@ import type { HabitEntry } from "@/lib/memory/context";
 import type { PlannerItem } from "@/lib/briefing/daily";
 import type { FocusSession } from "@/lib/types/execution";
 import type { Person } from "@/lib/types/relationships";
+import type { Opportunity } from "@/lib/types/opportunities";
+import { computeKnowledgeGraph } from "@/lib/knowledgeGraph/engine";
 
 function safeRead<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -85,6 +87,7 @@ export default function ChiefOfStaffCard() {
     const monthlyItems  = safeRead<string[]>(KEYS.PLANNER_MONTHLY, []);
     const focusSessions = safeRead<FocusSession[]>(KEYS.FOCUS_SESSIONS, []);
     const people        = safeRead<Person[]>(KEYS.RELATIONSHIPS, []);
+    const opportunities = safeRead<Opportunity[]>(KEYS.OPPORTUNITIES, []);
     const visionData    = {
       yr1: safeRead<string[]>(KEYS.PLANNER_1YR, []),
       yr3: safeRead<string[]>(KEYS.PLANNER_3YR, []),
@@ -102,10 +105,15 @@ export default function ChiefOfStaffCard() {
       visionData, dailyBriefing,
     });
 
+    const graph = computeKnowledgeGraph({
+      people, projects, opportunities, contentItems, memoryItems,
+    });
+
     const result = computeChiefOfStaffBrief({
       todayStr, projects, projectTasks, memoryItems, contentItems,
       dailyItems, weeklyItems, monthlyItems, habits, habitLog,
       visionData, focusEngine, dailyBriefing, people,
+      graphInsights: graph.insights,
       focusSessions: focusSessions.map((s: FocusSession) => ({
         date:        s.startedAt?.slice(0, 10) ?? todayStr,
         completedAt: s.endedAt,
