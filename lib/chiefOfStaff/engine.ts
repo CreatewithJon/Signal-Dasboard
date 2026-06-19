@@ -14,6 +14,8 @@ import type { ContentItem } from "@/lib/types/content";
 import type { HabitEntry } from "@/lib/memory/context";
 import type { PlannerItem, DailyBriefing } from "@/lib/briefing/daily";
 import type { FocusEngineResult } from "@/lib/focus/engine";
+import type { Person } from "@/lib/types/relationships";
+import { isFollowUpDue } from "@/lib/relationships/store";
 
 // ── Input ──────────────────────────────────────────────────────────────────
 
@@ -32,6 +34,7 @@ export interface ChiefInput {
   focusEngine:   FocusEngineResult;
   dailyBriefing: DailyBriefing | null;
   focusSessions: Array<{ date: string; completedAt?: string; abandoned?: boolean }>;
+  people:        Person[];               // v5.2 — relationship contacts
 }
 
 // ── Output ─────────────────────────────────────────────────────────────────
@@ -338,7 +341,7 @@ function findHighestLeverageAction(input: ChiefInput): LeverageAction {
 // ── Biggest Risk ───────────────────────────────────────────────────────────
 
 function findBiggestRisk(input: ChiefInput): RiskSignal {
-  const { projectTasks, projects, contentItems, todayStr } = input;
+  const { projectTasks, projects, contentItems, todayStr, people } = input;
   const today = new Date(todayStr + "T00:00:00");
 
   // Critical overdue tasks
@@ -350,6 +353,25 @@ function findBiggestRisk(input: ChiefInput): RiskSignal {
       title:          `${criticalOverdue.length} critical overdue task${criticalOverdue.length > 1 ? "s" : ""}`,
       severity:       "critical",
       recommendation: "Block time today to clear at least one. Overdue critical tasks compound into project risk.",
+    };
+  }
+
+  // Overdue high-priority follow-ups (relationship risk)
+  const overdueHighPriority = (people ?? []).filter(
+    (p) =>
+      p.status !== "Archived" &&
+      (p.priority === "Critical" || p.priority === "High") &&
+      isFollowUpDue(p, todayStr)
+  );
+  if (overdueHighPriority.length > 0) {
+    const names = overdueHighPriority
+      .slice(0, 2)
+      .map((p) => p.name)
+      .join(", ");
+    return {
+      title:          `${overdueHighPriority.length} high-priority follow-up${overdueHighPriority.length > 1 ? "s" : ""} overdue`,
+      severity:       overdueHighPriority.some((p) => p.priority === "Critical") ? "critical" : "high",
+      recommendation: `Reach out to ${names}${overdueHighPriority.length > 2 ? ` + ${overdueHighPriority.length - 2} more` : ""}. Delayed follow-ups erode trust and close windows.`,
     };
   }
 
@@ -526,6 +548,25 @@ function findOpportunities(input: ChiefInput): Opportunity[] {
       type:        "content",
       description: `High-priority content idea with no publish date has been drifting.`,
       action:      "Set a publish date or move it to Drafting to activate it.",
+    });
+  }
+
+  // 6. High-priority prospect or client with no linked opportunity
+  const { people } = input;
+  const relOpps = (people ?? []).filter(
+    (p) =>
+      p.status !== "Archived" &&
+      (p.relationship_type === "Prospect" || p.relationship_type === "Client") &&
+      (p.priority === "High" || p.priority === "Critical") &&
+      p.related_opportunity_ids.length === 0
+  );
+  if (relOpps.length > 0) {
+    const top = relOpps[0];
+    opportunities.push({
+      title:       `Opportunity gap: ${top.name}`,
+      type:        "relationship",
+      description: `${top.name} (${top.relationship_type}) is high priority but has no linked opportunity.`,
+      action:      "Open their profile and convert to an Opportunity to start tracking formally.",
     });
   }
 

@@ -76,6 +76,18 @@ const MODULE_NAV: NavItem[] = [
     ),
   },
   {
+    href: "/relationships",
+    label: "Relationships",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <circle cx="7" cy="7" r="3" />
+        <path d="M1 17c0-3.3 2.7-6 6-6h2" strokeLinecap="round" />
+        <circle cx="14" cy="11" r="2.5" />
+        <path d="M11 19c0-1.7 1.3-3 3-3s3 1.3 3 3" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
     href: "/focus",
     label: "Focus Engine",
     icon: (

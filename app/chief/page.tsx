@@ -25,6 +25,8 @@ import type { ContentItem } from "@/lib/types/content";
 import type { HabitEntry } from "@/lib/memory/context";
 import type { PlannerItem } from "@/lib/briefing/daily";
 import type { FocusSession } from "@/lib/types/execution";
+import type { Person } from "@/lib/types/relationships";
+import { isFollowUpDue } from "@/lib/relationships/store";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -328,10 +330,13 @@ const OPP_TYPE_COLORS: Record<string, string> = {
 export default function ChiefPage() {
   const [brief,      setBrief]      = useState<ChiefOfStaffBrief | null>(null);
   const [storedOpps, setStoredOpps] = useState<StoredOpportunity[]>([]);
+  const [people,     setPeople]     = useState<Person[]>([]);
+  const [todayStr,   setTodayStr]   = useState("");
   const [loaded,     setLoaded]     = useState(false);
 
   useEffect(() => {
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const today = new Date().toISOString().slice(0, 10);
+    setTodayStr(today);
 
     const projects      = safeRead<Project[]>(KEYS.PROJECTS, []);
     const projectTasks  = safeRead<ProjectTask[]>(KEYS.PROJECT_TASKS, []);
@@ -343,6 +348,7 @@ export default function ChiefPage() {
     const weeklyItems   = safeRead<PlannerItem[]>(KEYS.PLANNER_WEEKLY, []);
     const monthlyItems  = safeRead<string[]>(KEYS.PLANNER_MONTHLY, []);
     const focusSessions = safeRead<FocusSession[]>(KEYS.FOCUS_SESSIONS, []);
+    const loadedPeople  = safeRead<Person[]>(KEYS.RELATIONSHIPS, []);
     const visionData    = {
       yr1: safeRead<string[]>(KEYS.PLANNER_1YR, []),
       yr3: safeRead<string[]>(KEYS.PLANNER_3YR, []),
@@ -350,28 +356,29 @@ export default function ChiefPage() {
     };
 
     const dailyBriefing = computeDailyBriefing({
-      todayStr, projects, projectTasks, memoryItems,
+      todayStr: today, projects, projectTasks, memoryItems,
       dailyItems, weeklyItems, monthlyItems, habits, habitLog,
     });
 
     const focusEngine = computeFocusEngine({
-      todayStr, projects, projectTasks, memoryItems, contentItems,
+      todayStr: today, projects, projectTasks, memoryItems, contentItems,
       dailyItems, weeklyItems, monthlyItems, habits, habitLog,
       visionData, dailyBriefing,
     });
 
     const result = computeChiefOfStaffBrief({
-      todayStr, projects, projectTasks, memoryItems, contentItems,
+      todayStr: today, projects, projectTasks, memoryItems, contentItems,
       dailyItems, weeklyItems, monthlyItems, habits, habitLog,
-      visionData, focusEngine, dailyBriefing,
+      visionData, focusEngine, dailyBriefing, people: loadedPeople,
       focusSessions: focusSessions.map((s: FocusSession) => ({
-        date:        s.startedAt?.slice(0, 10) ?? todayStr,
+        date:        s.startedAt?.slice(0, 10) ?? today,
         completedAt: s.endedAt,
         abandoned:   s.status === "Abandoned",
       })),
     });
 
     setBrief(result);
+    setPeople(loadedPeople);
     setStoredOpps(loadOpportunities().filter((o) => o.status !== "Archived" && o.status !== "Converted"));
     setLoaded(true);
   }, []);
@@ -604,6 +611,80 @@ export default function ChiefPage() {
               </div>
             </div>
           )}
+
+          {/* ── Relationship Signals ─────────────────────────────────────── */}
+          {(() => {
+            if (!todayStr || people.length === 0) return null;
+            const overdue = people.filter(
+              (p) => p.status !== "Archived" && isFollowUpDue(p, todayStr)
+            );
+            const highProspects = people.filter(
+              (p) =>
+                p.status !== "Archived" &&
+                (p.relationship_type === "Prospect" || p.relationship_type === "Client") &&
+                (p.priority === "High" || p.priority === "Critical") &&
+                p.related_opportunity_ids.length === 0
+            );
+            if (overdue.length === 0 && highProspects.length === 0) return null;
+            return (
+              <Card>
+                <div className="flex items-center justify-between mb-3">
+                  <SectionLabel>Relationship Signals</SectionLabel>
+                  <Link
+                    href="/relationships"
+                    className="text-[9px] font-semibold px-2.5 py-1 rounded-lg transition-all"
+                    style={{
+                      background: "rgba(52,211,153,0.07)",
+                      border: "1px solid rgba(52,211,153,0.18)",
+                      color: "rgba(52,211,153,0.7)",
+                    }}
+                  >
+                    Open CRM →
+                  </Link>
+                </div>
+                {overdue.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] mb-2" style={{ color: "rgba(239,68,68,0.5)" }}>
+                      Follow-up overdue ({overdue.length})
+                    </p>
+                    <div className="space-y-1.5">
+                      {overdue.slice(0, 4).map((p) => (
+                        <div key={p.id} className="flex items-center gap-2">
+                          <div
+                            className="w-1.5 h-1.5 rounded-full shrink-0"
+                            style={{ background: p.priority === "Critical" ? "rgba(239,68,68,0.8)" : "rgba(245,158,11,0.8)" }}
+                          />
+                          <p className="text-xs text-white/65 font-medium truncate">{p.name}</p>
+                          <p className="text-[9px] shrink-0" style={{ color: "rgba(239,68,68,0.5)" }}>
+                            due {p.next_follow_up_at}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {highProspects.length > 0 && (
+                  <div>
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] mb-2" style={{ color: "rgba(255,255,255,0.2)" }}>
+                      Prospects without opportunities ({highProspects.length})
+                    </p>
+                    <div className="space-y-1.5">
+                      {highProspects.slice(0, 3).map((p) => (
+                        <div key={p.id} className="flex items-center gap-2">
+                          <div
+                            className="w-1.5 h-1.5 rounded-full shrink-0"
+                            style={{ background: "rgba(59,130,246,0.7)" }}
+                          />
+                          <p className="text-xs text-white/55 font-medium truncate">{p.name}</p>
+                          <p className="text-[9px] text-white/25 shrink-0">{p.relationship_type}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </Card>
+            );
+          })()}
 
           {/* ── Blocked Items ─────────────────────────────────────────────── */}
           {brief.blockedItems.length > 0 && (

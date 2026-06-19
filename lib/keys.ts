@@ -56,6 +56,9 @@ export const KEYS = {
   // Opportunities
   OPPORTUNITIES:     "sovereign_opportunities",
 
+  // Relationships (personal CRM)
+  RELATIONSHIPS:     "sovereign_relationships",
+
   // Migration sentinel — presence means migration has run
   MIGRATION_V1:      "sovereign_migration_v1_complete",
 } as const;

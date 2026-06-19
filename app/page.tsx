@@ -10,6 +10,7 @@ import SystemStatus from "@/components/SystemStatus";
 import ProjectsWidget from "@/components/ProjectsWidget";
 import OverdueDigest from "@/components/OverdueDigest";
 import MemoryWidget from "@/components/MemoryWidget";
+import RelationshipWidget from "@/components/RelationshipWidget";
 import ContentWidget from "@/components/ContentWidget";
 import DailyBriefingCard from "@/components/DailyBriefingCard";
 import FocusEngineCard from "@/components/FocusEngineCard";
@@ -175,6 +176,11 @@ export default async function HomePage() {
       <SectionDivider label="Memory" id="memory" accent="rgba(139,92,246,0.55)" />
 
       <MemoryWidget />
+
+      {/* ── RELATIONSHIPS ────────────────────────────────────────────── */}
+      <SectionDivider label="Relationships" id="relationships" accent="rgba(52,211,153,0.5)" />
+
+      <RelationshipWidget />
 
       {/* ── AI ──────────────────────────────────────────────────────── */}
       <SectionDivider label="AI" id="ai" accent="rgba(99,102,241,0.6)" />
