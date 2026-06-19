@@ -1,6 +1,8 @@
 import type { MemoryItem } from "@/lib/types/memory";
 import type { Project, ProjectTask } from "@/lib/types/projects";
 import type { ContentItem } from "@/lib/types/content";
+import type { Person } from "@/lib/types/relationships";
+import type { Opportunity } from "@/lib/types/opportunities";
 
 export interface MemoryContextResult {
   items: MemoryItem[];
@@ -10,12 +12,13 @@ export interface MemoryContextResult {
 // ── Context budgeting ──────────────────────────────────────────────────────
 
 const SECTION_CAPS = {
-  project: 900,
-  content: 800,
-  memory:  900,
-  planner: 700,
-  vision:  700,
-  habits:  500,
+  relationship: 900,
+  project:      900,
+  content:      800,
+  memory:       900,
+  planner:      700,
+  vision:       700,
+  habits:       500,
 } as const;
 
 const MAX_TOTAL_CHARS = 2000;
@@ -66,41 +69,44 @@ export interface CombinedContextResult {
 }
 
 interface CombinedContextInput {
-  projectBlock?:  string;
-  contentBlock?:  string;
-  memoryBlock:    string;
-  plannerBlock:   string;
-  visionBlock:    string;
-  habitBlock?:    string;
-  maxTotalChars?: number;
+  relationshipBlock?: string;
+  projectBlock?:      string;
+  contentBlock?:      string;
+  memoryBlock:        string;
+  plannerBlock:       string;
+  visionBlock:        string;
+  habitBlock?:        string;
+  maxTotalChars?:     number;
 }
 
 /**
  * buildCombinedContext
  *
  * Applies per-section caps, then enforces a total character budget.
- * Priority order: memory > planner > vision > habits.
+ * Priority order: relationship > project > content > memory > planner > vision > habits.
  * Lower-priority sections are dropped (not trimmed further) when budget runs out.
  */
 export function buildCombinedContext(input: CombinedContextInput): CombinedContextResult {
   const {
-    projectBlock  = "",
-    contentBlock  = "",
+    relationshipBlock = "",
+    projectBlock      = "",
+    contentBlock      = "",
     memoryBlock,
     plannerBlock,
     visionBlock,
-    habitBlock    = "",
-    maxTotalChars = MAX_TOTAL_CHARS,
+    habitBlock        = "",
+    maxTotalChars     = MAX_TOTAL_CHARS,
   } = input;
 
-  // Apply per-section caps first — priority: project > content > memory > planner > vision > habits
+  // Apply per-section caps first — priority: relationship > project > content > memory > planner > vision > habits
   const sections: Array<{ key: string; label: string; block: string }> = [
-    { key: "project", label: "Project", block: projectBlock ? trimContextSection(projectBlock, SECTION_CAPS.project) : "" },
-    { key: "content", label: "Content", block: contentBlock ? trimContextSection(contentBlock, SECTION_CAPS.content) : "" },
-    { key: "memory",  label: "Memory",  block: memoryBlock  ? trimContextSection(memoryBlock,  SECTION_CAPS.memory)  : "" },
-    { key: "planner", label: "Planner", block: plannerBlock ? trimContextSection(plannerBlock, SECTION_CAPS.planner) : "" },
-    { key: "vision",  label: "Vision",  block: visionBlock  ? trimContextSection(visionBlock,  SECTION_CAPS.vision)  : "" },
-    { key: "habits",  label: "Habits",  block: habitBlock   ? trimContextSection(habitBlock,   SECTION_CAPS.habits)  : "" },
+    { key: "relationship", label: "Relationship", block: relationshipBlock ? trimContextSection(relationshipBlock, SECTION_CAPS.relationship) : "" },
+    { key: "project",      label: "Project",      block: projectBlock      ? trimContextSection(projectBlock,      SECTION_CAPS.project)      : "" },
+    { key: "content",      label: "Content",      block: contentBlock      ? trimContextSection(contentBlock,      SECTION_CAPS.content)      : "" },
+    { key: "memory",       label: "Memory",       block: memoryBlock       ? trimContextSection(memoryBlock,       SECTION_CAPS.memory)       : "" },
+    { key: "planner",      label: "Planner",      block: plannerBlock      ? trimContextSection(plannerBlock,      SECTION_CAPS.planner)      : "" },
+    { key: "vision",       label: "Vision",       block: visionBlock       ? trimContextSection(visionBlock,       SECTION_CAPS.vision)       : "" },
+    { key: "habits",       label: "Habits",       block: habitBlock        ? trimContextSection(habitBlock,        SECTION_CAPS.habits)       : "" },
   ];
 
   const parts: string[] = [];
@@ -126,6 +132,214 @@ export function buildCombinedContext(input: CombinedContextInput): CombinedConte
   }
 
   return { combined: parts.join("\n\n"), sources };
+}
+
+// ── Relationship context ───────────────────────────────────────────────────
+
+/**
+ * Trigger words that signal the user is asking about a person or relationship.
+ * Also matches directly against person name, organization, email, and tags.
+ */
+const RELATIONSHIP_TRIGGERS = [
+  "person",
+  "people",
+  "relationship",
+  "client",
+  "prospect",
+  "partner",
+  "founder",
+  "mentor",
+  "educator",
+  "contact",
+  "follow up",
+  "follow-up",
+  "followup",
+  "meeting",
+  "call",
+  "email",
+  "intro",
+  "introduction",
+  "referral",
+  "reach out",
+  "outreach",
+  "crm",
+];
+
+/**
+ * getRelationshipContext
+ *
+ * Returns a formatted relationship context block for people relevant to the
+ * query. Triggers on keyword matches or direct name/org/tag matches.
+ * Returns up to 3 people, scored by relevance.
+ *
+ * Returns empty string when no relationship context is relevant.
+ */
+export function getRelationshipContext(
+  query: string,
+  people: Person[],
+  projects: Project[],
+  opportunities: Opportunity[],
+  memoryItems: MemoryItem[]
+): string {
+  if (people.length === 0) return "";
+
+  const q = query.toLowerCase();
+  const words = q.split(/\s+/).filter((w) => w.length > 2);
+
+  // Check global triggers first
+  const globallyTriggered = RELATIONSHIP_TRIGGERS.some((t) => q.includes(t));
+
+  // Score each person
+  const activePeople = people.filter((p) => p.status !== "Archived");
+
+  const scored = activePeople.map((person) => {
+    let score = 0;
+
+    // Global trigger — anyone could be relevant
+    if (globallyTriggered) score += 2;
+
+    // Name match — split into words, each match boosts score
+    const nameLower = person.name.toLowerCase();
+    if (q.includes(nameLower)) {
+      score += 15; // full name in query
+    } else {
+      const nameWords = nameLower.split(/\s+/).filter((w) => w.length > 1);
+      for (const nw of nameWords) {
+        if (q.includes(nw)) score += 6;
+      }
+    }
+
+    // Organization match
+    if (person.organization) {
+      const orgLower = person.organization.toLowerCase();
+      if (q.includes(orgLower)) score += 8;
+      else {
+        const orgWords = orgLower.split(/\s+/).filter((w) => w.length > 2);
+        for (const ow of orgWords) {
+          if (q.includes(ow)) score += 3;
+        }
+      }
+    }
+
+    // Email match
+    if (person.email && q.includes(person.email.toLowerCase())) score += 10;
+
+    // Tag match
+    for (const tag of person.tags) {
+      const tl = tag.toLowerCase();
+      if (q.includes(tl) || tl.includes(q.slice(0, 12))) score += 4;
+    }
+
+    // Role match
+    if (person.role) {
+      const rl = person.role.toLowerCase();
+      for (const word of words) {
+        if (rl.includes(word)) score += 2;
+      }
+    }
+
+    // Relationship type keyword match (e.g. "client" in query boosts Clients)
+    const typeKeywords: Record<string, string[]> = {
+      Founder:   ["founder", "founders"],
+      Client:    ["client", "clients"],
+      Prospect:  ["prospect", "prospects", "lead", "leads"],
+      Partner:   ["partner", "partners", "partnership"],
+      Mentor:    ["mentor", "mentors", "mentorship"],
+      Educator:  ["educator", "educators", "teacher", "professor"],
+      Community: ["community", "member"],
+    };
+    const matchWords = typeKeywords[person.relationship_type] ?? [];
+    if (matchWords.some((w) => q.includes(w))) score += 5;
+
+    // Priority boost
+    const priorityBoost: Record<string, number> = {
+      Critical: 4, High: 3, Medium: 1, Low: 0,
+    };
+    score += priorityBoost[person.priority] ?? 0;
+
+    // Follow-up due today or overdue — surface urgently
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (person.next_follow_up_at && person.next_follow_up_at <= todayStr) {
+      score += 3;
+    }
+
+    return { person, score };
+  });
+
+  const relevant = scored
+    .filter(({ score }) => score > 2) // must have more than global trigger alone
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map(({ person }) => person);
+
+  if (relevant.length === 0) return "";
+
+  const projectMap   = new Map(projects.map((p) => [p.id, p.title]));
+  const oppMap       = new Map(opportunities.map((o) => [o.id, o.title]));
+  const todayStr     = new Date().toISOString().slice(0, 10);
+
+  const lines: string[] = ["## Relevant Relationship Context", ""];
+
+  for (let i = 0; i < relevant.length; i++) {
+    const p = relevant[i];
+    lines.push(`### [${i + 1}] ${p.name}`);
+
+    const metaParts: string[] = [];
+    if (p.role)         metaParts.push(p.role);
+    if (p.organization) metaParts.push(p.organization);
+    if (metaParts.length > 0) lines.push(metaParts.join(" @ "));
+
+    lines.push(`Type: ${p.relationship_type} | Status: ${p.status} | Priority: ${p.priority}`);
+
+    if (p.last_contacted_at) {
+      lines.push(`Last contacted: ${p.last_contacted_at.slice(0, 10)}`);
+    }
+    if (p.next_follow_up_at) {
+      const overdue = p.next_follow_up_at <= todayStr;
+      lines.push(`Next follow-up: ${p.next_follow_up_at}${overdue ? " ⚠️ OVERDUE" : ""}`);
+    }
+
+    if (p.related_project_ids.length > 0) {
+      const projNames = p.related_project_ids
+        .map((id) => projectMap.get(id))
+        .filter(Boolean)
+        .join(", ");
+      if (projNames) lines.push(`Related projects: ${projNames}`);
+    }
+
+    if (p.related_opportunity_ids.length > 0) {
+      const oppNames = p.related_opportunity_ids
+        .map((id) => oppMap.get(id))
+        .filter(Boolean)
+        .join(", ");
+      if (oppNames) lines.push(`Related opportunities: ${oppNames}`);
+    }
+
+    if (p.related_memory_ids.length > 0) {
+      const mems = p.related_memory_ids
+        .map((id) => memoryItems.find((m) => m.id === id)?.title)
+        .filter(Boolean)
+        .slice(0, 3)
+        .join(", ");
+      if (mems) lines.push(`Related memories: ${mems}`);
+    }
+
+    if (p.tags.length > 0) {
+      lines.push(`Tags: ${p.tags.map((t) => `#${t}`).join(" ")}`);
+    }
+
+    if (p.notes) {
+      const notes = p.notes.length > 200 ? p.notes.slice(0, 200) + "…" : p.notes;
+      lines.push(`Notes: ${notes}`);
+    }
+
+    if (p.email) lines.push(`Email: ${p.email}`);
+    if (p.phone) lines.push(`Phone: ${p.phone}`);
+
+    lines.push("");
+  }
+
+  return lines.join("\n").trimEnd();
 }
 
 // ── Planner context ────────────────────────────────────────────────────────

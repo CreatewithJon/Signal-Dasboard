@@ -2,11 +2,13 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Card } from "./Card";
-import { getRelevantMemoryContext, getPlannerContext, getVisionContext, getHabitContext, getProjectContext, getContentContext, buildCombinedContext } from "@/lib/memory/context";
+import { getRelevantMemoryContext, getPlannerContext, getVisionContext, getHabitContext, getProjectContext, getContentContext, getRelationshipContext, buildCombinedContext } from "@/lib/memory/context";
 import type { PlannerData, VisionData, HabitEntry } from "@/lib/memory/context";
 import type { MemoryItem, MemoryType, MemoryImportance } from "@/lib/types/memory";
 import type { Project, ProjectTask } from "@/lib/types/projects";
 import type { ContentItem } from "@/lib/types/content";
+import type { Person } from "@/lib/types/relationships";
+import type { Opportunity } from "@/lib/types/opportunities";
 import { KEYS } from "@/lib/keys";
 import { saveMemoryItemDual, getMemoryItemsLocal } from "@/lib/repositories/memoryRepository";
 
@@ -104,6 +106,8 @@ export default function AIPanel() {
   const [projectIncluded, setProjectIncluded] = useState(false);
   // Whether content pipeline context was included for the most recent request
   const [contentIncluded, setContentIncluded] = useState(false);
+  // Whether relationship context was included for the most recent request
+  const [relationshipIncluded, setRelationshipIncluded] = useState(false);
   // Save states per message index: "saved" | "synced" | "local-only" | "duplicate" | undefined (idle)
   const [savedStates, setSavedStates] = useState<Record<number, "saved" | "synced" | "local-only" | "duplicate">>({});
   // Active save modal
@@ -152,6 +156,7 @@ export default function AIPanel() {
     setHabitsIncluded(false);
     setProjectIncluded(false);
     setContentIncluded(false);
+    setRelationshipIncluded(false);
   }, []);
 
   const send = useCallback(async (text: string) => {
@@ -166,6 +171,7 @@ export default function AIPanel() {
     setHabitsIncluded(false);
     setProjectIncluded(false);
     setContentIncluded(false);
+    setRelationshipIncluded(false);
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setStreamingContent(""); // start streaming state
 
@@ -178,6 +184,7 @@ export default function AIPanel() {
     let habitsUsed = false;
     let projectUsed = false;
     let contentUsed = false;
+    let relationshipUsed = false;
 
     try {
       // Memory items + projects + project tasks
@@ -284,8 +291,25 @@ export default function AIPanel() {
         habitBlock = getHabitContext(userMessage, habits, habitLog);
       } catch { /* ignore */ }
 
-      // Apply budget caps and combine — project > content > memory > planner > vision > habits
+      // Relationship context — highest priority, matched by name/type/trigger keywords
+      let relationshipBlock = "";
+      try {
+        const rawPeople = localStorage.getItem(KEYS.RELATIONSHIPS);
+        const rawOpps   = localStorage.getItem(KEYS.OPPORTUNITIES);
+        const relationshipPeople: Person[]       = rawPeople ? (JSON.parse(rawPeople) as Person[])       : [];
+        const relationshipOpps:   Opportunity[]  = rawOpps   ? (JSON.parse(rawOpps)   as Opportunity[])  : [];
+        relationshipBlock = getRelationshipContext(
+          userMessage,
+          relationshipPeople,
+          projects,
+          relationshipOpps,
+          memoryItems
+        );
+      } catch { /* ignore */ }
+
+      // Apply budget caps and combine — relationship > project > content > memory > planner > vision > habits
       const { combined, sources } = buildCombinedContext({
+        relationshipBlock,
         projectBlock,
         contentBlock,
         memoryBlock:  memResult.contextBlock,
@@ -295,11 +319,12 @@ export default function AIPanel() {
       });
 
       if (combined) memoryContext = combined;
-      projectUsed = sources.includes("Project");
-      contentUsed = sources.includes("Content");
-      plannerUsed = sources.includes("Planner");
-      visionUsed  = sources.includes("Vision");
-      habitsUsed  = sources.includes("Habits");
+      relationshipUsed = sources.includes("Relationship");
+      projectUsed      = sources.includes("Project");
+      contentUsed      = sources.includes("Content");
+      plannerUsed      = sources.includes("Planner");
+      visionUsed       = sources.includes("Vision");
+      habitsUsed       = sources.includes("Habits");
       // memoryCount already set above; reconcile with budget result
       if (!sources.includes("Memory")) memoryCount = 0;
 
@@ -314,6 +339,7 @@ export default function AIPanel() {
     setHabitsIncluded(habitsUsed);
     setProjectIncluded(projectUsed);
     setContentIncluded(contentUsed);
+    setRelationshipIncluded(relationshipUsed);
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -464,7 +490,7 @@ export default function AIPanel() {
               "Bitcoin · Focus · Wealth strategy"
             )}
           </p>
-          {(projectIncluded || contentIncluded || activeMemoryCount > 0 || plannerIncluded || visionIncluded || habitsIncluded) && (
+          {(relationshipIncluded || projectIncluded || contentIncluded || activeMemoryCount > 0 || plannerIncluded || visionIncluded || habitsIncluded) && (
             <p
               className="text-[10px] mt-0.5 flex items-center gap-1.5 flex-wrap"
               style={{ color: "rgba(139,92,246,0.6)" }}
@@ -475,12 +501,13 @@ export default function AIPanel() {
               />
               {(() => {
                 const parts: string[] = [];
-                if (projectIncluded)  parts.push("project");
-                if (contentIncluded)  parts.push("content");
+                if (relationshipIncluded) parts.push("relationship");
+                if (projectIncluded)      parts.push("project");
+                if (contentIncluded)      parts.push("content");
                 if (activeMemoryCount > 0) parts.push(`${activeMemoryCount} ${activeMemoryCount === 1 ? "memory" : "memories"}`);
-                if (plannerIncluded) parts.push("planner");
-                if (visionIncluded)  parts.push("vision");
-                if (habitsIncluded)  parts.push("habits");
+                if (plannerIncluded)      parts.push("planner");
+                if (visionIncluded)       parts.push("vision");
+                if (habitsIncluded)       parts.push("habits");
                 return parts.map((p, i) => (
                   <span key={p} className="flex items-center gap-1.5">
                     {i > 0 && <span style={{ color: "rgba(139,92,246,0.3)" }}>·</span>}
