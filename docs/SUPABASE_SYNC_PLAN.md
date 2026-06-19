@@ -5,7 +5,7 @@
 > sync, backups, and future workspace support.
 
 _Version: v4.8 (Read Mode Toggle — module-by-module opt-in Supabase reads with localStorage fallback)_
-_Last updated: 2026-06-18_
+_Last updated: 2026-06-19 · Note: v5.6 adds optional pgvector columns to `memory_items` (commented migration in schema.sql, not yet applied — see docs/VECTOR_MEMORY_PLAN.md)_
 
 ---
 
@@ -38,7 +38,7 @@ At each phase, the system is fully functional and the previous layer remains int
 |---|---|---|
 | `projects` | `sovereign_projects` | Full project records |
 | `project_tasks` | `sovereign_project_tasks` | FK to projects |
-| `memory_items` | `sovereign_memory_items` | Tags/people as jsonb |
+| `memory_items` | `sovereign_memory_items` | Tags/people as jsonb · v5.6: optional `embedding vector(1536)` column (pgvector migration, not yet applied) |
 | `content_items` | `sovereign_content_items` | Platforms as jsonb array |
 | `focus_sessions` | `sovereign_focus_sessions` | Timer/review data |
 | `planner_entries` | `sovereign_planner_*` | Unified table by horizon |

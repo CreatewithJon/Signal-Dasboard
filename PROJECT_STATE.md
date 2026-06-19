@@ -1,12 +1,12 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-18 (v5.1 — Opportunity Engine)_
+_Last updated: 2026-06-19 (v5.6 — Vector Memory Foundation)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v5.1 (Opportunity Engine: Complete)
+**Version:** Sovereign OS v5.6 (Vector Memory Foundation: Complete)
 **Stable:** Yes — localStorage-first, Supabase write-through enabled
 **Status:** Live, private, password-protected
 **Deployment:** Vercel (auto-deploy from `main`)
@@ -14,6 +14,17 @@ _Last updated: 2026-06-18 (v5.1 — Opportunity Engine)_
 ---
 
 ## What's Working
+
+### Vector Memory Foundation (`lib/vector/` — v5.6)
+- `lib/vector/embedding.ts` — `isEmbeddingConfigured()` (checks `OPENAI_API_KEY`), `getEmbeddingConfig()` (provider/model/dimensions), `formatMemoryForEmbedding(item)` (title + type + content + tags + people → 8k char cap), `createEmbedding(text)` → `{ status: ok|skipped|error, embedding?, model?, dimensions? }`. Never throws. OpenAI `text-embedding-3-small` (1536d). Graceful skip when key absent.
+- `lib/vector/semanticMemory.ts` — `generateMemoryEmbedding(item)` → embedding result or skip; `searchMemorySemantic(query, items, limit)` → `{ status, items, source, reason }`. `VECTOR_DB_READY = false` (v5.6 foundation flag). Keyword fallback always active. v5.7 semantic path stubbed with full implementation, awaiting pgvector migration.
+- `app/api/vector/status/route.ts` — GET; returns `{ embeddingConfigured, provider, model, dimensions, vectorDbReady, mode, supabaseConfigured }`. Safe for client components to poll.
+- `app/api/vector/embed/route.ts` — POST `{ text, memoryId }`; returns `{ status, dimensions, model }` or `{ status: skipped, reason }`. v5.6: embedding generated and returned, not persisted.
+- `components/settings/VectorMemorySettings.tsx` — Settings panel: mode badge (Deterministic Only / Semantic Ready), provider/pgvector/dimensions status rows, Test Embedding button (configured only), setup instructions (unconfigured).
+- `/settings` — Vector Memory section added.
+- `app/memory/page.tsx` — polls `/api/vector/status` on mount; passes `embeddingConfigured` to modal; "Embed" button in modal header shows only when configured; shows `1536d` on success.
+- `supabase/schema.sql` — Commented pgvector migration: `enable extension vector`, `alter table memory_items add column embedding vector(1536) + embedding_model + embedded_at`, `match_memories()` RPC, IVFFlat index notes.
+- `docs/VECTOR_MEMORY_PLAN.md` — Architecture doc: activation checklist (6 steps), provider rationale, text format, match_memories RPC design, fallback behavior table, phases v5.7–v6.0.
 
 ### Opportunity Engine (`lib/types/opportunities.ts` + `/opportunities` page — v5.1)
 - `lib/types/opportunities.ts` — `Opportunity` type: id, title, description, type (Partnership|Content|Client|Product|Event|Education|Revenue|Personal), status (Detected|Reviewing|Active|Converted|Archived), score (0–100), score_reasoning, suggested_action, related_people, related_project_ids, related_memory_ids, source (detected|manual), conversion (target + target_id + converted_at), notes, created_at, updated_at.

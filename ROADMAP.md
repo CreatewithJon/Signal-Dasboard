@@ -2,7 +2,7 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-18 (v5.1)_
+_Last updated: 2026-06-19 (v5.6)_
 
 ---
 
@@ -142,6 +142,54 @@ _Transform Sovereign OS from an intelligent dashboard into a proactive executive
 - [x] `components/Sidebar.tsx` — `/chief` nav item first in MODULE_NAV
 - [x] `components/MobileNav.tsx` — `/chief` nav item added
 - [x] Build clean, lint clean, type-check clean
+
+## Phase 5.6 — Vector Memory Foundation (Complete)
+_Semantic embedding infrastructure without replacing the deterministic engine._
+
+- [x] `lib/vector/embedding.ts` — `isEmbeddingConfigured()`, `getEmbeddingConfig()`, `formatMemoryForEmbedding()`, `createEmbedding()`. OpenAI text-embedding-3-small (1536d). Safe skipped-state when OPENAI_API_KEY not set.
+- [x] `lib/vector/semanticMemory.ts` — `generateMemoryEmbedding()`, `searchMemorySemantic()`. Keyword fallback when vector DB not ready. v5.7 semantic path stubbed with full commented implementation.
+- [x] `app/api/vector/status/route.ts` — GET endpoint; returns `embeddingConfigured`, `provider`, `model`, `dimensions`, `vectorDbReady`, `mode`, `supabaseConfigured`. Called by client components that can't read server env vars.
+- [x] `app/api/vector/embed/route.ts` — POST `{ text, memoryId }`; returns `{ status: ok|skipped|error, dimensions, model }`. v5.6: embedding generated, not persisted (no pgvector column yet).
+- [x] `components/settings/VectorMemorySettings.tsx` — Client component: provider status, pgvector readiness, mode badge, "Test Embedding" button (only if configured), setup instructions.
+- [x] `/settings` — Vector Memory section added before Data Recovery.
+- [x] `app/memory/page.tsx` — Fetches `/api/vector/status` on load; passes `embeddingConfigured` to modal; "Embed" button in modal header (only shown when configured); shows dimensions on success.
+- [x] `supabase/schema.sql` — Commented pgvector migration section: `enable extension vector`, `alter table memory_items add column embedding vector(1536)`, `match_memories` RPC function, IVFFlat index.
+- [x] `docs/VECTOR_MEMORY_PLAN.md` — Architecture doc: activation checklist, embedding provider rationale, text format, RPC design, fallback behavior, future phases v5.7–v6.0.
+- [x] Build clean, lint clean, type-check clean.
+
+## Phase 5.5 — Action Engine (Complete)
+_Convert graph insights, opportunities, risks, and signals into scored recommended actions._
+
+- [x] `lib/actionEngine/engine.ts` — 5 generators (graph insights, opportunities, overdue follow-ups, stalled projects, idle content). Scoring: `impact×0.4 + urgency×0.4 + effort×0.2`. Top 10 + 4 category buckets.
+- [x] `app/actions/page.tsx` — Urgent/Strategic/Relationship/Content sections. Each card: Develop Plan (AI modal), → Task (project picker), → Opp, Save to Memory.
+- [x] `components/ActionEngineCard.tsx` — Homepage widget: top action + urgent count.
+- [x] Chief of Staff integration: `topAction` feeds `findHighestLeverageAction` (preferred over heuristics when critical/high).
+- [x] Sidebar + MobileNav: `/actions` added.
+
+## Phase 5.4 — Knowledge Graph Engine (Complete)
+_Deterministic relationship graph mapping connections between People, Projects, Opportunities, Content, and Memory._
+
+- [x] `lib/knowledgeGraph/engine.ts` — 9 edge types, BFS clustering, 7 insight generators, top 5 per run.
+- [x] `app/graph/page.tsx` — Stats, Insights (with AI Explore modal), Clusters, Top Connected Nodes.
+- [x] Chief of Staff integration: `graphInsights` feeds risk detection and opportunity surfacing.
+
+## Phase 5.3 — Relationship Context Injection (Complete)
+_Automatically inject relevant relationship context into AI assistant queries._
+
+- [x] `lib/memory/context.ts` — `getRelationshipContext()`: 20+ trigger keywords, 8 scoring signals, top 3 matches.
+- [x] `components/AIPanel.tsx` — Shows "relationship in context" indicator when active.
+
+## Phase 5.2 — Relationship Intelligence (Complete)
+_Personal CRM engine with follow-up tracking, relationship context, and AI integration._
+
+- [x] `lib/types/relationships.ts` — `Person` type with 8 relationship types, priorities, follow-up scheduling.
+- [x] `app/relationships/page.tsx` — Full CRM with filters, overdue badges, AI Explore.
+- [x] `components/RelationshipWidget.tsx` — Homepage widget with overdue alerts.
+
+## Phase 5.1 — Opportunity Engine (Complete)
+_Turn Chief of Staff opportunities into a tracked, scored, convertible system._
+
+- [x] Full CRUD with scoring, conversion targets (Project/ContentItem/Task/Memory), AI Develop panel.
 
 ## Phase 4.9 — RLS (Planned)
 - [ ] Row-level security enabled on all tables

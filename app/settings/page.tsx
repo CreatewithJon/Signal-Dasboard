@@ -8,6 +8,7 @@ import MigrationAssistant from "@/components/settings/MigrationAssistant";
 import SupabaseReadPreview from "@/components/settings/SupabaseReadPreview";
 import SupabaseRestore from "@/components/settings/SupabaseRestore";
 import ReadModeSettings from "@/components/settings/ReadModeSettings";
+import VectorMemorySettings from "@/components/settings/VectorMemorySettings";
 
 export const metadata: Metadata = {
   title: "Settings — Sovereign OS",
@@ -216,6 +217,18 @@ export default function SettingsPage() {
         <p className="text-[10px] text-white/20 mt-2 px-1">
           Memory is fully wired. Projects, tasks, content, and focus sessions are
           prepared — UI wiring ships in the next phase. Config is saved regardless.
+        </p>
+      </section>
+
+      {/* ── Vector Memory ───────────────────────────────────────────────── */}
+      <section className="mb-8">
+        <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-4">
+          Vector Memory
+        </p>
+        <VectorMemorySettings />
+        <p className="text-[10px] text-white/20 mt-2 px-1">
+          Semantic search uses embeddings to find contextually relevant memories beyond keyword matching.
+          The existing deterministic engine always runs — vectors are additive, never a replacement.
         </p>
       </section>
 

@@ -218,6 +218,77 @@ exception when duplicate_object then null;
 end $$;
 
 -- ============================================================
+-- v5.6 — Vector Memory Migration (OPTIONAL — run separately)
+-- ============================================================
+-- This migration adds semantic embedding support to memory_items.
+-- DO NOT run this as part of the base schema setup.
+-- Run ONLY after confirming pgvector is available in your Supabase project.
+--
+-- Prerequisites:
+--   1. Your Supabase project must have the pgvector extension available.
+--      (All Supabase projects include pgvector — verify in Database > Extensions)
+--   2. Enable the extension: uncomment and run the CREATE EXTENSION line below.
+--   3. Apply the ALTER TABLE and function/index below.
+--   4. Set OPENAI_API_KEY in your Vercel environment to enable embedding generation.
+--   5. Use the "Generate embedding" button on individual memory items to index them.
+--      (Auto-bulk-embedding is intentionally deferred to v5.7+)
+--
+-- After applying this migration, the vector search path in
+-- lib/vector/semanticMemory.ts will activate automatically.
+--
+-- ── Step 1: Enable pgvector ──────────────────────────────────────────────
+--
+-- create extension if not exists vector;
+--
+-- ── Step 2: Add embedding columns to memory_items ────────────────────────
+--
+-- alter table memory_items
+--   add column if not exists embedding        vector(1536),   -- OpenAI text-embedding-3-small
+--   add column if not exists embedding_model  text,           -- e.g. "text-embedding-3-small"
+--   add column if not exists embedded_at      timestamptz;    -- when embedding was generated
+--
+-- ── Step 3: Add IVFFlat index for cosine similarity search ───────────────
+-- Run AFTER a meaningful number of rows have embeddings (typically 100+).
+-- Index must be created manually — CONCURRENTLY won't work in a transaction.
+--
+-- create index if not exists idx_memory_items_embedding
+--   on memory_items
+--   using ivfflat (embedding vector_cosine_ops)
+--   with (lists = 100);
+--
+-- ── Step 4: Create match_memories RPC function ────────────────────────────
+-- This function is called by lib/vector/semanticMemory.ts when vector search
+-- is active. Adjust match_threshold and match_count as needed.
+--
+-- create or replace function match_memories(
+--   query_embedding vector(1536),
+--   match_threshold float  default 0.7,
+--   match_count     int    default 10
+-- )
+-- returns table (
+--   id         uuid,
+--   title      text,
+--   similarity float
+-- )
+-- language sql stable
+-- as $$
+--   select
+--     id,
+--     title,
+--     1 - (embedding <=> query_embedding) as similarity
+--   from memory_items
+--   where embedding is not null
+--     and 1 - (embedding <=> query_embedding) > match_threshold
+--   order by similarity desc
+--   limit match_count;
+-- $$;
+--
+-- After applying, flip VECTOR_DB_READY = true in lib/vector/semanticMemory.ts
+-- and set vectorDbReady = true in app/api/vector/status/route.ts.
+-- See docs/VECTOR_MEMORY_PLAN.md for the full activation checklist.
+-- ============================================================
+
+-- ============================================================
 -- Notes for v4.1 migration
 -- ============================================================
 -- When ready to add RLS:

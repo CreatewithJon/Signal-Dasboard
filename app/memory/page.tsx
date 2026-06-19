@@ -176,19 +176,48 @@ function MemoryCard({
 
 // ── MemoryModal ───────────────────────────────────────────────────────────────
 
+type EmbedState = "idle" | "loading" | "ok" | "error";
+
 function MemoryModal({
-  item, projects, onSave, onDelete, onClose,
+  item, projects, onSave, onDelete, onClose, embeddingConfigured,
 }: {
   item: MemoryItem;
   projects: Project[];
   onSave: (item: MemoryItem) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
+  embeddingConfigured: boolean;
 }) {
   const [draft, setDraft] = useState<MemoryItem>({ ...item });
   const [tagInput, setTagInput] = useState("");
   const [personInput, setPersonInput] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [embedState, setEmbedState] = useState<EmbedState>("idle");
+  const [embedDims, setEmbedDims] = useState<number | null>(null);
+
+  async function generateEmbedding() {
+    if (!embeddingConfigured) return;
+    setEmbedState("loading");
+    setEmbedDims(null);
+    try {
+      const { formatMemoryForEmbedding } = await import("@/lib/vector/embedding");
+      const text = formatMemoryForEmbedding(draft);
+      const res = await fetch("/api/vector/embed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memoryId: draft.id, text }),
+      });
+      const data = await res.json() as { status: string; dimensions?: number; error?: string };
+      if (data.status === "ok") {
+        setEmbedState("ok");
+        setEmbedDims(data.dimensions ?? null);
+      } else {
+        setEmbedState("error");
+      }
+    } catch {
+      setEmbedState("error");
+    }
+  }
 
   function update(patch: Partial<MemoryItem>) {
     setDraft((prev) => ({ ...prev, ...patch, updatedAt: nowIso() }));
@@ -257,6 +286,36 @@ function MemoryModal({
             <p className="text-[10px] text-white/25">{formatDate(draft.createdAt)}</p>
           </div>
           <div className="flex items-center gap-2">
+            {embeddingConfigured && (
+              <button
+                onClick={generateEmbedding}
+                disabled={embedState === "loading"}
+                className="text-[9px] font-bold px-3 py-1.5 rounded-lg transition-all disabled:opacity-40"
+                style={{
+                  background: embedState === "ok"
+                    ? "rgba(52,211,153,0.08)"
+                    : embedState === "error"
+                    ? "rgba(239,68,68,0.08)"
+                    : "rgba(255,255,255,0.04)",
+                  border: embedState === "ok"
+                    ? "1px solid rgba(52,211,153,0.2)"
+                    : embedState === "error"
+                    ? "1px solid rgba(239,68,68,0.18)"
+                    : "1px solid rgba(255,255,255,0.08)",
+                  color: embedState === "ok"
+                    ? "rgba(52,211,153,0.8)"
+                    : embedState === "error"
+                    ? "rgba(239,68,68,0.75)"
+                    : "rgba(255,255,255,0.3)",
+                }}
+                title={embedState === "ok" ? `${embedDims}-dim vector generated` : "Generate semantic embedding"}
+              >
+                {embedState === "loading" && "Embedding…"}
+                {embedState === "ok"      && `✓ ${embedDims}d`}
+                {embedState === "error"   && "Embed failed"}
+                {embedState === "idle"    && "Embed"}
+              </button>
+            )}
             <button
               onClick={() => onSave(draft)}
               className="text-[10px] font-bold px-4 py-1.5 rounded-lg transition-all"
@@ -496,6 +555,7 @@ export default function MemoryPage() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(null);
   const [readSource, setReadSource] = useState<"local" | "supabase">("local");
   const [readFallback, setReadFallback] = useState<string | null>(null);
+  const [embeddingConfigured, setEmbeddingConfigured] = useState(false);
   const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Quick capture
@@ -521,6 +581,14 @@ export default function MemoryPage() {
       setProjects(loadProjects());
       setLoaded(true);
     })();
+
+    // Check embedding availability without blocking page load
+    fetch("/api/vector/status")
+      .then((r) => r.json())
+      .then((d: { embeddingConfigured?: boolean }) => {
+        setEmbeddingConfigured(d.embeddingConfigured ?? false);
+      })
+      .catch(() => {});
   }, []);
 
   function showSync(status: SyncStatus) {
@@ -609,6 +677,7 @@ export default function MemoryPage() {
           onSave={handleSave}
           onDelete={handleDelete}
           onClose={() => setEditItem(null)}
+          embeddingConfigured={embeddingConfigured}
         />
       )}
 
