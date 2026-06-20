@@ -12,6 +12,7 @@ import VectorMemorySettings from "@/components/settings/VectorMemorySettings";
 import WorkspaceSettings from "@/components/settings/WorkspaceSettings";
 import FocusCleanupStatus from "@/components/settings/FocusCleanupStatus";
 import SetupProgress from "@/components/settings/SetupProgress";
+import DemoModeSettings from "@/components/settings/DemoModeSettings";
 
 export const metadata: Metadata = {
   title: "Settings — Sovereign OS",
@@ -83,6 +84,14 @@ export default function SettingsPage() {
         <p className="text-[10px] text-white/20 mt-2 px-1">
           Auto-detected from your data. Manual toggles for export and Supabase — tap to mark complete.
         </p>
+      </section>
+
+      {/* ── Demo Mode ───────────────────────────────────────────────────── */}
+      <section className="mb-8">
+        <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-4">
+          Demo & Privacy
+        </p>
+        <DemoModeSettings />
       </section>
 
       {/* ── Workspaces ──────────────────────────────────────────────────── */}
@@ -413,7 +422,7 @@ export default function SettingsPage() {
           className="rounded-2xl px-5 py-1"
           style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
         >
-          <SettingRow label="Version" value="Sovereign OS v6.9" />
+          <SettingRow label="Version" value="Sovereign OS v7.2" />
           <SettingRow label="Persistence" value={supabase.mode === "supabase-ready" ? "Supabase + localStorage" : "localStorage only"} />
           <SettingRow label="AI Model" value="Claude Haiku 4.5" />
           <SettingRow label="Deployment" value="Vercel (auto-deploy from main)" />

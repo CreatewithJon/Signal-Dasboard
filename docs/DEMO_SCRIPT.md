@@ -1,22 +1,97 @@
-# DEMO_SCRIPT.md — Sovereign OS v6.8
+# DEMO_SCRIPT.md — Sovereign OS v7.2
 
 > 10-minute live demo flow. Use this for screen recordings, investor walkthroughs, client pitches, and beta user onboarding calls.
 
-_Created: 2026-06-19_
+_Updated: 2026-06-19 (v7.2 — demo setup checklist + safe walkthrough guidance added)_
 
 ---
 
-## Setup Before Demo
+## Demo Setup Checklist (v7.2)
+
+Complete these steps **before** any live demo, screen recording, or Loom walkthrough.
+
+### Step 1 — Export your real data
+- [ ] Go to Settings → Data & Storage → **Export All**
+- [ ] Save the JSON file somewhere safe (Desktop or Backup folder)
+- [ ] Verify the file downloaded successfully
+
+### Step 2 — Enable Demo Mode
+- [ ] Go to Settings → Demo & Privacy → **Enable Demo Mode**
+- [ ] Page reloads — confirm the red "Demo Mode" badge appears in the bottom-right corner
+- [ ] Navigate to `/` — you should see demo projects, tasks, and the WelcomeBanner (if not yet dismissed)
+- [ ] Navigate to `/memory` — verify 5 demo memory items are visible
+- [ ] Navigate to `/relationships` — verify 4 demo contacts are visible
+- [ ] Navigate to `/opportunities` — verify 3 demo opportunities are visible
+
+### Step 3 — Browser setup
+- [ ] Browser zoom at 90–100%
+- [ ] Hide bookmarks bar (Cmd+Shift+B on Mac)
+- [ ] Enable Do Not Disturb / Focus mode (no notification popups)
+- [ ] Close all other browser tabs visible in tab bar
+- [ ] If screen recording: set desktop background to dark solid color
+
+### Step 4 — Optional polish
+- [ ] Run `npm run build && npm run start` for production-grade performance
+- [ ] Close DevTools if open
+- [ ] Check that BTC price is loading (CoinGecko API live)
+
+**Time target:** 10 minutes. Keep moving. The product speaks for itself — don't over-explain.
+
+---
+
+## What NOT to Show
+
+Avoid these during any demo or screen share:
+
+| What | Why | Alternative |
+|---|---|---|
+| `/settings` → Auth section | Shows your email if signed in | Skip auth section entirely |
+| Real memory items | May contain sensitive personal or business notes | Use Demo Mode — demo memory is safe |
+| Real relationships | Contains real names, emails, and notes | Use Demo Mode — demo contacts are fictional |
+| Real opportunities | May reveal confidential client names or deal sizes | Use Demo Mode |
+| `.env` file or terminal | Contains API keys | Never open terminal during demo |
+| `SUPABASE_URL` in settings | Reveals your database URL | Skip Persistence Mode detail rows |
+| AI Panel history | May contain sensitive prior conversations | Clear AI messages before demo OR scroll past |
+| `/leads` route | Contains real lead data | Do not navigate to this route |
+
+---
+
+## Safe Walkthrough Order
+
+This order maximizes wow-factor while keeping sensitive data out of frame:
+
+1. **`/`** — Command Center homepage (TodayCommand hero, intelligence zones)
+2. **`/chief`** — Chief of Staff brief (the intelligence differentiator)
+3. **`/strategy`** — Strategic layer (North Star, objectives, 30/60/90)
+4. **`/goals`** — Goal decomposition (objectives → milestones → tasks)
+5. **`/daily`** — Daily Operating Rhythm (Morning Brief → priorities → wrap)
+6. **`/memory`** — Memory module (demo data safe, show search)
+7. **`/relationships`** — Personal CRM (demo contacts safe, show AI advisor)
+8. **`/opportunities`** — Scored pipeline (demo opportunities safe)
+9. **`/settings`** — Show: Onboarding progress, Workspace section, Export button only. Skip: Auth, Supabase detail rows.
+
+**Skip during standard demo:** `/content`, `/focus`, `/planner`, `/broll`, `/narrative`
+
+---
+
+## After the Demo
+
+- [ ] Go to Settings → Demo & Privacy → **Exit Demo Mode** (or click "Exit" on the badge)
+- [ ] Page reloads — your real data is restored
+- [ ] Verify your real projects/memory appear on the homepage
+- [ ] Delete the demo JSON export file if no longer needed
+
+---
+
+## Setup Before Demo (Legacy checklist — now superseded by v7.2 checklist above)
 
 - [ ] App running at localhost:3000 (or live URL)
-- [ ] Sample data loaded: 3–5 projects, 5–10 people, 5–10 memory items, 2–3 opportunities, 3–5 content items
-- [ ] At least 1 completed focus session from today
+- [ ] Demo Mode enabled (Settings → Demo & Privacy)
+- [ ] At least 1 completed focus session visible
 - [ ] Browser zoom at 90%–100%
 - [ ] No browser extensions visible in toolbar
 - [ ] Supabase configured (shows "Supabase Ready" in settings) — optional but impressive
 - [ ] Dark background behind browser for screen recordings
-
-**Time target:** 10 minutes. Keep moving. The product speaks for itself — don't over-explain.
 
 ---
 

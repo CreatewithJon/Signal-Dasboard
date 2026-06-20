@@ -71,6 +71,10 @@ export const KEYS = {
   WELCOME_SEEN:      "sovereign_welcome_seen",
   SETUP_CHECKLIST:   "sovereign_setup_checklist",
 
+  // Demo Mode (v7.2)
+  DEMO_MODE:         "sovereign_demo_mode",
+  DEMO_BACKUP:       "sovereign_demo_backup",
+
   // Migration sentinel — presence means migration has run
   MIGRATION_V1:      "sovereign_migration_v1_complete",
 } as const;

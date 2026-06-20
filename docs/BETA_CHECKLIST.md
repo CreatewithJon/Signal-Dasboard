@@ -1,8 +1,8 @@
-# BETA_CHECKLIST.md — Sovereign OS v6.8
+# BETA_CHECKLIST.md — Sovereign OS v7.2
 
 > Pre-beta readiness tracker. Work through this list before inviting external users.
 
-_Created: 2026-06-19 · Target: Beta Phase 1 (5–10 users)_
+_Created: 2026-06-19 · Updated: 2026-06-19 (v7.2) · Target: Beta Phase 1 (5–10 users)_
 
 ---
 
@@ -10,14 +10,12 @@ _Created: 2026-06-19 · Target: Beta Phase 1 (5–10 users)_
 
 ### Critical (Must Fix Before Any External User)
 
-- [ ] **Focus session stuck state** — Sessions left as "Active" indefinitely if browser closes mid-session. Add cleanup on app init: mark sessions with `status === "Active"` and `startedAt` older than 24h as "Abandoned".
-  - File: `app/layout.tsx` (add cleanup call on mount) + `lib/focus/cleanup.ts` (new utility)
-  - Key: `KEYS.FOCUS_SESSIONS`
+- [x] **Focus session stuck state** — DONE (v6.9). `lib/focus/cleanup.ts` + `FocusSessionCleanup` layout component auto-close stale sessions on init.
 
 - [ ] **Supabase RLS (Row-Level Security)** — Without RLS, any authenticated user can query any other user's data. Must be active before sharing with anyone outside a single-user context.
-  - File: `supabase/schema.sql` — add `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` + `CREATE POLICY` per table
+  - File: `supabase/schema.sql` — RLS section added in v7.0; SQL written and documented
   - Policy pattern: `user_id = auth.uid()` on all reads and writes
-  - Docs: `docs/SUPABASE_AUTH_PLAN.md` already covers this
+  - Status: SQL written; must be **executed** in Supabase dashboard before beta
 
 - [ ] **API key strategy** — Anthropic + YouTube API keys are in `.env`/Vercel env vars. For multi-user, decide: shared key with per-user rate limits, or per-user key input in settings.
   - Option A (fastest): shared key, rate limit per IP or per user session — add middleware
@@ -28,7 +26,7 @@ _Created: 2026-06-19 · Target: Beta Phase 1 (5–10 users)_
 
 ### Important (Fix Before Beta Phase 2)
 
-- [ ] **Empty state onboarding** — New users see a blank app. Add a `/welcome` page or first-run modal that explains the 5 first steps: add a project, add a vision, add a contact, add a memory, run a focus session.
+- [x] **Empty state onboarding** — DONE (v7.1). `/welcome` route + `WelcomeBanner` on homepage + `SetupProgress` in settings. New users are guided through 5 first actions immediately.
 
 - [ ] **Error states on AI endpoints** — When Anthropic API key is missing or rate-limited, AI panels show a generic error or go silent. Add user-facing error messages: "AI key not configured — add ANTHROPIC_API_KEY in Settings" or "Rate limit hit — try again in 60 seconds."
 
@@ -117,13 +115,43 @@ ALTER TABLE focus_sessions   ADD COLUMN workspace_id text;
 - [ ] 10-minute onboarding call per beta user (optional but strongly recommended)
 - [ ] Demo video (see docs/DEMO_SCRIPT.md)
 
-### In-App Onboarding (Beta Phase 2)
-- [ ] `/welcome` route — First-run experience for new users
-  - 5-step guided setup
-  - Seeds 1 example project, 1 example contact, 1 example memory item
-  - Links to each module
-- [ ] Empty state CTAs are already in place on all major routes (done in v6.4 audit)
-- [ ] First-run detection: if all major keys are empty, show onboarding banner on homepage
+### In-App Onboarding (Beta Phase 1 — DONE v7.1)
+- [x] `/welcome` route — Full first-run welcome guide with 5 action steps
+- [x] `WelcomeBanner` — Shown on homepage until dismissed; links to `/welcome`
+- [x] `SetupProgress` — 7-item auto-detecting checklist in settings
+- [x] Empty state CTAs in place on all major routes (done in v6.4 audit)
+- [x] First-run detection via `KEYS.WELCOME_SEEN` flag
+
+---
+
+## 4b. Demo Readiness (v7.2)
+
+Status: **Complete**
+
+### What shipped in v7.2
+
+| Feature | Status | Notes |
+|---|---|---|
+| Demo Mode toggle in settings | ✓ Done | Settings → Demo & Privacy |
+| Demo data (5 modules) | ✓ Done | Fictional projects, memory, relationships, opportunities, tasks |
+| Real data backup on enter | ✓ Done | Backed up to `sovereign_demo_backup` before swap |
+| Real data restore on exit | ✓ Done | Restored on "Exit Demo Mode" or badge "Exit" button |
+| Reset Demo Data button | ✓ Done | Re-injects clean demo data; backup untouched |
+| Demo Mode badge | ✓ Done | Fixed red badge visible in all screen recordings |
+| Pre-demo export warning | ✓ Done | Amber warning card always visible in Demo & Privacy section |
+| Demo setup checklist in docs | ✓ Done | `docs/DEMO_SCRIPT.md` — 4-step pre-demo setup |
+| What NOT to show list | ✓ Done | Table of sensitive routes/sections to avoid |
+| Safe walkthrough order | ✓ Done | 9-route recommended flow with skip list |
+| Post-demo restore instructions | ✓ Done | Included in DEMO_SCRIPT.md |
+
+### Demo Readiness Checklist
+
+Before any external walkthrough:
+- [ ] Export real data (Settings → Data & Storage → Export All)
+- [ ] Enable Demo Mode (Settings → Demo & Privacy)
+- [ ] Verify red badge appears bottom-right
+- [ ] Walk through the safe route order in DEMO_SCRIPT.md
+- [ ] Exit Demo Mode after call — verify real data restored
 
 ---
 
@@ -232,15 +260,18 @@ Send to each beta user weekly:
 |---|---|---|
 | Core product (engines, modules) | ✓ Production-ready | 9/10 |
 | Data safety (export, backup) | ✓ Gold standard | 10/10 |
+| Demo readiness | ✓ Demo Mode live (v7.2) | 9/10 |
 | Mobile responsiveness | ⚠ Needs device testing | 7/10 |
-| Auth / data isolation | ✗ RLS not active | 4/10 |
-| Onboarding | ✗ No first-run experience | 3/10 |
+| Auth / data isolation | ⚠ RLS SQL written, not yet executed | 5/10 |
+| Onboarding | ✓ /welcome + banner + checklist (v7.1) | 8/10 |
 | Error handling | ⚠ Partial | 6/10 |
 | Performance | ⚠ Untested on low-end devices | 6/10 |
-| **Overall** | **Pre-beta hardening needed** | **6.4/10** |
+| **Overall** | **Demo-ready. Beta Phase 1 viable.** | **7.5/10** |
 
-**Verdict:** The product is genuinely powerful. The core intelligence stack is production-grade. The gaps are onboarding, RLS, and polish. 2–3 weeks of focused work would push this to 8.5/10 and clear for a 5–10 person closed beta.
+**Verdict:** The product is demo-ready and beta-viable for a 5–10 person closed group. Primary remaining blocker before multi-user beta: execute RLS SQL in Supabase dashboard. Onboarding is solid. Demo safety is covered. Core intelligence stack is production-grade.
+
+**Next priority:** Execute `supabase/schema.sql` v7.0 RLS migration in Supabase dashboard before sharing with any external user on the same Supabase project.
 
 ---
 
-_Beta Checklist — Sovereign OS v6.8 · Created 2026-06-19_
+_Beta Checklist — Sovereign OS v7.2 · Created 2026-06-19 · Updated 2026-06-19_

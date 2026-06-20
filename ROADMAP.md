@@ -2,7 +2,7 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-19 (v7.1)_
+_Last updated: 2026-06-19 (v7.2)_
 
 ---
 
@@ -227,6 +227,21 @@ _Semantic embedding infrastructure without replacing the deterministic engine._
 - [x] `supabase/schema.sql` — Commented pgvector migration section: `enable extension vector`, `alter table memory_items add column embedding vector(1536)`, `match_memories` RPC function, IVFFlat index.
 - [x] `docs/VECTOR_MEMORY_PLAN.md` — Architecture doc: activation checklist, embedding provider rationale, text format, RPC design, fallback behavior, future phases v5.7–v6.0.
 - [x] Build clean, lint clean, type-check clean.
+
+## Phase 7.2 — Beta Demo Hardening (Complete)
+_Demo Mode with backup-and-swap, DemoModeBadge, settings panel, safe demo data, and updated docs._
+
+- [x] `lib/keys.ts` — `DEMO_MODE` + `DEMO_BACKUP` added
+- [x] `lib/demo/data.ts` — Fictional demo data: 3 projects, 5 tasks, 5 memory items, 4 relationships, 3 opportunities, 5 productivity tasks
+- [x] `lib/demo/demoMode.ts` — `enterDemoMode` (backup → inject) / `exitDemoMode` (restore → clear) / `resetDemoData` (re-inject, backup safe) / `isDemoMode`
+- [x] `components/DemoModeBadge.tsx` — Fixed red badge shown when demo is active; "Exit" button restores real data and reloads
+- [x] `components/settings/DemoModeSettings.tsx` — Pre-demo export warning (always visible), toggle, affected-data pills, Reset Demo Data button
+- [x] `app/settings/page.tsx` — "Demo & Privacy" section added above Workspaces; version → v7.2
+- [x] `app/layout.tsx` — `<DemoModeBadge />` mounted in root layout
+- [x] `docs/DEMO_SCRIPT.md` — 4-step setup checklist, What NOT to Show table, safe walkthrough order, post-demo restore instructions
+- [x] `docs/BETA_CHECKLIST.md` — v6.9/v7.1 items marked done; 4b. Demo Readiness section added; score updated 6.4→7.5
+- [x] `PROJECT_STATE.md` + `ROADMAP.md` updated to v7.2
+- [x] lint ✓ · tsc ✓ · build ✓
 
 ## Phase 7.1 — Welcome + First-Run Onboarding (Complete)
 _First-run detection, /welcome guide page, WelcomeBanner on homepage, Setup Progress checklist in settings._

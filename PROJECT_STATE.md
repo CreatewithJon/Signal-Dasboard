@@ -1,12 +1,32 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-19 (v7.1 — Welcome + First-Run Onboarding)_
+_Last updated: 2026-06-19 (v7.2 — Beta Demo Hardening)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v7.1 (Welcome + First-Run Onboarding: Complete)
+**Version:** Sovereign OS v7.2 (Beta Demo Hardening: Complete)
+
+### Beta Demo Hardening (v7.2)
+
+**`lib/keys.ts`** — Two keys added: `DEMO_MODE` (`sovereign_demo_mode`) + `DEMO_BACKUP` (`sovereign_demo_backup`).
+
+**`lib/demo/data.ts`** — Safe fictional demo data: 3 Projects (AI Revenue Systems, Content Growth Engine, Sovereign OS Beta Prep), 5 Project Tasks, 5 Memory Items, 4 Relationships (Marcus Chen/client, Priya Patel/prospect, Sofia Rodriguez/partner, David Kim/mentor), 3 Opportunities, 5 Tasks.
+
+**`lib/demo/demoMode.ts`** — Backup-and-swap mechanics: `enterDemoMode()` backs up 6 real keys to `DEMO_BACKUP` JSON blob then injects demo data. `exitDemoMode()` restores from backup and clears flag. `resetDemoData()` re-injects demo data without touching backup. `isDemoMode()` reads flag. Real data is never lost as long as backup exists.
+
+**`components/DemoModeBadge.tsx`** — Fixed bottom-right badge (red, pulsing dot) visible throughout the app when demo mode is active. "Exit" button calls `exitDemoMode()` + `window.location.reload()`. Positioned `bottom-24` on mobile (above MobileNav), `bottom-6` on desktop. Renders nothing when demo is off.
+
+**`components/settings/DemoModeSettings.tsx`** — Settings panel: amber pre-demo warning (always visible), toggle card with affected-data pill list, Reset Demo Data button (only when active). Reload on toggle to apply localStorage changes.
+
+**`app/settings/page.tsx`** — "Demo & Privacy" section added above Workspaces. Version updated to v7.2.
+
+**`app/layout.tsx`** — `<DemoModeBadge />` mounted alongside other invisible init components.
+
+**`docs/DEMO_SCRIPT.md`** — v7.2 update: 4-step pre-demo setup checklist, "What NOT to Show" table, Safe Walkthrough Order (9 routes + skip list), post-demo restore instructions.
+
+**`docs/BETA_CHECKLIST.md`** — v7.2 update: onboarding items marked done (v7.1), focus cleanup marked done (v6.9), new section "4b. Demo Readiness" with feature table + checklist, Beta Readiness Score updated to 7.5/10.
 
 ### Welcome + First-Run Onboarding (v7.1)
 
