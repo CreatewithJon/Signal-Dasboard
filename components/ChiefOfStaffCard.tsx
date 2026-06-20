@@ -38,6 +38,7 @@ import { getSupabaseStatus } from "@/lib/supabase/status";
 import { getSyncHealth } from "@/lib/supabase/syncHealth";
 import { isDemoMode } from "@/lib/demo/demoMode";
 import { computeSystemHealth, buildSystemRiskNote, statusColor, type HealthStatus } from "@/lib/systemHealth/engine";
+import { computeRevenueSnapshot, DEFAULT_REVENUE_SETTINGS, formatCurrency, gapColor, type RevenueSettings } from "@/lib/revenue/engine";
 
 function safeRead<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -97,6 +98,7 @@ export default function ChiefOfStaffCard() {
   const [workspaceSummary, setWorkspaceSummary] = useState<WorkspaceSummaryRow[]>([]);
   const [highestRiskWs,    setHighestRiskWs]    = useState<WorkspaceAnalytics | null>(null);
   const [systemRiskNote,   setSystemRiskNote]   = useState<{ note: string; status: HealthStatus } | null>(null);
+  const [revenueSignal,    setRevenueSignal]    = useState<{ rows: Array<{ name: string; color: string; expected: number; gap: number }>; totalExpected: number; totalGap: number } | null>(null);
   const [loaded,           setLoaded]           = useState(false);
 
   useEffect(() => {
@@ -237,6 +239,33 @@ export default function ChiefOfStaffCard() {
     });
     const note = buildSystemRiskNote(sysHealth);
     if (note) setSystemRiskNote({ note, status: sysHealth.overallStatus });
+
+    // Revenue Signal — top workspaces by expected revenue
+    const revSettings = safeRead<RevenueSettings>(KEYS.REVENUE_SETTINGS, DEFAULT_REVENUE_SETTINGS);
+    const revSnap = computeRevenueSnapshot({
+      workspaces:    allWorkspaces,
+      opportunities,
+      people,
+      projects:      safeRead<Project[]>(KEYS.PROJECTS, []),
+      settings:      revSettings,
+      todayStr,
+    });
+    const signalRows = revSnap.workspaceSummaries
+      .filter((w) => w.pipelineValue > 0 || w.activeOpportunityCount > 0)
+      .slice(0, 3)
+      .map((w) => ({
+        name:     w.workspace.name,
+        color:    w.workspace.color,
+        expected: w.expectedRevenue,
+        gap:      w.revenueGap,
+      }));
+    if (signalRows.length > 0 || revSnap.totalExpectedRevenue > 0) {
+      setRevenueSignal({
+        rows:          signalRows,
+        totalExpected: revSnap.totalExpectedRevenue,
+        totalGap:      revSnap.revenueGap,
+      });
+    }
 
     setLoaded(true);
   }, []);
@@ -459,6 +488,60 @@ export default function ChiefOfStaffCard() {
                 </div>
                 <p className="text-[9px] text-white/40 leading-relaxed">{systemRiskNote.note}</p>
               </div>
+            </div>
+          </>
+        )}
+
+        {/* Revenue Signal */}
+        {revenueSignal && (
+          <>
+            <div style={{ height: 1, background: "rgba(255,255,255,0.04)" }} />
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/25">Revenue Signal</p>
+                <a
+                  href="/revenue"
+                  className="text-[8px] font-semibold transition-colors"
+                  style={{ color: "rgba(52,211,153,0.4)" }}
+                >
+                  Full report →
+                </a>
+              </div>
+              {revenueSignal.rows.length > 0 ? (
+                <div className="space-y-1.5">
+                  {revenueSignal.rows.map((row) => (
+                    <div key={row.name} className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: row.color }} />
+                      <p className="text-[10px] font-semibold text-white/55 truncate flex-1">{row.name}</p>
+                      <span
+                        className="text-[9px] font-bold tabular-nums shrink-0"
+                        style={{ color: "rgba(52,211,153,0.75)" }}
+                      >
+                        {formatCurrency(row.expected)}
+                      </span>
+                      {row.gap > 0 ? (
+                        <span className="text-[8px] tabular-nums shrink-0" style={{ color: "rgba(239,68,68,0.55)" }}>
+                          -{formatCurrency(row.gap)}
+                        </span>
+                      ) : (
+                        <span className="text-[8px] tabular-nums shrink-0" style={{ color: "rgba(52,211,153,0.45)" }}>
+                          +{formatCurrency(Math.abs(row.gap))}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between pt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+                    <p className="text-[8px] text-white/15">Total expected</p>
+                    <span className="text-[9px] font-bold tabular-nums" style={{ color: gapColor(revenueSignal.totalGap) }}>
+                      {formatCurrency(revenueSignal.totalExpected)}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[9px] text-white/20">
+                  Add estimated values to opportunities to see revenue signal.
+                </p>
+              )}
             </div>
           </>
         )}

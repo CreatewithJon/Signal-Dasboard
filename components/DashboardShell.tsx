@@ -39,6 +39,7 @@ import OverdueDigest from "@/components/OverdueDigest";
 import SystemStatus from "@/components/SystemStatus";
 import HeroStats from "@/components/HeroStats";
 import SystemHealthCard from "@/components/SystemHealthCard";
+import RevenueCard from "@/components/RevenueCard";
 
 interface DashboardShellProps {
   btcPrice:       number;
@@ -109,6 +110,7 @@ export default function DashboardShell({
           <GoalsCard />
           <WeeklyReviewCard />
           <SystemHealthCard />
+          <RevenueCard />
         </div>
       </CollapsibleZone>
 

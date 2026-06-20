@@ -6,7 +6,37 @@ _Last updated: 2026-06-19 (v7.6 — System Health & Observability)_
 
 ## Current State
 
-**Version:** Sovereign OS v7.6 (System Health & Observability: Complete)
+**Version:** Sovereign OS v7.7 (Revenue Intelligence: Complete)
+
+### Revenue Intelligence (v7.7)
+
+**`lib/revenue/engine.ts`** — Pure `computeRevenueSnapshot()` engine. Inputs: workspaces, opportunities, people, projects, settings, todayStr. Outputs: `totalPipelineValue`, `totalExpectedRevenue`, `totalClosedRevenue`, `revenueGoal`, `revenueGap`, `highestValueWorkspace`, `highestRiskWorkspace`, `workspaceSummaries[]`, `risks[]`, `suggestions[]`. Revenue logic: pipeline = sum(estimated_value), expected = sum(estimated_value × close_probability), gap = goal - expected. Confidence score: +20 per active opp (max 40) + relationship attachments + recent updates, minus overdue opps and stalled projects. Risks sorted Critical→High→Medium. Helpers: `formatCurrency()`, `confidenceColor()`, `riskSeverityColor()`, `gapColor()`.
+
+**`lib/types/opportunities.ts`** — Three optional revenue fields added (backwards-compatible): `estimated_value?: number`, `close_probability?: number` (0–1), `expected_close_date?: string` (YYYY-MM-DD).
+
+**`lib/workspaces/analytics.ts`** — `WorkspaceAnalytics` extended with `pipelineValue` and `expectedRevenue` (computed from active opportunities in each workspace). Default close probability of 0.25 used when not set.
+
+**`lib/keys.ts`** — `REVENUE_SETTINGS` key added (`sovereign_revenue_settings`).
+
+**`app/revenue/page.tsx`** — Revenue Intelligence page ("use client"). 6 sections: Executive Summary (4-stat grid + highest-value workspace) → Revenue by Workspace (full table with pipeline/forecast/closed/confidence/gap) → Pipeline Forecast (bar chart per workspace) → Revenue Risks (sorted list) → Revenue Suggestions (up to 8 actionable items) → Goal Tracking (progress bar + gap).
+
+**`components/RevenueCard.tsx`** — Compact Executive zone card. Shows forecast, goal gap, progress bar, highest-value workspace, top risk, "Full report →" link.
+
+**`components/settings/RevenueSettings.tsx`** — Revenue defaults panel: default close probability (slider), monthly revenue goal (number input). Persists to `sovereign_revenue_settings`.
+
+**`app/opportunities/page.tsx`** — `OppForm` extended with Revenue Intelligence section: Estimated Value ($), Close Probability (%), Expected Close Date. Shows live expected value calculation. All fields optional.
+
+**`components/DashboardShell.tsx`** — `RevenueCard` added to Executive zone grid.
+
+**`components/ChiefOfStaffCard.tsx`** — Revenue Signal section appended: per-workspace expected revenue and gap, total expected, "Full report →" link. Only shown when pipeline data exists.
+
+**`components/Sidebar.tsx`** — `/revenue` (Revenue) added to `SYSTEM_NAV` above System Health.
+
+**`app/settings/page.tsx`** — Revenue Defaults section added (with id="revenue" anchor) above Demo & Privacy.
+
+**`docs/REVENUE_INTELLIGENCE_PLAN.md`** — Full architecture doc.
+
+### System Health & Observability (v7.6)
 
 ### System Health & Observability (v7.6)
 

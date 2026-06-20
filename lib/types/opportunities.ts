@@ -45,6 +45,10 @@ export interface Opportunity {
   conversion:       OpportunityConversion | null;
   notes:            string;
   workspace_id?:    string;         // v7.4 — undefined = Personal (backwards-compatible)
+  // v7.7 — Revenue Intelligence fields (optional, backwards-compatible)
+  estimated_value?:     number;     // estimated deal/contract value in dollars
+  close_probability?:   number;     // 0.0–1.0 (e.g. 0.4 = 40%). Default: 0.25
+  expected_close_date?: string;     // "YYYY-MM-DD" — when the deal is expected to close
   created_at:       string; // ISO
   updated_at:       string; // ISO
 }

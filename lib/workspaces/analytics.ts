@@ -34,6 +34,9 @@ export interface WorkspaceAnalytics {
   riskScore:           number;      // 0–100, higher = more risk
   momentumScore:       number;      // 0–100, higher = more momentum
   riskFactors:         string[];    // human-readable risk bullets
+  // v7.7 — Revenue Intelligence (computed from opportunity revenue fields)
+  pipelineValue:       number;      // sum of estimated_value for active opps
+  expectedRevenue:     number;      // sum of estimated_value * close_probability for active opps
 }
 
 // ── input type ───────────────────────────────────────────────────────────────
@@ -196,6 +199,18 @@ export function computeWorkspaceAnalytics(input: AnalyticsInput): WorkspaceAnaly
         activeOpportunities, recentMemories
       );
 
+      // v7.7 — Revenue values from active opportunities
+      const DEFAULT_CLOSE_PROB = 0.25;
+      const activeWsOpps = wsOpps.filter(
+        (o) => o.status === "Detected" || o.status === "Reviewing" || o.status === "Active"
+      );
+      const pipelineValue = activeWsOpps.reduce(
+        (sum, o) => sum + (o.estimated_value ?? 0), 0
+      );
+      const expectedRevenue = activeWsOpps.reduce(
+        (sum, o) => sum + (o.estimated_value ?? 0) * (o.close_probability ?? DEFAULT_CLOSE_PROB), 0
+      );
+
       return {
         workspace:           ws,
         openProjects,
@@ -209,6 +224,8 @@ export function computeWorkspaceAnalytics(input: AnalyticsInput): WorkspaceAnaly
         riskScore,
         momentumScore,
         riskFactors,
+        pipelineValue,
+        expectedRevenue,
       };
     });
 }

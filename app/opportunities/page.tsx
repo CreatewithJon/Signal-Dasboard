@@ -644,6 +644,10 @@ function OppForm({
   const [people,      setPeople]      = useState((initial?.related_people ?? []).join(", "));
   const [projIds,     setProjIds]     = useState<string[]>(initial?.related_project_ids ?? []);
   const [memIds,      setMemIds]      = useState<string[]>(initial?.related_memory_ids ?? []);
+  // v7.7 — Revenue fields
+  const [estValue,    setEstValue]    = useState<string>(initial?.estimated_value != null ? String(initial.estimated_value) : "");
+  const [closeProb,   setCloseProb]   = useState<string>(initial?.close_probability != null ? String(Math.round(initial.close_probability * 100)) : "");
+  const [closeDate,   setCloseDate]   = useState(initial?.expected_close_date ?? "");
 
   function toggleProj(id: string) {
     setProjIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
@@ -654,6 +658,8 @@ function OppForm({
 
   function handleSave() {
     if (!title.trim()) return;
+    const parsedValue = estValue.trim() !== "" ? Number(estValue) : undefined;
+    const parsedProb  = closeProb.trim() !== "" ? Math.max(0, Math.min(100, Number(closeProb))) / 100 : undefined;
     const draft = {
       title:               title.trim(),
       description:         description.trim(),
@@ -666,6 +672,10 @@ function OppForm({
       source:              (initial?.source ?? "manual") as "manual" | "detected",
       conversion:          initial?.conversion ?? null,
       notes:               notes.trim(),
+      // v7.7 revenue fields
+      ...(parsedValue !== undefined && !isNaN(parsedValue) ? { estimated_value: parsedValue } : {}),
+      ...(parsedProb  !== undefined && !isNaN(parsedProb)  ? { close_probability: parsedProb }  : {}),
+      ...(closeDate.trim() !== "" ? { expected_close_date: closeDate.trim() } : {}),
     };
 
     if (isNew) {
@@ -816,6 +826,58 @@ function OppForm({
               </div>
             </div>
           )}
+
+          {/* Revenue fields (v7.7) */}
+          <div
+            className="rounded-xl p-3 space-y-2"
+            style={{ background: "rgba(52,211,153,0.03)", border: "1px solid rgba(52,211,153,0.1)" }}
+          >
+            <p className="text-[9px] font-bold uppercase tracking-[0.12em]" style={{ color: "rgba(52,211,153,0.5)" }}>
+              Revenue Intelligence
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-[9px] font-semibold text-white/25 uppercase tracking-wide mb-1">Est. Value ($)</p>
+                <input
+                  type="number"
+                  className={inputCls}
+                  style={inputStyle}
+                  value={estValue}
+                  onChange={(e) => setEstValue(e.target.value)}
+                  placeholder="e.g. 1500"
+                  min={0}
+                />
+              </div>
+              <div>
+                <p className="text-[9px] font-semibold text-white/25 uppercase tracking-wide mb-1">Close Prob. (%)</p>
+                <input
+                  type="number"
+                  className={inputCls}
+                  style={inputStyle}
+                  value={closeProb}
+                  onChange={(e) => setCloseProb(e.target.value)}
+                  placeholder="25"
+                  min={0}
+                  max={100}
+                />
+              </div>
+            </div>
+            <div>
+              <p className="text-[9px] font-semibold text-white/25 uppercase tracking-wide mb-1">Expected Close Date</p>
+              <input
+                type="date"
+                className={inputCls}
+                style={inputStyle}
+                value={closeDate}
+                onChange={(e) => setCloseDate(e.target.value)}
+              />
+            </div>
+            {estValue && closeProb && (
+              <p className="text-[9px]" style={{ color: "rgba(52,211,153,0.55)" }}>
+                Expected: ${Math.round(Number(estValue) * Math.max(0, Math.min(100, Number(closeProb))) / 100).toLocaleString()} at {closeProb}%
+              </p>
+            )}
+          </div>
 
           {/* Notes */}
           <div>

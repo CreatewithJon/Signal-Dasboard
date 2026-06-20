@@ -2,7 +2,7 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-19 (v7.6)_
+_Last updated: 2026-06-20 (v7.7)_
 
 ---
 
@@ -227,6 +227,25 @@ _Semantic embedding infrastructure without replacing the deterministic engine._
 - [x] `supabase/schema.sql` — Commented pgvector migration section: `enable extension vector`, `alter table memory_items add column embedding vector(1536)`, `match_memories` RPC function, IVFFlat index.
 - [x] `docs/VECTOR_MEMORY_PLAN.md` — Architecture doc: activation checklist, embedding provider rationale, text format, RPC design, fallback behavior, future phases v5.7–v6.0.
 - [x] Build clean, lint clean, type-check clean.
+
+## Phase 7.7 — Revenue Intelligence (Complete)
+_Executive revenue layer: pipeline forecasting, goal tracking, risk detection, suggestions, and Chief integration._
+
+- [x] `lib/types/opportunities.ts` — `estimated_value?`, `close_probability?`, `expected_close_date?` added (backwards-compatible)
+- [x] `lib/revenue/engine.ts` — Pure `computeRevenueSnapshot()`: totalPipeline/Expected/ClosedRevenue, revenueGap, WorkspaceRevenueSummary[], RevenueRisk[], RevenueSuggestion[]; confidence score 0–100; risk severity Critical/High/Medium; suggestions sorted by priority
+- [x] `lib/workspaces/analytics.ts` — `pipelineValue` + `expectedRevenue` added to `WorkspaceAnalytics`; computed from active opps
+- [x] `lib/keys.ts` — `REVENUE_SETTINGS` key added
+- [x] `app/revenue/page.tsx` — 6-section page: Executive Summary · Workspace Table · Pipeline Forecast · Risks · Suggestions · Goal Tracking
+- [x] `components/RevenueCard.tsx` — Compact Executive zone card: forecast, goal gap, progress bar, top workspace, top risk
+- [x] `components/settings/RevenueSettings.tsx` — Revenue defaults panel: close probability slider + monthly goal input
+- [x] `app/opportunities/page.tsx` — Revenue Intelligence section in `OppForm`: value, close probability, close date, live expected value preview
+- [x] `components/DashboardShell.tsx` — `RevenueCard` added to Executive zone
+- [x] `components/ChiefOfStaffCard.tsx` — Revenue Signal section (per-workspace expected + gap, total, link)
+- [x] `components/Sidebar.tsx` — `/revenue` added to `SYSTEM_NAV`
+- [x] `app/settings/page.tsx` — Revenue Defaults section added
+- [x] `docs/REVENUE_INTELLIGENCE_PLAN.md` — Architecture doc: scoring logic, workspace revenue, risk rules, suggestion triggers
+- [x] `PROJECT_STATE.md` + `ROADMAP.md` → v7.7
+- [x] lint ✓ · tsc ✓ · build ✓
 
 ## Phase 7.6 — System Health & Observability (Complete)
 _Executive visibility dashboard — health of Sovereign OS itself. Not a dev page; an operational command layer._

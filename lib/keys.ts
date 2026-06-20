@@ -75,6 +75,9 @@ export const KEYS = {
   DEMO_MODE:         "sovereign_demo_mode",
   DEMO_BACKUP:       "sovereign_demo_backup",
 
+  // Revenue Intelligence (v7.7)
+  REVENUE_SETTINGS:  "sovereign_revenue_settings",
+
   // Migration sentinel — presence means migration has run
   MIGRATION_V1:      "sovereign_migration_v1_complete",
 } as const;

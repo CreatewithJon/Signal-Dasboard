@@ -13,6 +13,7 @@ import WorkspaceSettings from "@/components/settings/WorkspaceSettings";
 import FocusCleanupStatus from "@/components/settings/FocusCleanupStatus";
 import SetupProgress from "@/components/settings/SetupProgress";
 import DemoModeSettings from "@/components/settings/DemoModeSettings";
+import RevenueSettingsPanel from "@/components/settings/RevenueSettings";
 
 export const metadata: Metadata = {
   title: "Settings — Sovereign OS",
@@ -83,6 +84,17 @@ export default function SettingsPage() {
         <SetupProgress />
         <p className="text-[10px] text-white/20 mt-2 px-1">
           Auto-detected from your data. Manual toggles for export and Supabase — tap to mark complete.
+        </p>
+      </section>
+
+      {/* ── Revenue Defaults ────────────────────────────────────────────── */}
+      <section className="mb-8" id="revenue">
+        <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-4">
+          Revenue Defaults
+        </p>
+        <RevenueSettingsPanel />
+        <p className="text-[10px] text-white/20 mt-2 px-1">
+          These defaults apply to all opportunities without explicit values set. Configure per-opportunity in the Opportunities module.
         </p>
       </section>
 
