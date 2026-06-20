@@ -227,6 +227,17 @@ const MODULE_NAV: NavItem[] = [
 
 const SYSTEM_NAV: NavItem[] = [
   {
+    href: "/feedback",
+    label: "Feedback",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <path d="M3 4h14v9a2 2 0 01-2 2H5a2 2 0 01-2-2V4z" strokeLinejoin="round" />
+        <path d="M6 8h8M6 11h5" strokeLinecap="round" />
+        <path d="M7 15v2l3-1.5L13 17v-2" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
     href: "/revenue",
     label: "Revenue",
     icon: (

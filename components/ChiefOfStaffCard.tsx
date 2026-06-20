@@ -39,6 +39,8 @@ import { getSyncHealth } from "@/lib/supabase/syncHealth";
 import { isDemoMode } from "@/lib/demo/demoMode";
 import { computeSystemHealth, buildSystemRiskNote, statusColor, type HealthStatus } from "@/lib/systemHealth/engine";
 import { computeRevenueSnapshot, DEFAULT_REVENUE_SETTINGS, formatCurrency, gapColor, type RevenueSettings } from "@/lib/revenue/engine";
+import { loadFeedback } from "@/lib/feedback/store";
+import type { FeedbackItem } from "@/lib/types/feedback";
 
 function safeRead<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -99,6 +101,7 @@ export default function ChiefOfStaffCard() {
   const [highestRiskWs,    setHighestRiskWs]    = useState<WorkspaceAnalytics | null>(null);
   const [systemRiskNote,   setSystemRiskNote]   = useState<{ note: string; status: HealthStatus } | null>(null);
   const [revenueSignal,    setRevenueSignal]    = useState<{ rows: Array<{ name: string; color: string; expected: number; gap: number }>; totalExpected: number; totalGap: number } | null>(null);
+  const [feedbackSignal,   setFeedbackSignal]   = useState<{ criticalCount: number; openCount: number; topItems: Array<{ type: string; title: string }> } | null>(null);
   const [loaded,           setLoaded]           = useState(false);
 
   useEffect(() => {
@@ -264,6 +267,22 @@ export default function ChiefOfStaffCard() {
         rows:          signalRows,
         totalExpected: revSnap.totalExpectedRevenue,
         totalGap:      revSnap.revenueGap,
+      });
+    }
+
+    // Feedback Signal — critical + open counts, top priority items
+    const feedbackItems = loadFeedback();
+    const openFeedback  = feedbackItems.filter((f: FeedbackItem) => f.status === "New" || f.status === "Reviewing");
+    const critFeedback  = openFeedback.filter((f: FeedbackItem) => f.priority === "Critical");
+    if (openFeedback.length > 0) {
+      const sorted = [...openFeedback].sort((a: FeedbackItem, b: FeedbackItem) => {
+        const order: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+        return (order[a.priority] ?? 3) - (order[b.priority] ?? 3);
+      });
+      setFeedbackSignal({
+        criticalCount: critFeedback.length,
+        openCount:     openFeedback.length,
+        topItems:      sorted.slice(0, 2).map((f: FeedbackItem) => ({ type: f.type, title: f.title })),
       });
     }
 
@@ -545,6 +564,54 @@ export default function ChiefOfStaffCard() {
             </div>
           </>
         )}
+
+        {/* Feedback Signal */}
+        {feedbackSignal && (
+          <>
+            <div style={{ height: 1, background: "rgba(255,255,255,0.04)" }} />
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/25">Feedback Signal</p>
+                <a
+                  href="/feedback"
+                  className="text-[8px] font-semibold transition-colors"
+                  style={{ color: "rgba(167,139,250,0.4)" }}
+                >
+                  View all →
+                </a>
+              </div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-sm font-bold tabular-nums" style={{ color: "rgba(167,139,250,0.85)" }}>
+                    {feedbackSignal.openCount}
+                  </span>
+                  <span className="text-[8px] text-white/25">open</span>
+                </div>
+                {feedbackSignal.criticalCount > 0 && (
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-sm font-bold tabular-nums" style={{ color: "rgba(239,68,68,0.8)" }}>
+                      {feedbackSignal.criticalCount}
+                    </span>
+                    <span className="text-[8px] text-white/25">critical</span>
+                  </div>
+                )}
+              </div>
+              {feedbackSignal.topItems.length > 0 && (
+                <div className="space-y-1">
+                  {feedbackSignal.topItems.map((item, i) => (
+                    <div key={i} className="flex items-start gap-1.5">
+                      <span className="text-[7px] font-bold uppercase tracking-wide text-white/25 shrink-0 mt-0.5">
+                        {item.type}
+                      </span>
+                      <p className="text-[9px] text-white/40 leading-snug truncate">{item.title}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
       </div>
     </div>
   );

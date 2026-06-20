@@ -78,6 +78,9 @@ export const KEYS = {
   // Revenue Intelligence (v7.7)
   REVENUE_SETTINGS:  "sovereign_revenue_settings",
 
+  // Feedback Engine (v8.1)
+  FEEDBACK:          "sovereign_feedback",
+
   // Migration sentinel — presence means migration has run
   MIGRATION_V1:      "sovereign_migration_v1_complete",
 } as const;

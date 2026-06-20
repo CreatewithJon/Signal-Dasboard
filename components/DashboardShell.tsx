@@ -40,6 +40,7 @@ import SystemStatus from "@/components/SystemStatus";
 import HeroStats from "@/components/HeroStats";
 import SystemHealthCard from "@/components/SystemHealthCard";
 import RevenueCard from "@/components/RevenueCard";
+import FeedbackCard from "@/components/FeedbackCard";
 
 interface DashboardShellProps {
   btcPrice:       number;
@@ -147,6 +148,9 @@ export default function DashboardShell({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <RelationshipWidget />
             <MemoryWidget />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FeedbackCard />
           </div>
         </div>
       </CollapsibleZone>

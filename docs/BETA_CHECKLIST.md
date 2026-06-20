@@ -1,8 +1,8 @@
-# BETA_CHECKLIST.md — Sovereign OS v7.4
+# BETA_CHECKLIST.md — Sovereign OS v8.1
 
 > Pre-beta readiness tracker. Work through this list before inviting external users.
 
-_Created: 2026-06-19 · Updated: 2026-06-19 (v7.4) · Target: Beta Phase 1 (5–10 users)_
+_Created: 2026-06-19 · Updated: 2026-06-19 (v8.1) · Target: Beta Phase 1 (5–10 users)_
 
 ---
 
@@ -43,6 +43,8 @@ _Created: 2026-06-19 · Updated: 2026-06-19 (v7.4) · Target: Beta Phase 1 (5–
 - [ ] **Performance on low-end Android** — Homepage runs 5+ synchronous compute chains. Test on real budget Android device (Chrome). If slow, implement `useSovereignData()` shared hook (deferred from v6.5 planning).
 
 - [ ] **`/leads` route** — Currently marked "Soon" in sidebar. Remove from sidebar entirely or add minimal functional state before any external user sees it.
+
+- [x] **Feedback Engine (v8.1)** — `/feedback` route live. Structured capture of bugs, UX issues, feature requests, and insights. AI-powered analysis, workspace-aware, conversion to project/task/memory. Chief of Staff shows Feedback Signal. FeedbackCard in Operating zone.
 
 - [ ] **`/broll` and `/narrative`** — Keep hidden. Confirm they are not publicly accessible or redirect to parent page.
 

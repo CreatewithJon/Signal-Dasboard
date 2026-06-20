@@ -2,7 +2,21 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-20 (v7.7)_
+_Last updated: 2026-06-19 (v8.1)_
+
+## Phase 8.1 — Feedback Engine (Complete)
+_Structured system for capturing friction, bugs, ideas, requests, and insights from real-world usage and beta testing._
+
+- [x] `lib/types/feedback.ts` — FeedbackItem type (type, status, priority, source, workspace_id, conversion)
+- [x] `lib/feedback/store.ts` — CRUD store: loadFeedback, createFeedback, updateFeedback, deleteFeedback, setFeedbackStatus, markFeedbackConverted
+- [x] `lib/keys.ts` — FEEDBACK key added
+- [x] `app/api/feedback-chat/route.ts` — AI analysis endpoint (product intelligence analyst system prompt)
+- [x] `app/feedback/page.tsx` — Full feedback page: stats, New/Active, Planned, Insights, Completed, AI Analysis, filters, conversions
+- [x] `components/FeedbackCard.tsx` — Operating zone homepage card
+- [x] `components/ChiefOfStaffCard.tsx` — Feedback Signal section
+- [x] `components/DashboardShell.tsx` — FeedbackCard in Operating zone
+- [x] `components/Sidebar.tsx` — /feedback in SYSTEM_NAV
+- [x] `docs/FEEDBACK_ENGINE_PLAN.md` — Full architecture doc
 
 ---
 

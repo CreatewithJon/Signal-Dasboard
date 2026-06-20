@@ -1,10 +1,36 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-19 (v7.6 — System Health & Observability)_
+_Last updated: 2026-06-19 (v8.1 — Feedback Engine)_
 
 ---
 
 ## Current State
+
+**Version:** Sovereign OS v8.1 (Feedback Engine: Complete)
+
+### Feedback Engine (v8.1)
+
+**`lib/types/feedback.ts`** — `FeedbackItem` type. Fields: id, title, description, type (Bug/Feature/UX/Performance/Workflow/Insight), status (New/Reviewing/Planned/In Progress/Completed/Rejected), priority (Critical/High/Medium/Low), source (Self/Beta User/Client/Team), workspace_id?, related_project_id?, conversion?, created_at, updated_at. `FeedbackConversion`: target (project/task/opportunity/memory), target_id, converted_at.
+
+**`lib/feedback/store.ts`** — CRUD store following opportunities pattern. `loadFeedback()`, `createFeedback()` (auto-id, timestamps, workspace awareness), `updateFeedback()`, `deleteFeedback()`, `setFeedbackStatus()`, `markFeedbackConverted()`. All reads/writes to `sovereign_feedback` in localStorage.
+
+**`lib/keys.ts`** — `FEEDBACK: "sovereign_feedback"` added (v8.1).
+
+**`app/api/feedback-chat/route.ts`** — AI analysis endpoint. System prompt: product intelligence analyst reviewing a backlog. Passes top 30 items as context. Surfaces patterns, priority issues, next actions.
+
+**`app/feedback/page.tsx`** — Feedback Engine page ("use client"). 6 sections: Summary Stats (4-stat grid) → New & Active Issues → Planned & In Progress → Insights → Completed & Rejected → AI Analysis. Filters: type, priority, workspace. Expandable rows with full description, status controls, conversion buttons (→ Project, → Task, → Memory). FeedbackForm for capture and edit.
+
+**`components/FeedbackCard.tsx`** — Compact Operating zone card. Shows open count, critical count, top priority item, latest insight, "View all →" link, "+ Add" quick link.
+
+**`components/ChiefOfStaffCard.tsx`** — Feedback Signal section appended: open count, critical count, top 2 items by priority. Only shown when open feedback exists.
+
+**`components/DashboardShell.tsx`** — `FeedbackCard` added to Operating zone grid.
+
+**`components/Sidebar.tsx`** — `/feedback` (Feedback) added as first entry in `SYSTEM_NAV`.
+
+**`docs/FEEDBACK_ENGINE_PLAN.md`** — Full architecture doc.
+
+---
 
 **Version:** Sovereign OS v7.7 (Revenue Intelligence: Complete)
 
