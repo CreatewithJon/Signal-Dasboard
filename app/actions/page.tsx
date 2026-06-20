@@ -12,6 +12,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import AppModal from "@/components/ui/AppModal";
 import { KEYS } from "@/lib/keys";
 import { computeKnowledgeGraph } from "@/lib/knowledgeGraph/engine";
 import { computeActionEngine } from "@/lib/actionEngine/engine";
@@ -134,23 +135,10 @@ function DevelopPlanModal({
   const pm = PRIORITY_META[action.priority];
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div
-        className="w-full max-w-lg rounded-2xl flex flex-col"
-        style={{
-          background: "rgba(8,8,14,0.98)",
-          border: "1px solid rgba(99,102,241,0.2)",
-          boxShadow: "0 0 80px rgba(99,102,241,0.12)",
-          maxHeight: "82vh",
-        }}
-      >
+    <AppModal open={true} onClose={onClose} align="bottom" maxWidth="lg" aria-label="Develop Action Plan">
         {/* Header */}
         <div
-          className="px-5 py-4 flex items-start gap-3"
+          className="px-5 py-4 flex items-start gap-3 shrink-0"
           style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
         >
           <div className="flex-1 min-w-0">
@@ -168,8 +156,14 @@ function DevelopPlanModal({
             <p className="text-xs font-semibold text-white/80 leading-snug">{action.title}</p>
             <p className="text-[10px] text-white/35 mt-1 leading-relaxed">{action.reason}</p>
           </div>
-          <button onClick={onClose} className="text-white/25 hover:text-white/60 transition-colors text-base shrink-0 mt-0.5">
-            ✕
+          <button
+            onClick={onClose}
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-white/25 hover:text-white/55 hover:bg-white/[0.04] transition-all shrink-0"
+            aria-label="Close"
+          >
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+              <path d="M3 3l10 10M13 3L3 13" strokeLinecap="round" />
+            </svg>
           </button>
         </div>
 
@@ -253,8 +247,7 @@ function DevelopPlanModal({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </AppModal>
   );
 }
 
@@ -296,25 +289,21 @@ function TaskModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div
-        className="w-full max-w-sm rounded-2xl"
-        style={{
-          background: "rgba(8,8,14,0.98)",
-          border: "1px solid rgba(99,102,241,0.2)",
-          boxShadow: "0 0 60px rgba(99,102,241,0.1)",
-        }}
-      >
-        <div className="px-5 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+    <AppModal open={true} onClose={onClose} maxWidth="sm" aria-label="Convert to Task">
+        <div className="px-5 py-4 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div className="flex items-center justify-between">
             <p className="text-[9px] font-bold uppercase tracking-[0.18em]" style={{ color: "rgba(99,102,241,0.6)" }}>
               Convert to Task
             </p>
-            <button onClick={onClose} className="text-white/25 hover:text-white/60 transition-colors text-sm">✕</button>
+            <button
+              onClick={onClose}
+              className="w-10 h-10 flex items-center justify-center rounded-xl text-white/25 hover:text-white/55 hover:bg-white/[0.04] transition-all"
+              aria-label="Close"
+            >
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+                <path d="M3 3l10 10M13 3L3 13" strokeLinecap="round" />
+              </svg>
+            </button>
           </div>
           <p className="text-xs font-semibold text-white/70 mt-1 leading-snug">{action.title}</p>
         </div>
@@ -384,8 +373,7 @@ function TaskModal({
             Save Task
           </button>
         </div>
-      </div>
-    </div>
+    </AppModal>
   );
 }
 

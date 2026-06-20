@@ -2,7 +2,7 @@
 
 > Semantic memory retrieval using embeddings for the Sovereign OS knowledge engine.
 
-_Version: v5.6 (Foundation — Embedding Utility + Schema Prep)_
+_Version: v5.7 (Activation — Semantic Search Live + Batch Embed)_
 _Last updated: 2026-06-19_
 
 ---
@@ -50,24 +50,27 @@ Keyword Context Engine (always runs — lib/memory/context.ts)
 
 ---
 
-## Current State (v5.6 — Foundation)
+## Current State (v5.7 — Activation)
 
 | Component | Status | Notes |
 |---|---|---|
 | `lib/vector/embedding.ts` | ✅ Built | Server-side OpenAI embedding utility |
-| `lib/vector/semanticMemory.ts` | ✅ Built | Semantic search + keyword fallback |
-| `app/api/vector/status` | ✅ Built | Reports configuration state to client |
-| `app/api/vector/embed` | ✅ Built | On-demand per-item embedding endpoint |
-| `components/settings/VectorMemorySettings.tsx` | ✅ Built | Settings panel with test button |
-| Memory page "Embed" button | ✅ Built | Shows only when OPENAI_API_KEY configured |
+| `lib/vector/vectorDb.ts` | ✅ Built | pgvector readiness probe (probeVectorDb) |
+| `lib/vector/semanticMemory.ts` | ✅ Built | Semantic search + keyword fallback; activates automatically when configured |
+| `app/api/vector/status` | ✅ Built | 4-state mode detection with Supabase probing |
+| `app/api/vector/embed` | ✅ Built | On-demand embedding + Supabase persistence when pgvector ready |
+| `app/api/vector/search` | ✅ Built | Server-side semantic search endpoint (query → IDs) |
+| `components/settings/VectorMemorySettings.tsx` | ✅ Built | 4-state mode panel + test + setup steps |
+| Memory page "Embed" button | ✅ Built | Per-item embed in modal |
+| Memory page "Batch Embed" | ✅ Built | Select mode with progress bar |
+| AI panel semantic indicator | ✅ Built | ⚡ semantic badge when vector search used |
 | `supabase/schema.sql` | ✅ Commented | pgvector migration ready to apply |
-| Supabase pgvector active | ⏳ Pending | Apply migration when ready |
-| Embeddings stored in DB | ⏳ Pending | After pgvector column added |
-| Semantic search active | ⏳ Pending | After VECTOR_DB_READY flipped |
+| Supabase pgvector active | ⏳ Pending | Apply migration to activate semantic search |
+| Embeddings in DB | ⏳ Pending | Auto-persists once pgvector column exists |
 
 ---
 
-## Activation Checklist (v5.7)
+## Activation Checklist
 
 Complete these steps in order to fully activate semantic search:
 
@@ -90,32 +93,23 @@ Run the SQL in `supabase/schema.sql` under the `v5.6 — Vector Memory Migration
 npx vercel env add OPENAI_API_KEY
 ```
 
-### Step 4 — Flip the feature flags
-In `lib/vector/semanticMemory.ts`, change:
-```ts
-const VECTOR_DB_READY = false;
-```
-to:
-```ts
-const VECTOR_DB_READY = true;
-```
-
-In `app/api/vector/status/route.ts`, change:
-```ts
-const vectorDbReady = false;
-```
-to:
-```ts
-const vectorDbReady = true;
-```
+### Step 4 — No feature flag change needed
+v5.7 removes the hardcoded `VECTOR_DB_READY = false` flag. Once the migration
+is applied, `/api/vector/status` probes Supabase dynamically and returns
+`mode: "semantic-active"` automatically. No code change required.
 
 ### Step 5 — Index memories
-Use the "Embed" button on individual memory items from `/memory` to generate
-embeddings one at a time. Start with Critical and High importance items.
+Go to `/memory` → click **Batch Embed** → select High/Critical items →
+click "Embed N selected". Progress bar tracks each item. Continue on errors.
+
+For individual items: open any memory card → click **Embed** in the modal header.
 
 ### Step 6 — Verify in settings
-Go to `/settings → Vector Memory`. Mode should show "Semantic Ready."
-Run the "Test Embedding" to confirm end-to-end pipeline.
+Go to `/settings → Vector Memory`. Mode should show **Semantic Active** (green).
+Run "Test Embedding" to confirm the end-to-end pipeline.
+
+The AI panel will show a `⚡ semantic` badge next to the memory count when
+vector search is active for a given query.
 
 ---
 
@@ -177,11 +171,13 @@ The user experience degrades gracefully — keyword results are always returned.
 
 ## Future Phases
 
-**v5.7 — Semantic Activation:**
-- Apply pgvector migration
-- Flip feature flags
-- Batch embed High/Critical memories via a migration script
-- Merge semantic + keyword results with score weighting
+**v5.7 — Semantic Activation:** ✅ Complete
+- pgvector probe via `probeVectorDb()` — no hardcoded flags
+- `app/api/vector/search` endpoint for server-side semantic search
+- `/api/vector/embed` persists to Supabase when column exists
+- Batch embed UI on Memory page with progress bar
+- AI panel ⚡ semantic badge + merged keyword+semantic context
+- 4-state mode in settings panel
 
 **v5.8 — Context Injection:**
 - `getRelationshipContext()` and `buildCombinedContext()` incorporate semantic hits
@@ -205,14 +201,19 @@ The user experience degrades gracefully — keyword results are always returned.
 ```
 lib/vector/
   embedding.ts          — OpenAI embedding utility (server-side)
+  vectorDb.ts           — probeVectorDb() — Supabase column readiness check
   semanticMemory.ts     — Semantic search + keyword fallback
 
 app/api/vector/
-  status/route.ts       — Configuration status endpoint
-  embed/route.ts        — On-demand embedding endpoint
+  status/route.ts       — 4-state mode detection endpoint
+  embed/route.ts        — On-demand embedding + Supabase persistence
+  search/route.ts       — Server-side semantic search (query → IDs)
 
 components/settings/
-  VectorMemorySettings.tsx  — Settings panel
+  VectorMemorySettings.tsx  — 4-state mode settings panel
+
+app/memory/page.tsx     — Batch Embed UI (selectMode + batchEmbed)
+components/AIPanel.tsx  — ⚡ semantic badge + /api/vector/search integration
 
 supabase/
   schema.sql            — Commented pgvector migration (v5.6 section)

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import AppModal from "@/components/ui/AppModal";
 import type {
   ContentItem,
   ContentStatus,
@@ -420,20 +421,7 @@ function ContentModal({
   const LABEL_STYLE = { color: "rgba(255,255,255,0.3)" };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(8px)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div
-        className="w-full max-w-lg rounded-2xl flex flex-col"
-        style={{
-          background: "rgba(10,8,22,0.98)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          boxShadow: "0 0 80px rgba(99,102,241,0.12)",
-          maxHeight: "90vh",
-        }}
-      >
+    <AppModal open={true} onClose={onClose} align="bottom" maxWidth="lg" accentBorder="rgba(255,255,255,0.08)" aria-label="Content item detail">
         {/* Modal header */}
         <div
           className="flex items-start justify-between px-5 pt-5 pb-4"
@@ -461,10 +449,13 @@ function ContentModal({
           </div>
           <button
             onClick={onClose}
-            className="text-sm leading-none shrink-0"
+            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/[0.04] transition-all shrink-0"
             style={{ color: "rgba(255,255,255,0.25)" }}
+            aria-label="Close"
           >
-            ✕
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+              <path d="M3 3l10 10M13 3L3 13" strokeLinecap="round" />
+            </svg>
           </button>
         </div>
 
@@ -687,8 +678,7 @@ function ContentModal({
             Save
           </button>
         </div>
-      </div>
-    </div>
+    </AppModal>
   );
 }
 

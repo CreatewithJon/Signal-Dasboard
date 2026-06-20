@@ -1,0 +1,278 @@
+"use client";
+
+/**
+ * components/StrategicPlannerCard.tsx
+ *
+ * Homepage widget for Strategic Planner Engine — Sovereign OS v6.0
+ * Shows: North Star, Top Objective, Primary Bottleneck, Confidence score.
+ * Links to /strategy for the full plan.
+ */
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { KEYS } from "@/lib/keys";
+import { computeStrategicPlan } from "@/lib/strategicPlanner/engine";
+import type { StrategicPlan } from "@/lib/strategicPlanner/engine";
+import type { Project, ProjectTask } from "@/lib/types/projects";
+import type { MemoryItem } from "@/lib/types/memory";
+import type { ContentItem } from "@/lib/types/content";
+import type { Person } from "@/lib/types/relationships";
+import type { Opportunity } from "@/lib/types/opportunities";
+import type { FocusSession } from "@/lib/types/execution";
+import { computeKnowledgeGraph } from "@/lib/knowledgeGraph/engine";
+import { computeActionEngine } from "@/lib/actionEngine/engine";
+import { computeFocusEngine } from "@/lib/focus/engine";
+import { computeDailyBriefing } from "@/lib/briefing/daily";
+import { computeChiefOfStaffBrief } from "@/lib/chiefOfStaff/engine";
+import type { HabitEntry } from "@/lib/memory/context";
+import type { PlannerItem } from "@/lib/briefing/daily";
+
+function safeRead<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function ConfidenceRing({ score }: { score: number }) {
+  const r = 16;
+  const circ = 2 * Math.PI * r;
+  const dash = (score / 100) * circ;
+  const color =
+    score >= 70 ? "rgba(52,211,153,0.85)" :
+    score >= 45 ? "rgba(245,158,11,0.85)" :
+    "rgba(239,68,68,0.7)";
+
+  return (
+    <div className="relative flex items-center justify-center" style={{ width: 38, height: 38 }}>
+      <svg width="38" height="38" style={{ transform: "rotate(-90deg)" }}>
+        <circle cx="19" cy="19" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="2.5" />
+        <circle
+          cx="19" cy="19" r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth="2.5"
+          strokeDasharray={`${dash} ${circ - dash}`}
+          strokeLinecap="round"
+        />
+      </svg>
+      <span className="absolute text-[10px] font-bold tabular-nums" style={{ color }}>
+        {score}
+      </span>
+    </div>
+  );
+}
+
+const SEVERITY_COLORS: Record<string, string> = {
+  critical: "rgba(239,68,68,0.85)",
+  high:     "rgba(245,158,11,0.85)",
+  medium:   "rgba(167,139,250,0.7)",
+};
+
+export default function StrategicPlannerCard() {
+  const [plan,   setPlan]   = useState<StrategicPlan | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    const projects      = safeRead<Project[]>(KEYS.PROJECTS, []);
+    const projectTasks  = safeRead<ProjectTask[]>(KEYS.PROJECT_TASKS, []);
+    const memoryItems   = safeRead<MemoryItem[]>(KEYS.MEMORY_ITEMS, []);
+    const contentItems  = safeRead<ContentItem[]>(KEYS.CONTENT_ITEMS, []);
+    const habits        = safeRead<HabitEntry[]>(KEYS.HABITS, []);
+    const habitLog      = safeRead<Record<string, string[]>>(KEYS.HABIT_LOG, {});
+    const dailyItems    = safeRead<PlannerItem[]>(KEYS.PLANNER_DAILY, []);
+    const weeklyItems   = safeRead<PlannerItem[]>(KEYS.PLANNER_WEEKLY, []);
+    const monthlyItems  = safeRead<string[]>(KEYS.PLANNER_MONTHLY, []);
+    const focusSessions = safeRead<FocusSession[]>(KEYS.FOCUS_SESSIONS, []);
+    const people        = safeRead<Person[]>(KEYS.RELATIONSHIPS, []);
+    const opportunities = safeRead<Opportunity[]>(KEYS.OPPORTUNITIES, []);
+    const visionData    = {
+      yr1: safeRead<string[]>(KEYS.PLANNER_1YR, []),
+      yr3: safeRead<string[]>(KEYS.PLANNER_3YR, []),
+      yr5: safeRead<string[]>(KEYS.PLANNER_5YR, []),
+    };
+
+    const focusSessNorm = focusSessions.map((s: FocusSession) => ({
+      date:        s.startedAt?.slice(0, 10) ?? todayStr,
+      completedAt: s.endedAt,
+      abandoned:   s.status === "Abandoned",
+    }));
+
+    const dailyBriefing = computeDailyBriefing({
+      todayStr, projects, projectTasks, memoryItems,
+      dailyItems, weeklyItems, monthlyItems, habits, habitLog,
+    });
+
+    const focusEngine = computeFocusEngine({
+      todayStr, projects, projectTasks, memoryItems, contentItems,
+      dailyItems, weeklyItems, monthlyItems, habits, habitLog,
+      visionData, dailyBriefing,
+    });
+
+    const graph = computeKnowledgeGraph({
+      people, projects, opportunities, contentItems, memoryItems,
+    });
+
+    const actionResult = computeActionEngine({
+      graphInsights: graph.insights,
+      opportunities,
+      people,
+      projects,
+      projectTasks,
+      contentItems,
+      todayStr,
+    });
+
+    const chiefBrief = computeChiefOfStaffBrief({
+      todayStr, projects, projectTasks, memoryItems, contentItems,
+      dailyItems, weeklyItems, monthlyItems, habits, habitLog,
+      visionData, focusEngine, dailyBriefing, people,
+      graphInsights: graph.insights,
+      topAction:     actionResult.actions[0],
+      focusSessions: focusSessNorm,
+    });
+
+    const result = computeStrategicPlan({
+      todayStr,
+      visionData,
+      projects,
+      projectTasks,
+      opportunities,
+      people,
+      contentItems,
+      memoryItems,
+      focusSessions,
+      graphInsights: graph.insights,
+      chiefBrief,
+      actionResult,
+    });
+
+    setPlan(result);
+    setLoaded(true);
+  }, []);
+
+  if (!loaded) {
+    return (
+      <div
+        className="rounded-2xl overflow-hidden animate-pulse"
+        style={{
+          border: "1px solid rgba(255,255,255,0.06)",
+          background: "rgba(255,255,255,0.012)",
+          height: 140,
+        }}
+      />
+    );
+  }
+
+  if (!plan) return null;
+
+  const topObj     = plan.topObjectives[0];
+  const topBneck   = plan.bottlenecks[0];
+  const bneckColor = topBneck ? (SEVERITY_COLORS[topBneck.severity] ?? SEVERITY_COLORS.medium) : undefined;
+
+  return (
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{
+        border: "1px solid rgba(139,92,246,0.16)",
+        background: "rgba(139,92,246,0.025)",
+      }}
+    >
+      {/* Header */}
+      <div
+        className="px-4 pt-3.5 pb-2.5 flex items-center justify-between gap-3"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
+      >
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: "rgba(139,92,246,0.14)", border: "1px solid rgba(139,92,246,0.22)" }}
+          >
+            <svg viewBox="0 0 16 16" fill="none" className="w-3.5 h-3.5">
+              <path d="M8 1L9.5 5H14L10.5 7.5L12 12L8 9.5L4 12L5.5 7.5L2 5H6.5L8 1Z"
+                stroke="rgba(167,139,250,0.85)" strokeWidth="1.2" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-[11px] font-bold text-white/80 leading-none">Strategic Plan</p>
+            <p className="text-[9px] text-white/25 mt-0.5">30 · 60 · 90 day horizon</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <ConfidenceRing score={plan.confidence} />
+          <Link
+            href="/strategy"
+            className="text-[9px] font-semibold px-2.5 py-1 rounded-lg transition-all"
+            style={{
+              background: "rgba(139,92,246,0.08)",
+              border: "1px solid rgba(139,92,246,0.2)",
+              color: "rgba(167,139,250,0.7)",
+            }}
+          >
+            Full plan →
+          </Link>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="px-4 py-3 space-y-3">
+        {/* North Star */}
+        <div>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/25 mb-1">
+            North Star
+          </p>
+          <p className="text-xs font-semibold text-white/80 leading-snug line-clamp-2">
+            {plan.northStar.title}
+          </p>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: "rgba(255,255,255,0.04)" }} />
+
+        {/* Top Objective */}
+        {topObj && (
+          <div>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/25 mb-1">
+              Top Objective
+            </p>
+            <p className="text-[10px] text-white/65 leading-relaxed line-clamp-2">
+              {topObj.title}
+            </p>
+          </div>
+        )}
+
+        {/* Divider */}
+        {topBneck && <div style={{ height: 1, background: "rgba(255,255,255,0.04)" }} />}
+
+        {/* Primary Bottleneck */}
+        {topBneck && (
+          <div>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/25 mb-1">
+              Primary Bottleneck
+            </p>
+            <div className="flex items-start gap-2">
+              <span
+                className="text-[8px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md shrink-0 mt-0.5"
+                style={{
+                  background: `${bneckColor}18`,
+                  border: `1px solid ${bneckColor}33`,
+                  color: bneckColor,
+                }}
+              >
+                {topBneck.severity}
+              </span>
+              <p className="text-[10px] text-white/50 leading-relaxed line-clamp-2">
+                {topBneck.title}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -18,6 +18,8 @@ import type { Person } from "@/lib/types/relationships";
 import { isFollowUpDue } from "@/lib/relationships/store";
 import type { GraphInsight } from "@/lib/knowledgeGraph/engine";
 import type { Action } from "@/lib/actionEngine/engine";
+import type { StrategicPlan } from "@/lib/strategicPlanner/engine";
+import type { WeeklyReview } from "@/lib/weeklyReview/engine";
 
 // ── Input ──────────────────────────────────────────────────────────────────
 
@@ -39,6 +41,8 @@ export interface ChiefInput {
   people:        Person[];               // v5.2 — relationship contacts
   graphInsights?: GraphInsight[];        // v5.4 — knowledge graph insights (optional)
   topAction?:    Action;                 // v5.5 — action engine's top recommendation (optional)
+  strategicPlan?: StrategicPlan;         // v6.0 — strategic plan for alignment checking (optional)
+  weeklyReview?:  WeeklyReview;          // v6.2 — weekly review for slipped items + alignment (optional)
 }
 
 // ── Output ─────────────────────────────────────────────────────────────────
@@ -683,6 +687,54 @@ function buildReasoning(
     lines.push(
       `**Avoid today:** ${focusEngine.avoidList.slice(0, 3).join("; ")}.`
     );
+  }
+
+  // v6.2: Weekly review signals — slipped items + alignment score
+  if (input.weeklyReview) {
+    const wr = input.weeklyReview;
+    if (wr.slippedItems.length > 0) {
+      const critCount = wr.slippedItems.filter((s) => s.severity === "critical").length;
+      const note = critCount > 0
+        ? `${critCount} critical and ${wr.slippedItems.length - critCount} other items slipped`
+        : `${wr.slippedItems.length} item${wr.slippedItems.length !== 1 ? "s" : ""} slipped`;
+      lines.push(
+        `**📋 Last week:** ${note}. Top slipped: "${wr.slippedItems[0].title}". Carry forward or consciously drop before adding new work.`
+      );
+    }
+    if (wr.strategicAlignment.score < 50 && wr.strategicAlignment.totalCompleted > 0) {
+      lines.push(
+        `**📊 Weekly alignment was ${wr.strategicAlignment.score}%** — only ${wr.strategicAlignment.completedAligned}/${wr.strategicAlignment.totalCompleted} completed tasks were strategically aligned. Today's choices should close that gap. See /review for details.`
+      );
+    }
+  }
+
+  // v6.1: Goal decomposition hint — warn if top objective has no linked projects
+  if (input.strategicPlan) {
+    const topObj = input.strategicPlan.topObjectives[0];
+    if (topObj && topObj.relatedProjects.length === 0) {
+      lines.push(
+        `**🎯 Goal decomposition needed:** Your top strategic objective ("${topObj.title}") has no linked projects or tasks. Visit /goals to decompose it into milestones and concrete actions.`
+      );
+    }
+  }
+
+  // v6.0: Strategic alignment warning
+  if (input.strategicPlan) {
+    const sp = input.strategicPlan;
+    const topObjectiveTitles = sp.topObjectives.map((o) => o.title.toLowerCase());
+    const actionLower = action.title.toLowerCase();
+    const aligned = topObjectiveTitles.some(
+      (t) => t.split(" ").filter((w) => w.length > 4).some((w) => actionLower.includes(w))
+    );
+    if (!aligned && sp.topObjectives.length > 0) {
+      lines.push(
+        `**⚠️ Strategic alignment check:** Today's highest leverage action ("${action.title}") may not directly serve your top strategic objective ("${sp.topObjectives[0].title}"). Confirm this is intentional or reprioritize.`
+      );
+    } else if (sp.bottlenecks.length > 0 && sp.bottlenecks[0].severity === "critical") {
+      lines.push(
+        `**Strategic context:** The strategy engine flagged a critical bottleneck: "${sp.bottlenecks[0].title}". Ensure today's actions address it or have a plan to unblock it.`
+      );
+    }
   }
 
   return lines.join("\n\n");

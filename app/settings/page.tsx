@@ -9,6 +9,7 @@ import SupabaseReadPreview from "@/components/settings/SupabaseReadPreview";
 import SupabaseRestore from "@/components/settings/SupabaseRestore";
 import ReadModeSettings from "@/components/settings/ReadModeSettings";
 import VectorMemorySettings from "@/components/settings/VectorMemorySettings";
+import WorkspaceSettings from "@/components/settings/WorkspaceSettings";
 
 export const metadata: Metadata = {
   title: "Settings — Sovereign OS",
@@ -70,6 +71,17 @@ export default function SettingsPage() {
           Manage persistence, data, and environment configuration.
         </p>
       </div>
+
+      {/* ── Workspaces ──────────────────────────────────────────────────── */}
+      <section className="mb-8">
+        <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-4">
+          Workspaces
+        </p>
+        <WorkspaceSettings />
+        <p className="text-[10px] text-white/20 mt-2 px-1">
+          Workspaces are metadata contexts — Personal, brand, client, community. Data filtering (scoping content and projects per workspace) ships in a future release.
+        </p>
+      </section>
 
       {/* ── Persistence Mode ────────────────────────────────────────────── */}
       <section className="mb-8">
@@ -388,7 +400,7 @@ export default function SettingsPage() {
           className="rounded-2xl px-5 py-1"
           style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
         >
-          <SettingRow label="Version" value="Sovereign OS v4.8" />
+          <SettingRow label="Version" value="Sovereign OS v6.7" />
           <SettingRow label="Persistence" value={supabase.mode === "supabase-ready" ? "Supabase + localStorage" : "localStorage only"} />
           <SettingRow label="AI Model" value="Claude Haiku 4.5" />
           <SettingRow label="Deployment" value="Vercel (auto-deploy from main)" />

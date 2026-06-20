@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import AppModal from "@/components/ui/AppModal";
 import type {
   Project,
   ProjectTask,
@@ -802,15 +803,17 @@ function ProjectModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-12 pb-8 px-4"
-      style={{ background: "rgba(0,0,0,0.75)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    <AppModal
+      open={true}
+      onClose={onClose}
+      maxWidth="2xl"
+      align="top"
+      rounded="3xl"
+      accentBorder="rgba(255,255,255,0.09)"
+      accentShadow="0 32px 80px rgba(0,0,0,0.6)"
+      background="#0d0d14"
+      aria-label="Project detail"
     >
-      <div
-        className="w-full max-w-2xl flex flex-col rounded-3xl overflow-hidden"
-        style={{ background: "#0d0d14", border: "1px solid rgba(255,255,255,0.09)", boxShadow: "0 32px 80px rgba(0,0,0,0.6)", maxHeight: "calc(100vh - 6rem)" }}
-      >
         {/* Header */}
         <div className="px-6 pt-6 pb-4 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           {/* Title + close */}
@@ -823,9 +826,12 @@ function ProjectModal({
             />
             <button
               onClick={onClose}
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-white/30 hover:text-white/60 transition-all shrink-0 text-lg"
+              className="w-11 h-11 flex items-center justify-center rounded-xl text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all shrink-0"
+              aria-label="Close"
             >
-              ×
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+                <path d="M3 3l10 10M13 3L3 13" strokeLinecap="round" />
+              </svg>
             </button>
           </div>
 
@@ -1029,8 +1035,7 @@ function ProjectModal({
             />
           )}
         </div>
-      </div>
-    </div>
+    </AppModal>
   );
 }
 
@@ -1454,15 +1459,17 @@ function WeeklyReviewModal({
   }, [onClose]);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-12 pb-8 px-4"
-      style={{ background: "rgba(0,0,0,0.8)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    <AppModal
+      open={true}
+      onClose={onClose}
+      maxWidth="2xl"
+      align="top"
+      rounded="3xl"
+      accentBorder="rgba(255,255,255,0.09)"
+      accentShadow="0 32px 80px rgba(0,0,0,0.6)"
+      background="#0d0d14"
+      aria-label="Weekly Project Review"
     >
-      <div
-        className="w-full max-w-2xl flex flex-col rounded-3xl overflow-hidden"
-        style={{ background: "#0d0d14", border: "1px solid rgba(255,255,255,0.09)", boxShadow: "0 32px 80px rgba(0,0,0,0.6)", maxHeight: "calc(100vh - 5rem)" }}
-      >
         <div className="px-6 pt-6 pb-4 shrink-0 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div>
             <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-indigo-400/50 mb-0.5">AI Analysis</p>
@@ -1479,7 +1486,15 @@ function WeeklyReviewModal({
                 Regenerate
               </button>
             )}
-            <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-white/30 hover:text-white/60 transition-all text-lg">×</button>
+            <button
+              onClick={onClose}
+              className="w-11 h-11 flex items-center justify-center rounded-xl text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all"
+              aria-label="Close"
+            >
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+                <path d="M3 3l10 10M13 3L3 13" strokeLinecap="round" />
+              </svg>
+            </button>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto px-6 py-5">
@@ -1500,8 +1515,7 @@ function WeeklyReviewModal({
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </AppModal>
   );
 }
 

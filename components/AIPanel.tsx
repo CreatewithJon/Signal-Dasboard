@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Card } from "./Card";
 import { getRelevantMemoryContext, getPlannerContext, getVisionContext, getHabitContext, getProjectContext, getContentContext, getRelationshipContext, buildCombinedContext } from "@/lib/memory/context";
 import type { PlannerData, VisionData, HabitEntry } from "@/lib/memory/context";
@@ -108,6 +108,10 @@ export default function AIPanel() {
   const [contentIncluded, setContentIncluded] = useState(false);
   // Whether relationship context was included for the most recent request
   const [relationshipIncluded, setRelationshipIncluded] = useState(false);
+  // Whether semantic vector search was used for the most recent request
+  const [semanticMemoryUsed, setSemanticMemoryUsed] = useState(false);
+  // Vector mode — fetched once on mount; drives semantic search opt-in
+  const [vectorMode, setVectorMode] = useState<string>("deterministic-only");
   // Save states per message index: "saved" | "synced" | "local-only" | "duplicate" | undefined (idle)
   const [savedStates, setSavedStates] = useState<Record<number, "saved" | "synced" | "local-only" | "duplicate">>({});
   // Active save modal
@@ -119,7 +123,7 @@ export default function AIPanel() {
 
   const isStreaming = streamingContent !== null;
 
-  // Load persisted messages on mount
+  // Load persisted messages on mount + fetch vector mode
   useEffect(() => {
     try {
       const raw = localStorage.getItem(MESSAGES_KEY);
@@ -129,6 +133,12 @@ export default function AIPanel() {
       }
     } catch {}
     setMounted(true);
+
+    // Fetch vector status non-blocking — drives semantic search opt-in
+    fetch("/api/vector/status")
+      .then((r) => r.json())
+      .then((d: { mode?: string }) => { if (d.mode) setVectorMode(d.mode); })
+      .catch(() => {});
   }, []);
 
   // Persist messages whenever they change (after mount)
@@ -157,6 +167,7 @@ export default function AIPanel() {
     setProjectIncluded(false);
     setContentIncluded(false);
     setRelationshipIncluded(false);
+    setSemanticMemoryUsed(false);
   }, []);
 
   const send = useCallback(async (text: string) => {
@@ -172,6 +183,7 @@ export default function AIPanel() {
     setProjectIncluded(false);
     setContentIncluded(false);
     setRelationshipIncluded(false);
+    setSemanticMemoryUsed(false);
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setStreamingContent(""); // start streaming state
 
@@ -185,6 +197,7 @@ export default function AIPanel() {
     let projectUsed = false;
     let contentUsed = false;
     let relationshipUsed = false;
+    let semanticUsed = false;
 
     try {
       // Memory items + projects + project tasks
@@ -206,10 +219,77 @@ export default function AIPanel() {
         contentBlock = getContentContext(userMessage, contentItems, projects, memoryItems);
       } catch { /* ignore */ }
 
-      const memResult =
+      let memResult =
         memoryItems.length > 0
           ? getRelevantMemoryContext(userMessage, memoryItems, projects)
           : { items: [], contextBlock: "" };
+
+      // ── Semantic memory augmentation (v5.7) ────────────────────────────
+      // When semantic-active, call the server-side search endpoint to get
+      // embedding-matched IDs and merge with keyword results.
+      if (vectorMode === "semantic-active" && memoryItems.length > 0) {
+        try {
+          const semRes = await fetch("/api/vector/search", {
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify({ query: userMessage, limit: 5 }),
+          });
+          const semData = await semRes.json() as {
+            status: string;
+            ids:    string[];
+            source: string;
+          };
+
+          if (semData.status === "ok" && semData.source === "semantic" && semData.ids.length > 0) {
+            const semIds       = new Set(semData.ids);
+            const semItems     = memoryItems.filter((i) => semIds.has(i.id));
+            const kwItems      = memResult.items;
+
+            // Merge: semantic first, keyword fill, dedup, cap at 5
+            const merged: typeof memoryItems = [...semItems];
+            for (const ki of kwItems) {
+              if (merged.length >= 5) break;
+              if (!semIds.has(ki.id)) merged.push(ki);
+            }
+
+            if (merged.length > 0) {
+              // Build context block in same format as getRelevantMemoryContext
+              const projectMap = new Map(projects.map((p) => [p.id, p.title]));
+              const contextBlock = [
+                "## Relevant Memory Context",
+                "",
+                ...merged.map((item, idx) => {
+                  const lines = [
+                    `### [${idx + 1}] [${item.type}] ${item.title}`,
+                    `Importance: ${item.importance} | Source: ${item.source}`,
+                    "",
+                    item.content,
+                  ];
+                  if (item.relatedProjectIds.length > 0) {
+                    const names = item.relatedProjectIds
+                      .map((id) => projectMap.get(id) ?? id)
+                      .join(", ");
+                    lines.push(`Related Projects: ${names}`);
+                  }
+                  if (item.relatedPeople.length > 0) {
+                    lines.push(`People: ${item.relatedPeople.join(", ")}`);
+                  }
+                  if (item.tags.length > 0) {
+                    lines.push(`Tags: ${item.tags.map((t) => `#${t}`).join(" ")}`);
+                  }
+                  return lines.filter(Boolean).join("\n");
+                }),
+              ].join("\n");
+
+              memResult  = { items: merged, contextBlock };
+              semanticUsed = true;
+            }
+          }
+        } catch {
+          // Non-fatal — keyword result already in memResult
+        }
+      }
+
       memoryCount = memResult.items.length;
 
       // Planner data — parse each key's format safely
@@ -340,6 +420,7 @@ export default function AIPanel() {
     setProjectIncluded(projectUsed);
     setContentIncluded(contentUsed);
     setRelationshipIncluded(relationshipUsed);
+    setSemanticMemoryUsed(semanticUsed);
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -400,7 +481,7 @@ export default function AIPanel() {
     } finally {
       abortRef.current = null;
     }
-  }, [isStreaming]);
+  }, [isStreaming, vectorMode]);
 
   function openSaveModal(messageIndex: number) {
     const msg = messages[messageIndex];
@@ -500,16 +581,37 @@ export default function AIPanel() {
                 style={{ background: "rgba(139,92,246,0.7)" }}
               />
               {(() => {
-                const parts: string[] = [];
+                const parts: React.ReactNode[] = [];
                 if (relationshipIncluded) parts.push("relationship");
                 if (projectIncluded)      parts.push("project");
                 if (contentIncluded)      parts.push("content");
-                if (activeMemoryCount > 0) parts.push(`${activeMemoryCount} ${activeMemoryCount === 1 ? "memory" : "memories"}`);
+                if (activeMemoryCount > 0) {
+                  const label = `${activeMemoryCount} ${activeMemoryCount === 1 ? "memory" : "memories"}`;
+                  parts.push(
+                    semanticMemoryUsed
+                      ? (
+                        <span
+                          key="memory-semantic"
+                          className="inline-flex items-center gap-1"
+                          title="Semantic vector search active"
+                        >
+                          {label}
+                          <span
+                            className="text-[8px] font-bold px-1 py-0.5 rounded"
+                            style={{ background: "rgba(99,102,241,0.18)", color: "rgba(165,180,252,0.85)" }}
+                          >
+                            ⚡ semantic
+                          </span>
+                        </span>
+                      )
+                      : label
+                  );
+                }
                 if (plannerIncluded)      parts.push("planner");
                 if (visionIncluded)       parts.push("vision");
                 if (habitsIncluded)       parts.push("habits");
                 return parts.map((p, i) => (
-                  <span key={p} className="flex items-center gap-1.5">
+                  <span key={i} className="flex items-center gap-1.5">
                     {i > 0 && <span style={{ color: "rgba(139,92,246,0.3)" }}>·</span>}
                     {p}
                   </span>

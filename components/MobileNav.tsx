@@ -14,6 +14,38 @@ const navItems = [
     ),
   },
   {
+    href: "/strategy",
+    label: "Strategy",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-5 h-5">
+        <path d="M10 2L14 8H18L14 12L15.5 18L10 15L4.5 18L6 12L2 8H6L10 2Z" strokeLinejoin="round" />
+        <path d="M10 7v5M7.5 12h5" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    href: "/goals",
+    label: "Goals",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-5 h-5">
+        <circle cx="10" cy="10" r="8" />
+        <path d="M10 6v4l3 3" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="10" cy="10" r="1.5" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+  },
+  {
+    href: "/review",
+    label: "Review",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-5 h-5">
+        <rect x="3" y="4" width="14" height="13" rx="2" />
+        <path d="M3 8h14" strokeLinecap="round" />
+        <path d="M6 12l2.5 2L14 10" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
     href: "/actions",
     label: "Actions",
     icon: (
@@ -32,6 +64,16 @@ const navItems = [
         <rect x="11" y="2" width="7" height="7" rx="1.5" />
         <rect x="2" y="11" width="7" height="7" rx="1.5" />
         <rect x="11" y="11" width="7" height="7" rx="1.5" />
+      </svg>
+    ),
+  },
+  {
+    href: "/daily",
+    label: "Daily",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-5 h-5">
+        <circle cx="10" cy="10" r="8" />
+        <path d="M10 6v4l2.5 2.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
   },
@@ -123,21 +165,24 @@ const navItems = [
   },
 ];
 
-const EXACT_ROUTES = ["/focus", "/planner", "/content", "/projects", "/memory", "/opportunities", "/relationships", "/graph", "/actions"];
+const EXACT_ROUTES = ["/daily", "/focus", "/planner", "/content", "/projects", "/memory", "/opportunities", "/relationships", "/graph", "/actions", "/chief", "/strategy", "/goals", "/review"];
 
 export default function MobileNav() {
   const pathname = usePathname();
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around h-16"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50"
       style={{
-        background: "rgba(3,3,8,0.92)",
-        backdropFilter: "blur(20px)",
+        background:           "rgba(3,3,8,0.92)",
+        backdropFilter:       "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        borderTop: "1px solid rgba(255,255,255,0.06)",
+        borderTop:            "1px solid rgba(255,255,255,0.06)",
+        // iOS home indicator safe zone
+        paddingBottom:        "env(safe-area-inset-bottom)",
       }}
     >
+      <div className="flex items-center justify-around h-16">
       {navItems.map((item) => {
         const isActive = EXACT_ROUTES.includes(item.href)
           ? pathname === item.href
@@ -157,6 +202,7 @@ export default function MobileNav() {
           </Link>
         );
       })}
+      </div>
     </nav>
   );
 }

@@ -15,6 +15,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import AppModal from "@/components/ui/AppModal";
 import { KEYS } from "@/lib/keys";
 import {
   loadOpportunities,
@@ -186,18 +187,7 @@ function AIDevelopPanel({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}
-    >
-      <div
-        className="w-full max-w-lg rounded-2xl overflow-hidden flex flex-col"
-        style={{
-          maxHeight: "85vh",
-          background: "#0d0d0f",
-          border: "1px solid rgba(99,102,241,0.2)",
-        }}
-      >
+    <AppModal open={true} onClose={onClose} align="bottom" maxWidth="lg" accentBorder="rgba(99,102,241,0.2)" aria-label="Develop Opportunity">
         {/* Header */}
         <div
           className="px-4 pt-4 pb-3 flex items-start justify-between gap-3 shrink-0"
@@ -209,7 +199,8 @@ function AIDevelopPanel({
           </div>
           <button
             onClick={onClose}
-            className="text-white/30 hover:text-white/60 transition-colors shrink-0"
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all shrink-0"
+            aria-label="Close"
           >
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
               <path d="M3 3l10 10M13 3L3 13" strokeLinecap="round" />
@@ -312,8 +303,7 @@ function AIDevelopPanel({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </AppModal>
   );
 }
 
@@ -448,24 +438,21 @@ function ConvertModal({
   ];
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}
-    >
-      <div
-        className="w-full max-w-md rounded-2xl overflow-hidden"
-        style={{ background: "#0d0d0f", border: "1px solid rgba(255,255,255,0.09)" }}
-      >
+    <AppModal open={true} onClose={onClose} maxWidth="md" accentBorder="rgba(255,255,255,0.09)" aria-label="Convert Opportunity">
         {/* Header */}
         <div
-          className="px-4 pt-4 pb-3 flex items-start justify-between"
+          className="px-4 pt-4 pb-3 flex items-start justify-between shrink-0"
           style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
         >
           <div>
             <p className="text-xs font-bold text-white/80">Convert Opportunity</p>
             <p className="text-[10px] text-white/30 mt-0.5 line-clamp-1">{opp.title}</p>
           </div>
-          <button onClick={onClose} className="text-white/30 hover:text-white/60 transition-colors">
+          <button
+            onClick={onClose}
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all"
+            aria-label="Close"
+          >
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
               <path d="M3 3l10 10M13 3L3 13" strokeLinecap="round" />
             </svg>
@@ -611,8 +598,7 @@ function ConvertModal({
             </div>
           </>
         )}
-      </div>
-    </div>
+    </AppModal>
   );
 }
 
@@ -698,23 +684,20 @@ function OppForm({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
-      style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}
-    >
-      <div
-        className="w-full max-w-lg rounded-2xl overflow-hidden my-auto"
-        style={{ background: "#0d0d0f", border: "1px solid rgba(255,255,255,0.09)" }}
-      >
+    <AppModal open={true} onClose={onCancel} maxWidth="lg" accentBorder="rgba(255,255,255,0.09)" aria-label={isNew ? "New Opportunity" : "Edit Opportunity"}>
         {/* Header */}
         <div
-          className="px-4 pt-4 pb-3 flex items-center justify-between"
+          className="px-4 pt-4 pb-3 flex items-center justify-between shrink-0"
           style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
         >
           <p className="text-xs font-bold text-white/80">
             {isNew ? "New Opportunity" : "Edit Opportunity"}
           </p>
-          <button onClick={onCancel} className="text-white/30 hover:text-white/60">
+          <button
+            onClick={onCancel}
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all"
+            aria-label="Close"
+          >
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
               <path d="M3 3l10 10M13 3L3 13" strokeLinecap="round" />
             </svg>
@@ -876,8 +859,7 @@ function OppForm({
             Cancel
           </button>
         </div>
-      </div>
-    </div>
+    </AppModal>
   );
 }
 

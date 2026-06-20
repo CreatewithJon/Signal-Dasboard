@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
@@ -10,6 +10,13 @@ import AuthListener from "@/components/auth/AuthListener";
 export const metadata: Metadata = {
   title: "Sovereign OS",
   description: "A personal AI operating system for building, organizing, and executing in the AI-powered digital era.",
+};
+
+// Enable env(safe-area-inset-*) CSS variables for iOS notch/home-indicator support
+export const viewport: Viewport = {
+  width:       "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -33,7 +40,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <Sidebar />
           <div className="flex-1 flex flex-col overflow-hidden">
             <DashboardHeader />
-            <main className="flex-1 overflow-y-auto px-4 pb-24 md:px-8 md:pb-10">{children}</main>
+            {/* pb-32 covers fixed MobileNav (64px) + iOS safe-area (~34px) + margin */}
+            <main className="flex-1 overflow-y-auto px-4 pb-32 md:px-8 md:pb-10">{children}</main>
           </div>
         </div>
 

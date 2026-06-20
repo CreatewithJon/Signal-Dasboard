@@ -1,18 +1,31 @@
 /**
  * lib/vector/semanticMemory.ts
  *
- * Vector Memory Foundation — Sovereign OS v5.6
+ * Vector Memory Search — Sovereign OS v5.7
  *
  * Semantic memory search using vector embeddings.
- * Falls back to the existing keyword search when not configured.
+ * Falls back to keyword search when not configured or on any error.
  *
- * Architecture:
- *   1. If no provider configured → return skipped + keyword fallback
- *   2. If Supabase vector not ready (pgvector not installed) → return skipped
- *   3. If both ready → perform cosine similarity search via Supabase RPC
+ * Architecture (v5.7):
+ *   - `searchMemorySemantic()` tries embedding + Supabase RPC when both are
+ *     configured. On the server (route handlers), OPENAI_API_KEY is available
+ *     so the semantic path activates automatically. On the browser client,
+ *     OPENAI_API_KEY is absent, so it falls back to keyword search without
+ *     any error surfaced to the user.
+ *   - Server-side callers (e.g. a route handler processing context) can
+ *     import this function directly.
+ *   - Client components use the `/api/vector/search` POST endpoint instead
+ *     of calling this function, since they can't read OPENAI_API_KEY.
+ *   - `generateMemoryEmbedding()` is used by the `/api/vector/embed` route
+ *     for on-demand per-item embedding with optional Supabase persistence.
  *
- * v5.6: Foundation only. Supabase vector search path returns "skipped" until
- * the pgvector migration (docs/VECTOR_MEMORY_PLAN.md) is applied.
+ * Fallback table:
+ *   OPENAI_API_KEY absent        → keyword search (no error)
+ *   Supabase not configured      → keyword search (no error)
+ *   pgvector column absent       → keyword search (no error)
+ *   Embedding API error          → keyword search, logs reason
+ *   Supabase RPC error           → keyword search, logs reason
+ *   Empty query                  → all items (unranked)
  */
 
 import {
@@ -28,10 +41,10 @@ import type { MemoryItem } from "@/lib/types/memory";
 export type SemanticSearchStatus = "ok" | "skipped" | "error" | "fallback";
 
 export interface SemanticSearchResult {
-  status:      SemanticSearchStatus;
-  items:       MemoryItem[];   // Ranked results (empty on skip/error)
-  source:      "semantic" | "keyword" | "none";
-  reason?:     string;         // Why skipped/fallback was used
+  status:  SemanticSearchStatus;
+  items:   MemoryItem[];   // Ranked results (empty on skip/error)
+  source:  "semantic" | "keyword" | "none";
+  reason?: string;         // Why fallback/skip was used
 }
 
 export interface GenerateEmbeddingResult {
@@ -46,8 +59,8 @@ export interface GenerateEmbeddingResult {
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 /**
- * Simple keyword fallback: scores each memory item by query term overlap.
- * Used when semantic search is unavailable.
+ * Keyword fallback scorer — used when semantic search is unavailable.
+ * Scores items by term overlap across title, content, tags, and people.
  */
 function keywordFallback(query: string, items: MemoryItem[], limit: number): MemoryItem[] {
   const terms = query.toLowerCase().split(/\s+/).filter((t) => t.length > 1);
@@ -63,9 +76,9 @@ function keywordFallback(query: string, items: MemoryItem[], limit: number): Mem
     ].join(" ").toLowerCase();
 
     const score = terms.reduce((sum, term) => {
-      const titleBonus = item.title.toLowerCase().includes(term) ? 3 : 0;
+      const titleBonus   = item.title.toLowerCase().includes(term) ? 3 : 0;
       const contentBonus = item.content.toLowerCase().includes(term) ? 1 : 0;
-      const tagBonus = item.tags.some((t) => t.includes(term)) ? 2 : 0;
+      const tagBonus     = item.tags.some((t) => t.includes(term)) ? 2 : 0;
       return sum + (haystack.includes(term) ? 1 : 0) + titleBonus + contentBonus + tagBonus;
     }, 0);
 
@@ -82,13 +95,10 @@ function keywordFallback(query: string, items: MemoryItem[], limit: number): Mem
 // ── Generate embedding for a single memory item ────────────────────────────
 
 /**
- * Generates and returns the embedding for a MemoryItem.
+ * Generates the embedding for a MemoryItem.
  *
- * v5.6: The embedding is returned but NOT stored anywhere yet (Supabase
- * pgvector column doesn't exist until the migration is applied).
- * The result can be used for one-off comparisons or logged for debugging.
- *
- * Future (v5.7+): Store in Supabase memory_items.embedding column.
+ * v5.7: Returns the embedding result. Persistence to Supabase (when pgvector
+ * migration is applied) is handled by the /api/vector/embed route, not here.
  */
 export async function generateMemoryEmbedding(
   item: MemoryItem
@@ -101,7 +111,7 @@ export async function generateMemoryEmbedding(
     };
   }
 
-  const text = formatMemoryForEmbedding(item);
+  const text              = formatMemoryForEmbedding(item);
   const result: EmbeddingResult = await createEmbedding(text);
 
   if (result.status === "skipped") {
@@ -125,14 +135,13 @@ export async function generateMemoryEmbedding(
 /**
  * Performs semantic search across memory items.
  *
- * Priority:
- *   1. If embedding not configured → skip, run keyword fallback
- *   2. If Supabase vector not available → skip, run keyword fallback
- *   3. Otherwise → cosine similarity search (v5.7+)
+ * On the server (route handlers): activates the full semantic path when
+ * OPENAI_API_KEY is set and Supabase + pgvector are configured.
+ * On the browser client: OPENAI_API_KEY is absent, so `createEmbedding()`
+ * returns "skipped" and this function falls back to keyword search.
  *
- * v5.6: Always returns fallback, as the Supabase vector column doesn't exist yet.
- * This function is the placeholder for the semantic path; the keyword fallback
- * ensures existing search functionality is never degraded.
+ * For client-side semantic search, call the /api/vector/search endpoint
+ * instead (which runs this logic server-side).
  */
 export async function searchMemorySemantic(
   query: string,
@@ -149,7 +158,7 @@ export async function searchMemorySemantic(
     };
   }
 
-  // Guard: no embedding provider
+  // Guard: no embedding provider (includes client-side where OPENAI_API_KEY is absent)
   if (!isEmbeddingConfigured()) {
     return {
       status: "fallback",
@@ -159,57 +168,62 @@ export async function searchMemorySemantic(
     };
   }
 
-  // v5.6: Supabase pgvector not yet available (migration pending).
-  // Skip the semantic path and use keyword fallback.
-  // TODO v5.7: Check if memory_items.embedding column exists; if so,
-  //            generate query embedding + call Supabase RPC match_memories().
-  const VECTOR_DB_READY = false; // Will flip to true after pgvector migration
+  // Attempt full semantic path
+  try {
+    const queryEmbedding = await createEmbedding(query.trim());
 
-  if (!VECTOR_DB_READY) {
+    if (queryEmbedding.status !== "ok" || !queryEmbedding.embedding) {
+      // Embedding generation skipped or failed — keyword fallback
+      return {
+        status: "fallback",
+        items:  keywordFallback(query, allItems, limit),
+        source: "keyword",
+        reason: queryEmbedding.status === "skipped"
+          ? (queryEmbedding.reason ?? "Embedding skipped.")
+          : (queryEmbedding.error ?? "Embedding generation failed."),
+      };
+    }
+
+    // Import Supabase browser client dynamically to avoid breaking builds
+    // when Supabase env vars are absent (deferred import pattern)
+    const { getSupabaseClient } = await import("@/lib/supabase/client");
+    const supabase = getSupabaseClient();
+
+    if (!supabase) {
+      return {
+        status: "fallback",
+        items:  keywordFallback(query, allItems, limit),
+        source: "keyword",
+        reason: "Supabase not configured — using keyword search.",
+      };
+    }
+
+    const { data, error } = await supabase.rpc("match_memories", {
+      query_embedding: queryEmbedding.embedding,
+      match_threshold: 0.7,
+      match_count:     limit,
+    });
+
+    if (error) {
+      // RPC may not exist if pgvector migration hasn't been applied
+      return {
+        status: "fallback",
+        items:  keywordFallback(query, allItems, limit),
+        source: "keyword",
+        reason: `Supabase RPC error: ${error.message}`,
+      };
+    }
+
+    const ids     = new Set((data as Array<{ id: string }>).map((r) => r.id));
+    const matched = allItems.filter((i) => ids.has(i.id));
+
+    return { status: "ok", items: matched, source: "semantic" };
+  } catch (err) {
     return {
       status: "fallback",
       items:  keywordFallback(query, allItems, limit),
       source: "keyword",
-      reason: "Supabase pgvector not yet enabled — using keyword search. Apply the migration in docs/VECTOR_MEMORY_PLAN.md to activate semantic search.",
+      reason: `Semantic search failed (${err instanceof Error ? err.message : "unknown"}), using keyword fallback.`,
     };
   }
-
-  // ── Future semantic path (v5.7+) ──────────────────────────────────────
-  // Uncomment and complete when pgvector migration is applied:
-  //
-  // try {
-  //   const queryEmbedding = await createEmbedding(query);
-  //   if (queryEmbedding.status !== "ok" || !queryEmbedding.embedding) {
-  //     throw new Error(queryEmbedding.error ?? "Embedding failed");
-  //   }
-  //   const { getSupabaseClient } = await import("@/lib/supabase/client");
-  //   const supabase = getSupabaseClient();
-  //   if (!supabase) throw new Error("Supabase not configured");
-  //
-  //   const { data, error } = await supabase.rpc("match_memories", {
-  //     query_embedding: queryEmbedding.embedding,
-  //     match_threshold: 0.7,
-  //     match_count:     limit,
-  //   });
-  //   if (error) throw new Error(error.message);
-  //
-  //   const ids = new Set((data as { id: string }[]).map((r) => r.id));
-  //   const matched = allItems.filter((i) => ids.has(i.id));
-  //   return { status: "ok", items: matched, source: "semantic" };
-  // } catch (err) {
-  //   return {
-  //     status: "fallback",
-  //     items:  keywordFallback(query, allItems, limit),
-  //     source: "keyword",
-  //     reason: `Semantic search failed (${err instanceof Error ? err.message : "unknown"}), using keyword fallback.`,
-  //   };
-  // }
-
-  // Should never reach here in v5.6
-  return {
-    status: "fallback",
-    items:  keywordFallback(query, allItems, limit),
-    source: "keyword",
-    reason: "Semantic path not yet active.",
-  };
 }

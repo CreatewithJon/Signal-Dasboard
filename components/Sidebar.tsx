@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import WorkspaceSwitcher from "@/components/WorkspaceSwitcher";
 
 type NavItem = {
   href: string;
@@ -66,6 +67,38 @@ const MODULE_NAV: NavItem[] = [
     ),
   },
   {
+    href: "/strategy",
+    label: "Strategy",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <path d="M10 2L14 8H18L14 12L15.5 18L10 15L4.5 18L6 12L2 8H6L10 2Z" strokeLinejoin="round" />
+        <path d="M10 7v5M7.5 12h5" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    href: "/goals",
+    label: "Goals",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <circle cx="10" cy="10" r="8" />
+        <path d="M10 6v4l3 3" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="10" cy="10" r="1.5" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+  },
+  {
+    href: "/review",
+    label: "Weekly Review",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <rect x="3" y="4" width="14" height="13" rx="2" />
+        <path d="M3 8h14" strokeLinecap="round" />
+        <path d="M6 12l2.5 2L14 10" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
     href: "/actions",
     label: "Actions",
     icon: (
@@ -118,6 +151,16 @@ const MODULE_NAV: NavItem[] = [
         <circle cx="10" cy="10" r="8" />
         <circle cx="10" cy="10" r="3.5" />
         <circle cx="10" cy="10" r="1" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+  },
+  {
+    href: "/daily",
+    label: "Daily Rhythm",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <circle cx="10" cy="10" r="8" />
+        <path d="M10 6v4l2.5 2.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
   },
@@ -296,6 +339,9 @@ export default function Sidebar() {
             <p className="text-sm font-bold text-white/90 leading-none tracking-tight">Sovereign OS</p>
             <p className="text-[10px] text-white/25 mt-0.5 tracking-wide">Personal OS</p>
           </div>
+        </div>
+        <div className="mt-3">
+          <WorkspaceSwitcher />
         </div>
       </div>
 

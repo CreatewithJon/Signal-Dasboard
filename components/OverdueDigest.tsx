@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-
-const PROJECTS_KEY = "sovereign_projects";
-const TASKS_KEY = "sovereign_project_tasks";
+import { KEYS } from "@/lib/keys";
 
 function getDueDateState(dateStr: string, isComplete: boolean): "overdue" | null {
   if (!dateStr || isComplete) return null;
@@ -23,7 +21,7 @@ export default function OverdueDigest() {
     try {
       let overdueCount = 0;
 
-      const rawP = localStorage.getItem(PROJECTS_KEY);
+      const rawP = localStorage.getItem(KEYS.PROJECTS);
       if (rawP) {
         const projects = JSON.parse(rawP) as Array<{ due_date?: string; status?: string }>;
         if (Array.isArray(projects)) {
@@ -34,7 +32,7 @@ export default function OverdueDigest() {
         }
       }
 
-      const rawT = localStorage.getItem(TASKS_KEY);
+      const rawT = localStorage.getItem(KEYS.PROJECT_TASKS);
       if (rawT) {
         const tasks = JSON.parse(rawT) as Array<{ due_date?: string; status?: string }>;
         if (Array.isArray(tasks)) {

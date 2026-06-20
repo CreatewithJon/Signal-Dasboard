@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import AppModal from "@/components/ui/AppModal";
 import type { MemoryItem, MemoryType, MemoryImportance } from "@/lib/types/memory";
 import type { Project } from "@/lib/types/projects";
 import {
@@ -88,20 +89,34 @@ function Pill({ label, color, bg, border }: { label: string; color: string; bg: 
 // ── MemoryCard ────────────────────────────────────────────────────────────────
 
 function MemoryCard({
-  item, projects, onClick,
-}: { item: MemoryItem; projects: Project[]; onClick: () => void }) {
+  item, projects, onClick, selectMode, selected, onToggle,
+}: {
+  item: MemoryItem;
+  projects: Project[];
+  onClick: () => void;
+  selectMode?: boolean;
+  selected?: boolean;
+  onToggle?: (id: string) => void;
+}) {
   const typeCfg = TYPE_CONFIG[item.type];
   const impCfg = IMPORTANCE_CONFIG[item.importance];
   const projectMap = new Map(projects.map((p) => [p.id, p.title]));
 
+  function handleClick() {
+    if (selectMode && onToggle) { onToggle(item.id); return; }
+    onClick();
+  }
+
   return (
     <div
       className="rounded-2xl overflow-hidden flex flex-col cursor-pointer transition-all group"
+      onClick={handleClick}
       style={{
-        background: "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(255,255,255,0.07)",
+        background: selected ? "rgba(99,102,241,0.06)" : "rgba(255,255,255,0.025)",
+        border: selected
+          ? "1px solid rgba(99,102,241,0.3)"
+          : "1px solid rgba(255,255,255,0.07)",
       }}
-      onClick={onClick}
     >
       {/* Type accent strip */}
       <div style={{ height: 2, background: `linear-gradient(90deg, ${typeCfg.color}80, transparent)` }} />
@@ -109,6 +124,21 @@ function MemoryCard({
       <div className="p-5 flex flex-col gap-3">
         {/* Header */}
         <div className="flex items-center gap-2 flex-wrap">
+          {selectMode && (
+            <div
+              className="w-4 h-4 rounded-md flex items-center justify-center shrink-0"
+              style={{
+                background: selected ? "rgba(99,102,241,0.8)" : "rgba(255,255,255,0.06)",
+                border: selected ? "1px solid rgba(99,102,241,0.9)" : "1px solid rgba(255,255,255,0.15)",
+              }}
+            >
+              {selected && (
+                <svg viewBox="0 0 8 8" fill="none" stroke="white" strokeWidth="1.5" className="w-2 h-2">
+                  <path d="M1 4l2 2 4-3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </div>
+          )}
           <Pill label={item.type} color={typeCfg.color} bg={typeCfg.bg} border={typeCfg.border} />
           {item.importance !== "Medium" && (
             <Pill label={item.importance} color={impCfg.color} bg={impCfg.bg} border={impCfg.border} />
@@ -260,20 +290,17 @@ function MemoryModal({
   const typeCfg = TYPE_CONFIG[draft.type];
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-12 pb-8 px-4"
-      style={{ background: "rgba(0,0,0,0.75)" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    <AppModal
+      open={true}
+      onClose={onClose}
+      maxWidth="2xl"
+      align="top"
+      rounded="3xl"
+      accentBorder="rgba(255,255,255,0.09)"
+      accentShadow="0 32px 80px rgba(0,0,0,0.6)"
+      background="#0d0d14"
+      aria-label="Edit Memory"
     >
-      <div
-        className="w-full max-w-2xl flex flex-col rounded-3xl overflow-hidden"
-        style={{
-          background: "#0d0d14",
-          border: "1px solid rgba(255,255,255,0.09)",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.6)",
-          maxHeight: "calc(100vh - 6rem)",
-        }}
-      >
         {/* Header */}
         <div
           className="px-6 pt-6 pb-4 shrink-0 flex items-center justify-between"
@@ -325,9 +352,12 @@ function MemoryModal({
             </button>
             <button
               onClick={onClose}
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-white/30 hover:text-white/60 transition-all text-lg"
+              className="w-11 h-11 flex items-center justify-center rounded-xl text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all"
+              aria-label="Close"
             >
-              ×
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+                <path d="M3 3l10 10M13 3L3 13" strokeLinecap="round" />
+              </svg>
             </button>
           </div>
         </div>
@@ -541,8 +571,7 @@ function MemoryModal({
             )}
           </div>
         </div>
-      </div>
-    </div>
+    </AppModal>
   );
 }
 
@@ -571,6 +600,11 @@ export default function MemoryPage() {
 
   // Modal
   const [editItem, setEditItem] = useState<MemoryItem | null>(null);
+
+  // Batch embed
+  const [selectMode, setSelectMode]       = useState(false);
+  const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set());
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number; errors: number } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -662,6 +696,64 @@ export default function MemoryPage() {
     setFilterType("All");
     setFilterImportance("All");
     setFilterTag("All");
+  }
+
+  // ── Batch Embed ────────────────────────────────────────────────────────────
+
+  function toggleSelectMode() {
+    setSelectMode((prev) => !prev);
+    setSelectedIds(new Set());
+    setBatchProgress(null);
+  }
+
+  function toggleSelectItem(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function selectAllVisible() {
+    setSelectedIds(new Set(visibleItems.map((i) => i.id)));
+  }
+
+  async function batchEmbed() {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+
+    setBatchProgress({ done: 0, total: ids.length, errors: 0 });
+    let errors = 0;
+
+    for (const id of ids) {
+      try {
+        const item = items.find((i) => i.id === id);
+        if (!item) {
+          errors++;
+          setBatchProgress((p) => p ? { ...p, done: p.done + 1, errors } : null);
+          continue;
+        }
+        const { formatMemoryForEmbedding } = await import("@/lib/vector/embedding");
+        const text = formatMemoryForEmbedding(item);
+        const res  = await fetch("/api/vector/embed", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ memoryId: id, text }),
+        });
+        const data = await res.json() as { status: string };
+        if (data.status !== "ok") errors++;
+      } catch {
+        errors++;
+      }
+      setBatchProgress((p) => p ? { ...p, done: p.done + 1, errors } : null);
+    }
+
+    // Brief display of result before exiting select mode
+    setTimeout(() => {
+      setBatchProgress(null);
+      setSelectedIds(new Set());
+      setSelectMode(false);
+    }, 1800);
   }
 
   if (!loaded) {
@@ -951,6 +1043,91 @@ export default function MemoryPage() {
         </div>
       </div>
 
+      {/* ── Batch Embed Toolbar (shown when embeddingConfigured) ── */}
+      {embeddingConfigured && (
+        <div
+          className="flex items-center gap-3 flex-wrap mb-4 px-4 py-3 rounded-xl"
+          style={{
+            background: selectMode ? "rgba(99,102,241,0.05)" : "rgba(255,255,255,0.02)",
+            border: selectMode ? "1px solid rgba(99,102,241,0.18)" : "1px solid rgba(255,255,255,0.05)",
+          }}
+        >
+          <button
+            onClick={toggleSelectMode}
+            className="text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all"
+            style={{
+              background: selectMode ? "rgba(99,102,241,0.12)" : "rgba(255,255,255,0.04)",
+              border: selectMode ? "1px solid rgba(99,102,241,0.25)" : "1px solid rgba(255,255,255,0.08)",
+              color: selectMode ? "rgba(165,180,252,0.9)" : "rgba(255,255,255,0.3)",
+            }}
+          >
+            {selectMode ? "Cancel" : "Batch Embed"}
+          </button>
+
+          {selectMode && (
+            <>
+              <button
+                onClick={selectAllVisible}
+                className="text-[10px] font-semibold px-3 py-1.5 rounded-lg transition-all"
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" }}
+              >
+                Select all visible ({visibleItems.length})
+              </button>
+
+              {selectedIds.size > 0 && (
+                <button
+                  onClick={() => setSelectedIds(new Set())}
+                  className="text-[10px] font-semibold px-3 py-1.5 rounded-lg transition-all"
+                  style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.25)" }}
+                >
+                  Deselect all
+                </button>
+              )}
+
+              <span className="text-[10px] text-white/25">
+                {selectedIds.size} selected
+              </span>
+
+              {batchProgress ? (
+                <div className="ml-auto flex items-center gap-3">
+                  <div
+                    className="h-1.5 rounded-full overflow-hidden"
+                    style={{ width: 100, background: "rgba(255,255,255,0.06)" }}
+                  >
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${Math.round((batchProgress.done / batchProgress.total) * 100)}%`,
+                        background: batchProgress.errors > 0 ? "rgba(245,158,11,0.7)" : "rgba(99,102,241,0.7)",
+                      }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-white/30 tabular-nums">
+                    {batchProgress.done}/{batchProgress.total}
+                    {batchProgress.errors > 0 && ` · ${batchProgress.errors} failed`}
+                  </span>
+                </div>
+              ) : (
+                <button
+                  onClick={batchEmbed}
+                  disabled={selectedIds.size === 0}
+                  className="ml-auto text-[10px] font-bold px-4 py-1.5 rounded-lg transition-all disabled:opacity-30"
+                  style={{ background: "rgba(99,102,241,0.12)", border: "1px solid rgba(99,102,241,0.25)", color: "rgba(165,180,252,0.9)" }}
+                >
+                  Embed {selectedIds.size > 0 ? `${selectedIds.size} selected` : "selected"}
+                </button>
+              )}
+            </>
+          )}
+
+          {!selectMode && (
+            <p className="text-[10px] text-white/20">
+              Select memory items to generate and store vector embeddings.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* ── Memory Grid ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-16">
         {visibleItems.map((item) => (
@@ -959,6 +1136,9 @@ export default function MemoryPage() {
             item={item}
             projects={projects}
             onClick={() => setEditItem(item)}
+            selectMode={selectMode}
+            selected={selectedIds.has(item.id)}
+            onToggle={toggleSelectItem}
           />
         ))}
 

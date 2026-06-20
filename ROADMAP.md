@@ -2,7 +2,7 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-19 (v5.6)_
+_Last updated: 2026-06-19 (v6.7)_
 
 ---
 
@@ -143,6 +143,77 @@ _Transform Sovereign OS from an intelligent dashboard into a proactive executive
 - [x] `components/MobileNav.tsx` — `/chief` nav item added
 - [x] Build clean, lint clean, type-check clean
 
+## Phase 6.4 — Product Readiness Audit (Complete)
+_Pre-commercial stability audit: route coverage, feature overlap analysis, data safety, mobile polish, and bug fixes._
+
+- [x] **Route audit** — Verified all 14 major routes load, have nav links, and have empty states. `/chief` silent-null bug fixed. `/opportunities` and `/brand` confirmed as secondary (not in MobileNav, acceptable).
+- [x] **Feature overlap analysis** — Documented Chief/Strategy/Goals/Review/Actions/Focus/Briefing as intentionally layered by timeframe. Identified `/briefing` rename opportunity, `/leads` sidebar cleanup, `/narrative` consolidation as v6.5 candidates. No deletions yet.
+- [x] **Bug fix: OverdueDigest hardcoded keys** — `components/OverdueDigest.tsx` used raw string constants instead of `KEYS` registry. Fixed to import and use `KEYS.PROJECTS` / `KEYS.PROJECT_TASKS`. Prevents silent drift if key names change.
+- [x] **Bug fix: Chief page blank state** — `app/chief/page.tsx` returned `null` silently when `brief` was unavailable. Replaced with friendly guidance message.
+- [x] **Bug fix: Homepage header mobile overflow** — `components/DashboardShell.tsx` header with HeroStats pills overflowed at 375px. Fixed with `flex-col sm:flex-row` responsive stacking.
+- [x] **Bug fix: TodayCommand inline border conflicts** — Removed inline `borderColor`/`borderTopWidth` styles that conflicted with Tailwind `divide-*` utilities on the 2×2 command grid.
+- [x] **Data safety audit** — `safeRead`/`safeWrite` pattern confirmed on 100% of localStorage reads. Key registry centralized. Export/restore flow confirmed gold standard. Focus session stuck-state risk documented.
+- [x] **Mobile audit** — Tested patterns at 375/390/430px. 4 specific issues fixed above. 2 remaining (modal max-h, iOS safe-area-inset) deferred to v6.5.
+- [x] `docs/PRODUCT_READINESS_AUDIT.md` — Full audit doc: route table, feature overlap map, data safety findings, mobile issue tracker, pre-commercial checklist, known risks, next 5 commits.
+- [x] `PROJECT_STATE.md` + `ROADMAP.md` updated to v6.4
+
+## Phase 6.3 — Executive Dashboard Polish (Complete)
+_Reorganises the Command Center into a clean executive operating dashboard with clear zones and a "Today's Command" hero._
+
+- [x] `components/TodayCommand.tsx` — "Today's Command" hero: 4-cell command grid (Top Action, Risk, Top Objective, Focus status), momentum score pill header, date label, executive summary excerpt, CTA buttons (Review Week + Start/Continue Focus). Computes full chief + strategy chain from localStorage. Active-session-aware.
+- [x] `components/CollapsibleZone.tsx` — Reusable zone wrapper: label + accent gradient divider + chevron toggle. Persists state in sessionStorage (via useEffect, not useState initializer, to avoid SSR hydration mismatch). Extra slot for right-side additions.
+- [x] `components/DashboardShell.tsx` — Client shell: compact header (title + HeroStats pills), SystemStatus, TodayCommand, then 5 collapsible zones: Executive (Chief/Strategy/Goals/Review 2×2), Execution (Actions full + Briefing/Focus 2-col), Operating (Projects/Content/Relationships/Memory 2×2 with OverdueDigest in header), Signal (BTC/Stack + Productivity/Habits), AI. All default open.
+- [x] `app/page.tsx` — Simplified to pure server component: fetch BTC, check env, pass props to DashboardShell. Old marketing hero, SectionDivider, and all direct card imports removed.
+- [x] Mobile: 2-col grids collapse to stacked on `sm:` breakpoint. No horizontal scroll. Header layout switches to stacked. Zone labels remain legible at all widths.
+
+## Phase 6.2 — Weekly Review Engine (Complete)
+_Reviews the current week: completed work, slipped items, wins, blockers, habit consistency, focus stats, strategic alignment, and next-week focus._
+
+- [x] `lib/weeklyReview/engine.ts` — `computeWeeklyReview(input)`: pure deterministic review engine. Week bounds (Mon–Sun), `findCompletedWork()` (tasks Done + updated_at in week, content Published, opps Converted, focus sessions Completed), `findSlippedItems()` (tasks due in week not done, content with publish_date not published, follow-ups <= weekEnd not actioned), `findWins()` (task count, content published, habit ≥70%, focus ≥3 sessions, opps converted), `findBlockers()` (paused projects, active high-priority with no tasks, tasks overdue >14d), `findRelationshipFollowUps()` (due by weekEnd, sorted by priority), `analyzeContentProgress()` (created/movedReady/published this week), `analyzeHabitConsistency()` (score, completionByDay, perfectDays, bestStreak, lowestHabit), `analyzeFocusStats()` (completed/abandoned, totalMinutes, avg, longest, topProject), `analyzeStrategicAlignment()` (completed task projectIds vs top 3 objectives' relatedProjects), `buildRecommendations()` (up to 7: critical slipped, high slipped, blockers, habit rebuild, strategic realignment, action engine top, overdue follow-up), `buildNextWeekFocus()` (up to 5: slipped tasks, strategic objective next action, action engine top, overdue follow-up, slipped content). Also exports `buildWeeklyReviewContext()` for AI panel.
+- [x] `app/review/page.tsx` — Full weekly review page. Hero with quick stats (completed, slipped, wins, focus min, alignment %). Sections: Wins grid, Completed Work list (type badge + project), Slipped Items (severity badge + reason), Blockers, Focus Stats + Habit Consistency 2-col grid (habit day grid + lowest habit), Relationship Follow-Ups (Reschedule button), Content Progress (created/ready/published counts), Strategic Alignment (ring + note + strategy link), Recommendations (priority-colored, "→ Task" conversion button), Next Week Focus (numbered list with type badge), AI Analysis panel ("Analyze My Week" + 4 quick prompts), Save to Memory.
+- [x] `components/WeeklyReviewCard.tsx` — Homepage widget: completed count, slipped count, focus minutes, alignment %, top next-week focus. Green accent theme. "Full review →" link to /review. Full compute chain.
+- [x] `lib/chiefOfStaff/engine.ts` — `ChiefInput.weeklyReview?: WeeklyReview` added. `buildReasoning()` adds slipped items summary note and low alignment warning (< 50%) from last week's review.
+- [x] `app/strategy/page.tsx` — Weekly Alignment Note section added before AI Analysis: color-coded alignment score (green/amber/red), completed vs total tasks aligned, note text, slipped items summary, "View full weekly review →" link.
+- [x] `app/page.tsx` — `WeeklyReviewCard` inserted between `GoalsCard` and `ActionEngineCard`
+- [x] `components/Sidebar.tsx` — `/review` nav added after `/goals`
+- [x] `components/MobileNav.tsx` — `/review` nav added after `/goals`; `/review` added to `EXACT_ROUTES`
+
+## Phase 6.1 — Goal Decomposition Engine (Complete)
+_Turns strategic objectives into concrete milestones, tasks, content, follow-ups, and opportunities._
+
+- [x] `lib/goalDecomposition/engine.ts` — `computeGoalDecomposition(input)`: pure deterministic decomposition. Theme detection (ai/bitcoin/content/dwt/education/revenue/relationships/general via regex). Per objective: `deriveMilestones()` (30d foundation + optional validation for hard/very-hard + 60d momentum + 90d outcome), `suggestTasks()` (6 templates per theme, deduped against existing open tasks), `suggestContent()` (3 content ideas per theme with format/platform/angle, deduped against existing titles), `suggestFollowUps()` (linked-project people first, then theme-matched templates with existing person preference), `suggestOpportunities()` (2 per theme, deduped against existing). Output: `DecompositionResult` with `decomposedGoals[]` + totals.
+- [x] `app/goals/page.tsx` — Full goal decomposition page. Accordion per objective (first open by default). Milestones timeline (30d/60d/90d badges). Suggested tasks with inline project picker (dropdown). Content with format/platform/angle. Follow-ups with Schedule/Save Note. Opportunities with Track button. "Save to Memory" per goal. All conversions write to localStorage. Empty state with /planner link.
+- [x] `components/GoalsCard.tsx` — Homepage widget: top objective, next milestone (horizon badge), total suggested action count, "View goals →" link. Full compute chain (graph → focus → briefing → action → chief → strategy → decomposition).
+- [x] `lib/chiefOfStaff/engine.ts` — `buildReasoning()` now checks if top strategic objective has no linked projects; adds "🎯 Goal decomposition needed" warning with link to /goals.
+- [x] `app/page.tsx` — `GoalsCard` inserted between `StrategicPlannerCard` and `ActionEngineCard`
+- [x] `app/strategy/page.tsx` — "Decompose into milestones + actions →" link added after Top Objectives section
+- [x] `components/Sidebar.tsx` — `/goals` nav added after `/strategy`
+- [x] `components/MobileNav.tsx` — `/goals` nav added after `/strategy`; `/goals` added to `EXACT_ROUTES`
+
+## Phase 6.0 — Strategic Planner (Complete)
+_Long-horizon planning layer sitting above Focus Engine, Briefing, Chief of Staff, and Action Engine._
+
+- [x] `lib/strategicPlanner/engine.ts` — `computeStrategicPlan()`: North Star derivation (yr1 vision → category theme), Top Objectives (3–5 scored by priority + tasks + opps), Dependency chain detection (4 patterns), Bottleneck detection (6 types, severity-sorted), Strategic risk detection (6 types), 30/60/90-day horizon plans, Sequencing (ordered steps from critical bottlenecks → objectives → action engine), Confidence score (0–100 from data richness), Reasoning (structured multi-paragraph)
+- [x] `app/strategy/page.tsx` — Full premium strategy page: Confidence ring hero, North Star, Top Objectives, 30/60/90 tab switcher, Recommended Sequence, Bottlenecks + Dependencies side-by-side, Strategic Risks, Confidence + Reasoning, Chief Alignment, AI Challenge panel using `/api/chief-chat`
+- [x] `components/StrategicPlannerCard.tsx` — Homepage widget: North Star, Top Objective, Primary Bottleneck severity badge, Confidence ring, "Full plan →" link to `/strategy`
+- [x] `lib/chiefOfStaff/engine.ts` — `ChiefInput.strategicPlan?` added; `buildReasoning()` checks highest leverage action against strategic objectives; warns on misalignment; surfaces critical bottlenecks
+- [x] `app/page.tsx` — `StrategicPlannerCard` added between `ChiefOfStaffCard` and `ActionEngineCard`
+- [x] `components/Sidebar.tsx` — `/strategy` nav added after `/chief`
+- [x] `components/MobileNav.tsx` — `/strategy` nav added; `/chief` and `/strategy` added to EXACT_ROUTES
+
+## Phase 5.7 — Vector Memory Activation (Complete)
+_Semantic search activated end-to-end: dynamic pgvector detection, per-item embedding, batch embed, AI panel integration._
+
+- [x] `lib/vector/vectorDb.ts` — `probeVectorDb(supabase)`: PostgREST column probe (`.select("embedding").limit(0)`); detects 42703 "undefined column" error; returns `{ columnExists, ready }`
+- [x] `app/api/vector/status/route.ts` — Dynamic 4-state mode detection (`deterministic-only` → `embedding-provider-ready` → `vector-db-ready` → `semantic-active`). Probes Supabase via `probeVectorDb`; no hardcoded flags.
+- [x] `app/api/vector/embed/route.ts` — Embedding persistence: after generating embedding, probes pgvector readiness; if ready, writes `embedding`, `embedding_model`, `embedded_at` to Supabase `memory_items`. Returns `{ persisted: boolean }`.
+- [x] `app/api/vector/search/route.ts` — Server-side semantic search: `POST { query, limit }` → generates query embedding → calls `match_memories` Supabase RPC → returns `{ status, ids, source }`. Falls back to keyword at every failure point.
+- [x] `lib/vector/semanticMemory.ts` — Removed `VECTOR_DB_READY = false` flag. Semantic path activated: `createEmbedding()` → dynamic `getSupabaseClient()` import → `supabase.rpc("match_memories", ...)`. Graceful fallback at every step.
+- [x] `components/AIPanel.tsx` — Fetches `/api/vector/status` on mount; when `semantic-active`, calls `/api/vector/search` per message; merges semantic IDs with keyword results (semantic-first, keyword fill, cap 5); shows `⚡ semantic` badge in context indicator.
+- [x] `app/memory/page.tsx` — Select mode with checkboxes; Batch Embed toolbar (select all visible, deselect, progress bar); per-item embed via `/api/vector/embed`; continue-on-error.
+- [x] `components/settings/VectorMemorySettings.tsx` — 4-state mode panel with `MODE_CONFIG` + `SETUP_STEPS` records; accent colors per mode.
+- [x] `docs/VECTOR_MEMORY_PLAN.md` — Updated to v5.7: dynamic detection, all new files documented, activation checklist revised.
+
 ## Phase 5.6 — Vector Memory Foundation (Complete)
 _Semantic embedding infrastructure without replacing the deterministic engine._
 
@@ -156,6 +227,48 @@ _Semantic embedding infrastructure without replacing the deterministic engine._
 - [x] `supabase/schema.sql` — Commented pgvector migration section: `enable extension vector`, `alter table memory_items add column embedding vector(1536)`, `match_memories` RPC function, IVFFlat index.
 - [x] `docs/VECTOR_MEMORY_PLAN.md` — Architecture doc: activation checklist, embedding provider rationale, text format, RPC design, fallback behavior, future phases v5.7–v6.0.
 - [x] Build clean, lint clean, type-check clean.
+
+## Phase 6.7 — Workspace Foundation (Complete)
+_Metadata-only workspace model: schema, CRUD in settings, sidebar switcher. No data filtering yet._
+
+- [x] `lib/types/workspace.ts` — `Workspace` type: id, name, type (Personal/Company/Project/Client/Community/Education), description, color, archived, created_at, updated_at. `DEFAULT_WORKSPACE` (Personal, violet). `WORKSPACE_COLORS` (7 presets). `WORKSPACE_TYPE_LABELS`.
+- [x] `lib/keys.ts` — `KEYS.WORKSPACES` (`sovereign_workspaces`) + `KEYS.ACTIVE_WORKSPACE_ID` (`sovereign_active_workspace_id`)
+- [x] `components/WorkspaceSwitcher.tsx` — Sidebar component: active workspace name + color dot. Dropdown to switch when multiple exist. Auto-seeds Personal default. No data scoping yet.
+- [x] `components/settings/WorkspaceSettings.tsx` — Create / edit / archive workspaces. Personal workspace protected from archiving. Color picker (7 presets). Type selector. Info banner explains future filtering.
+- [x] `app/settings/page.tsx` — Workspaces section added at top. Version bumped to v6.7.
+- [x] `components/Sidebar.tsx` — `WorkspaceSwitcher` mounted in brand header below logo.
+- [x] `docs/WORKSPACE_PLAN.md` — Full workspace architecture: schema, 5 planned workspaces, 5 activation phases, data safety contract.
+- [x] **No existing data modified.** No `sovereign_*` keys changed. Zero migration required.
+- [x] lint ✓ · tsc ✓ · build ✓
+
+## Phase 6.6 — Daily Operating Rhythm (Complete)
+_Structured daily workflow: Morning Brief → Start Day → Midday Check-In → End of Day._
+
+- [x] `app/daily/page.tsx` — 5-section daily page. Morning Brief auto-computed from engine chain. Start Day: 4-checkbox checklist + 3 priority inputs + "Start Day →". Midday Check-In: 3 text areas + "Save ✓". End of Day: completed/slipped/tomorrow + "Save to Memory" (creates MemoryItem) + "Convert to Tasks" (pushes slipped lines to KEYS.TASKS) + "Wrap Day ✓". Weekly Review shortcut link. Per-day state auto-resets on new calendar day.
+- [x] `components/DailyRhythmCard.tsx` — Homepage Execution zone widget: phase badge (Morning/Working/Evening/Wrapped), 4-step progress bar, today's 3 priorities, morning checklist mini-progress. Links to /daily.
+- [x] `components/TodayCommand.tsx` — Primary CTA changed: `href={hasActive ? "/focus" : "/daily"}` — "Start Day →" when no active session.
+- [x] `lib/keys.ts` — `KEYS.DAILY_RHYTHM` (`sovereign_daily_rhythm`) added.
+- [x] `components/Sidebar.tsx` + `MobileNav.tsx` — `/daily` (Daily Rhythm) added to nav.
+- [x] `components/DashboardShell.tsx` — `DailyRhythmCard` added to Execution zone.
+- [x] lint ✓ · tsc ✓ · build ✓
+
+## Phase 6.5 — Mobile + Modal Polish (Complete)
+_Reusable modal infrastructure, iOS safe-area support, Escape-key handling, 44px touch targets._
+
+- [x] `components/ui/AppModal.tsx` — Reusable modal shell. Handles backdrop overlay, click-outside-to-close, Escape key, `max-h-[90vh]` + `overflow-hidden` panel, iOS `env(safe-area-inset-bottom)` padding for bottom-sheet alignment. Props: `open`, `onClose`, `maxWidth` (sm/md/lg/xl/2xl), `align` (center/bottom/top), `accentBorder`, `accentShadow`, `background`, `rounded` (2xl/3xl), `aria-label`.
+- [x] `components/MobileNav.tsx` — iOS home-indicator safe-area: outer nav uses `paddingBottom: env(safe-area-inset-bottom)`. Items in inner `h-16` row are unaffected visually. Nav height auto-expands on notched iPhones.
+- [x] `app/layout.tsx` — Added `viewport` export with `viewportFit: "cover"` to enable `env(safe-area-inset-*)` on iOS. Main `pb-24` → `pb-32` to clear taller nav on notched devices.
+- [x] 9 modals migrated to AppModal across 5 files:
+  - `app/actions/page.tsx` — DevelopPlanModal, TaskModal
+  - `app/projects/page.tsx` — ProjectModal, WeeklyReviewModal
+  - `app/relationships/page.tsx` — AIPanel, PersonForm, NoteModal, ConvertOppModal
+  - `app/opportunities/page.tsx` — AIDevelopPanel, ConvertModal, OppForm
+  - `app/memory/page.tsx` — MemoryModal
+  - `components/content/ContentPipeline.tsx` — ContentModal
+- [x] All migrated close buttons: `w-4 h-4` SVGs / bare `✕` text upgraded to `w-10 h-10` / `w-11 h-11` flex containers with `rounded-xl` and hover bg — consistent ≥40px tap targets.
+- [x] Escape key support added to all 9 migrated modals (was missing from 7 of them).
+- [x] `docs/PRODUCT_READINESS_AUDIT.md` — Pre-commercial checklist modal items marked complete.
+- [x] lint ✓ · tsc ✓ · build ✓
 
 ## Phase 5.5 — Action Engine (Complete)
 _Convert graph insights, opportunities, risks, and signals into scored recommended actions._

@@ -59,6 +59,13 @@ export const KEYS = {
   // Relationships (personal CRM)
   RELATIONSHIPS:     "sovereign_relationships",
 
+  // Daily Operating Rhythm — per-day state
+  DAILY_RHYTHM:      "sovereign_daily_rhythm",
+
+  // Workspaces — named contexts for organizing data (v6.7)
+  WORKSPACES:          "sovereign_workspaces",
+  ACTIVE_WORKSPACE_ID: "sovereign_active_workspace_id",
+
   // Migration sentinel — presence means migration has run
   MIGRATION_V1:      "sovereign_migration_v1_complete",
 } as const;

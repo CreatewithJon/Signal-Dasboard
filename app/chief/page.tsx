@@ -428,7 +428,14 @@ export default function ChiefPage() {
     );
   }
 
-  if (!brief) return null;
+  if (!brief) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "#080808" }}>
+      <div className="text-center max-w-xs px-6">
+        <p className="text-sm text-white/40 mb-2">No brief available yet.</p>
+        <p className="text-xs text-white/20 leading-relaxed">Add projects and tasks in /projects, then return here.</p>
+      </div>
+    </div>
+  );
 
   const riskMeta = RISK_META[brief.biggestRisk.severity];
 
