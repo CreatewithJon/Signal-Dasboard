@@ -6,6 +6,7 @@ import DashboardHeader from "@/components/DashboardHeader";
 import MobileNav from "@/components/MobileNav";
 import StorageMigration from "@/components/StorageMigration";
 import AuthListener from "@/components/auth/AuthListener";
+import FocusSessionCleanup from "@/components/FocusSessionCleanup";
 
 export const metadata: Metadata = {
   title: "Sovereign OS",
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <StorageMigration />
         <AuthListener />
+        <FocusSessionCleanup />
         <div
           className="flex h-screen text-zinc-100 overflow-hidden"
           style={{

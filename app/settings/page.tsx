@@ -10,6 +10,7 @@ import SupabaseRestore from "@/components/settings/SupabaseRestore";
 import ReadModeSettings from "@/components/settings/ReadModeSettings";
 import VectorMemorySettings from "@/components/settings/VectorMemorySettings";
 import WorkspaceSettings from "@/components/settings/WorkspaceSettings";
+import FocusCleanupStatus from "@/components/settings/FocusCleanupStatus";
 
 export const metadata: Metadata = {
   title: "Settings — Sovereign OS",
@@ -400,11 +401,12 @@ export default function SettingsPage() {
           className="rounded-2xl px-5 py-1"
           style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
         >
-          <SettingRow label="Version" value="Sovereign OS v6.7" />
+          <SettingRow label="Version" value="Sovereign OS v6.9" />
           <SettingRow label="Persistence" value={supabase.mode === "supabase-ready" ? "Supabase + localStorage" : "localStorage only"} />
           <SettingRow label="AI Model" value="Claude Haiku 4.5" />
           <SettingRow label="Deployment" value="Vercel (auto-deploy from main)" />
           <SettingRow label="Schema version" value="supabase/schema.sql v4.0" muted />
+          <FocusCleanupStatus />
         </div>
       </section>
 

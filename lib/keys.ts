@@ -45,6 +45,7 @@ export const KEYS = {
   PROJECTS:          "sovereign_projects",
   PROJECT_TASKS:     "sovereign_project_tasks",
   FOCUS_SESSIONS:    "sovereign_focus_sessions",
+  FOCUS_CLEANUP_LOG: "sovereign_focus_cleanup_log",
   MEMORY_ITEMS:      "sovereign_memory_items",
 
   // Sync metadata — last Supabase write result per module

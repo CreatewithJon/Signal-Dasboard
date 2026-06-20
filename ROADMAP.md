@@ -2,7 +2,7 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-19 (v6.7)_
+_Last updated: 2026-06-19 (v6.9)_
 
 ---
 
@@ -227,6 +227,27 @@ _Semantic embedding infrastructure without replacing the deterministic engine._
 - [x] `supabase/schema.sql` — Commented pgvector migration section: `enable extension vector`, `alter table memory_items add column embedding vector(1536)`, `match_memories` RPC function, IVFFlat index.
 - [x] `docs/VECTOR_MEMORY_PLAN.md` — Architecture doc: activation checklist, embedding provider rationale, text format, RPC design, fallback behavior, future phases v5.7–v6.0.
 - [x] Build clean, lint clean, type-check clean.
+
+## Phase 6.9 — Focus Session Cleanup (Complete)
+_Auto-close stale Active sessions on app startup. Prevents stuck "Active" state from browser closes._
+
+- [x] `lib/focus/cleanup.ts` — `cleanupStaleFocusSessions()`: finds Active sessions with `startedAt` > 24h ago, marks Abandoned, sets `endedAt` + `actualMinutes`, appends auto-close note. Returns `CleanupResult { count, timestamp }`. Writes to `KEYS.FOCUS_CLEANUP_LOG`.
+- [x] `components/FocusSessionCleanup.tsx` — Invisible client component; runs cleanup once on mount.
+- [x] `app/layout.tsx` — `<FocusSessionCleanup />` mounted in root layout alongside `StorageMigration` and `AuthListener`.
+- [x] `components/settings/FocusCleanupStatus.tsx` — Reads cleanup log; shows "last cleanup" row in System Info section of `/settings`.
+- [x] `lib/keys.ts` — `FOCUS_CLEANUP_LOG` added.
+- [x] `app/settings/page.tsx` — `FocusCleanupStatus` added to System section; version → v6.9.
+- [x] lint ✓ · tsc ✓ · build ✓
+
+## Phase 6.8 — Commercial Readiness Plan (Complete)
+_Planning and documentation milestone. Defines the path from personal OS to productized Agentic Systems offering._
+
+- [x] `docs/COMMERCIAL_READINESS_PLAN.md` — Full commercial strategy: capabilities inventory, ideal first users, product positioning, 5 product offers (Personal/Founder/Creator/Client/Agentic Systems Internal), personal-only vs. productizable analysis, technical blockers, security/privacy requirements, workspace/multi-user roadmap, pricing experiments, beta rollout plan (4 phases), demo script summary, sales narrative.
+- [x] `docs/DEMO_SCRIPT.md` — 10-minute live demo flow: minute-by-minute arc across Command Center, Chief of Staff, Strategy, Goals, Actions, Daily Rhythm, Memory, Relationships, Opportunities, Settings. Setup checklist, demo tips, screen recording checklist.
+- [x] `docs/BETA_CHECKLIST.md` — Pre-beta readiness tracker: critical fixes (RLS, stuck sessions, API key strategy), auth/isolation matrix, Supabase RLS SQL guide, onboarding requirements, export/backup matrix, 5-device mobile test matrix, known limitations disclosure, feedback collection plan with 6 activation metrics. Beta readiness score: **6.4/10**.
+- [x] `PROJECT_STATE.md` + `ROADMAP.md` updated to v6.8
+- [x] No code changes — docs-only milestone
+- [x] lint ✓ · tsc ✓ · build ✓
 
 ## Phase 6.7 — Workspace Foundation (Complete)
 _Metadata-only workspace model: schema, CRUD in settings, sidebar switcher. No data filtering yet._

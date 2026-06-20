@@ -1,10 +1,62 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-19 (v6.7 — Workspace Foundation)_
+_Last updated: 2026-06-19 (v6.9 — Focus Session Cleanup)_
 
 ---
 
 ## Current State
+
+**Version:** Sovereign OS v6.9 (Focus Session Cleanup: Complete)
+
+### Focus Session Cleanup (v6.9)
+
+**`lib/focus/cleanup.ts`** — `cleanupStaleFocusSessions()`: reads `KEYS.FOCUS_SESSIONS`, finds sessions with `status === "Active"` and `startedAt` older than 24 hours, marks them `"Abandoned"`, sets `endedAt` to current ISO timestamp, computes `actualMinutes` from elapsed time, appends "Auto-closed after 24h of inactivity." to notes. Returns `CleanupResult { count, timestamp }`. Writes result to `KEYS.FOCUS_CLEANUP_LOG`.
+
+**`components/FocusSessionCleanup.tsx`** — Invisible client component. Calls `cleanupStaleFocusSessions()` once on mount via `useEffect`. No UI output.
+
+**`app/layout.tsx`** — `<FocusSessionCleanup />` mounted alongside `<StorageMigration />` and `<AuthListener />`. Runs on every app load, client-side only.
+
+**`components/settings/FocusCleanupStatus.tsx`** — Reads `KEYS.FOCUS_CLEANUP_LOG` on mount and renders a `SettingRow`-style line in the System Info section of `/settings`: "Last session cleanup — 0 stale · Jun 19, 3:42 PM" or "2 closed · Jun 19, 3:42 PM".
+
+**`lib/keys.ts`** — `FOCUS_CLEANUP_LOG: "sovereign_focus_cleanup_log"` added.
+
+**`app/settings/page.tsx`** — `FocusCleanupStatus` added to System Info card. Version label bumped to v6.9.
+
+**Version:** Sovereign OS v6.8 (Commercial Readiness Plan: Complete)
+
+### Commercial Readiness Plan (v6.8)
+
+**Planning and documentation milestone.** No code changes. Three strategy documents created to define the path from personal OS to productized offering.
+
+**`docs/COMMERCIAL_READINESS_PLAN.md`** — Full commercial strategy document:
+- Current product capabilities inventory (engines, modules, infrastructure)
+- Ideal first users (Tier 1: solo founders, content creators, AI builders; Tier 2: small agency owners, Bitcoin-native builders)
+- Product positioning vs. Notion, ChatGPT, Monday.com, Clay
+- Five product offers: Personal (free/self-hosted), Founder OS ($49/mo), Creator OS ($29/mo), Client OS ($99/mo/workspace), Agentic Systems Internal OS ($500–$2,000 setup + $149/mo retainer)
+- What is personal-only vs. productizable today
+- Technical blockers before external users (RLS, API key strategy, onboarding, stuck sessions)
+- Security and privacy requirements (data ownership, RLS, no analytics without consent)
+- Workspace / multi-user roadmap (v6.7 Foundation → v7.0 Tags → v7.1 Filter UI → v7.2 Intelligence → v7.3 Cloud → v7.4 RLS → v7.5 Sharing → v8.0 Team)
+- Pricing experiments (Founder OS freemium, lifetime deal, pay-what-you-want, Agentic Systems retainer)
+- Beta rollout plan (Phase 0 hardening → Phase 1 closed 5–10 users → Phase 2 community → Phase 3 paid → Phase 4 public launch)
+- Sales narrative (problem: tools that don't talk to each other; solution: one private intelligence stack that knows your context)
+
+**`docs/DEMO_SCRIPT.md`** — 10-minute live demo flow:
+- Setup checklist (sample data, browser config, zoom)
+- Minute-by-minute arc: Command Center → TodayCommand → Chief of Staff → Strategy → Goals → Actions → Daily Rhythm → Memory → Relationships → Opportunities → Settings/Data Ownership → Close
+- Demo tips (use real data, pause on intelligence, problem-first framing)
+- Screen recording checklist
+
+**`docs/BETA_CHECKLIST.md`** — Pre-beta readiness tracker:
+- Pre-beta fixes (critical: RLS, stuck sessions, API key strategy; important: onboarding, error states, mobile)
+- Auth / data isolation requirements table with status
+- Supabase / RLS implementation guide (SQL policies for all 5 synced tables)
+- Onboarding requirements (minimum viable: written guide + demo video; in-app: /welcome route)
+- Backup / export requirements (full matrix — mostly done)
+- Mobile testing matrix (5 devices × checklist of 9 scenarios)
+- Known limitations disclosure for beta users
+- Feedback collection plan (in-app form, Discord, weekly check-in template, 6 activation metrics)
+- Beta readiness score: **6.4/10** — core product 9/10, data safety 10/10, RLS 4/10, onboarding 3/10
 
 **Version:** Sovereign OS v6.7 (Workspace Foundation: Complete)
 
