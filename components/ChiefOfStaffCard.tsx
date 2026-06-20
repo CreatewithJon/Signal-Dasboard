@@ -27,6 +27,13 @@ import { computeKnowledgeGraph } from "@/lib/knowledgeGraph/engine";
 import { computeActionEngine } from "@/lib/actionEngine/engine";
 import type { Workspace } from "@/lib/types/workspace";
 import { DEFAULT_WORKSPACE } from "@/lib/types/workspace";
+import {
+  computeWorkspaceAnalytics,
+  getWeekStart,
+  riskColor as wsRiskColor,
+  riskLabel as wsRiskLabel,
+} from "@/lib/workspaces/analytics";
+import type { WorkspaceAnalytics } from "@/lib/workspaces/analytics";
 
 function safeRead<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -84,6 +91,7 @@ interface WorkspaceSummaryRow {
 export default function ChiefOfStaffCard() {
   const [brief,            setBrief]            = useState<ChiefOfStaffBrief | null>(null);
   const [workspaceSummary, setWorkspaceSummary] = useState<WorkspaceSummaryRow[]>([]);
+  const [highestRiskWs,    setHighestRiskWs]    = useState<WorkspaceAnalytics | null>(null);
   const [loaded,           setLoaded]           = useState(false);
 
   useEffect(() => {
@@ -182,6 +190,26 @@ export default function ChiefOfStaffCard() {
       .filter((row) => row.openProjects > 0 || row.openOpps > 0);
 
     setWorkspaceSummary(wsRows);
+
+    // Highest-risk workspace via analytics engine
+    const weekStartStr = getWeekStart(todayStr);
+    const wsAnalytics = computeWorkspaceAnalytics({
+      workspaces:    allWorkspaces,
+      projects,
+      projectTasks,
+      memoryItems,
+      contentItems,
+      opportunities,
+      people,
+      focusSessions,
+      todayStr,
+      weekStartStr,
+    });
+    const topRisk = wsAnalytics.length > 0
+      ? wsAnalytics.reduce((a, b) => a.riskScore > b.riskScore ? a : b)
+      : null;
+    setHighestRiskWs(topRisk && topRisk.riskScore >= 20 ? topRisk : null);
+
     setLoaded(true);
   }, []);
 
@@ -305,9 +333,42 @@ export default function ChiefOfStaffCard() {
           <>
             <div style={{ height: 1, background: "rgba(255,255,255,0.04)" }} />
             <div>
-              <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/25 mb-2">
-                Workspace Summary
-              </p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/25">
+                  Workspace Summary
+                </p>
+                <Link
+                  href="/workspaces"
+                  className="text-[8px] font-semibold transition-colors"
+                  style={{ color: "rgba(99,102,241,0.45)" }}
+                >
+                  Analytics →
+                </Link>
+              </div>
+              {/* Highest risk workspace alert */}
+              {highestRiskWs && highestRiskWs.riskScore >= 45 && (
+                <div
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg mb-2"
+                  style={{
+                    background: `${wsRiskColor(highestRiskWs.riskScore).replace("0.85", "0.06").replace("0.7", "0.06")}`,
+                    border: `1px solid ${wsRiskColor(highestRiskWs.riskScore).replace("0.85", "0.15").replace("0.7", "0.12")}`,
+                  }}
+                >
+                  <div
+                    className="w-1.5 h-1.5 rounded-full shrink-0"
+                    style={{ background: highestRiskWs.workspace.color }}
+                  />
+                  <p className="text-[9px] text-white/45 flex-1 truncate">
+                    Watch: <span className="font-semibold text-white/65">{highestRiskWs.workspace.name}</span>
+                  </p>
+                  <span
+                    className="text-[8px] font-bold uppercase tracking-wide shrink-0"
+                    style={{ color: wsRiskColor(highestRiskWs.riskScore) }}
+                  >
+                    {wsRiskLabel(highestRiskWs.riskScore)} risk
+                  </span>
+                </div>
+              )}
               <div className="space-y-1.5">
                 {workspaceSummary.map((row) => (
                   <div key={row.id} className="flex items-center gap-2">

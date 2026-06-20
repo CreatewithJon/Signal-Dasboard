@@ -1,8 +1,17 @@
-# Workspace Activation — Sovereign OS v7.4
+# Workspace Activation — Sovereign OS v7.5
 
 ## Overview
 
-Workspaces are now a fully functional organizational layer. Every data type carries a `workspace_id` field, new records are stamped at creation time, and the UI filters/displays data per the active workspace.
+Workspaces are a fully functional organizational layer with analytics. Every data type carries a `workspace_id` field, new records are stamped at creation time, the UI filters/displays data per the active workspace, and `/workspaces` provides a per-workspace operational snapshot.
+
+## v7.5 Additions
+
+- **`lib/workspaces/analytics.ts`** — `computeWorkspaceAnalytics()` engine: riskScore, momentumScore, openProjects, overdueTasks, activeOpps, contentPipeline, focusMinutesWeek, riskFactors per workspace
+- **`/workspaces`** — Analytics route: Executive Summary, Overview Cards, Compare Table, Risk Register, Opportunities, Content Pipeline, Focus Time sections
+- **`WorkspaceSwitcher`** — "Analytics →" link in dropdown footer
+- **`ChiefOfStaffCard`** — Highest-risk workspace alert when risk ≥ 45 + "Analytics →" link
+- **`TodayCommand`** — Workspace-scoped Risk/Momentum badges in header when not viewing "All"
+- **Sidebar** — `/workspaces` added to SYSTEM_NAV
 
 ---
 

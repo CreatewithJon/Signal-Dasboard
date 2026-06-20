@@ -227,6 +227,18 @@ const MODULE_NAV: NavItem[] = [
 
 const SYSTEM_NAV: NavItem[] = [
   {
+    href: "/workspaces",
+    label: "Workspaces",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <rect x="2" y="2" width="7" height="7" rx="1.5" />
+        <rect x="11" y="2" width="7" height="7" rx="1.5" />
+        <rect x="2" y="11" width="7" height="5" rx="1.5" />
+        <rect x="11" y="11" width="7" height="5" rx="1.5" />
+      </svg>
+    ),
+  },
+  {
     href: "/beta",
     label: "Beta Overview",
     icon: (

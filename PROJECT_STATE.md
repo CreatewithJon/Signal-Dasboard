@@ -1,12 +1,28 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-19 (v7.3 — Private Beta Landing)_
+_Last updated: 2026-06-19 (v7.5 — Workspace Analytics)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v7.3 (Private Beta Landing: Complete)
+**Version:** Sovereign OS v7.5 (Workspace Analytics: Complete)
+
+### Workspace Analytics (v7.5)
+
+**`lib/workspaces/analytics.ts`** — Pure analytics engine. `computeWorkspaceAnalytics()` takes all data arrays + todayStr + weekStartStr and returns per-workspace: openProjects, overdueTasks, activeOpportunities, highPriorityPeople, contentPipeline, focusMinutesWeek, focusSessionsWeek, memoryCount, riskScore (0–100), momentumScore (0–100), riskFactors (string[]). Helper exports: `getWeekStart()`, `riskLabel()`, `riskColor()`, `momentumColor()`.
+
+**`app/workspaces/page.tsx`** — New route `/workspaces`. Client component, all data from localStorage. Sections: Executive Summary (aggregate stats + highest risk/momentum workspace) → Workspace Overview Cards (2-col grid, click to activate) → Compare Table (all metrics, click row to activate) → Risk Register (sorted by risk score, risk bar + factor bullets) → Opportunities by Workspace (active count + top opp) → Content Pipeline (bar chart per workspace) → Focus Time (bar chart + session count). "Set Active" button updates active workspace on the fly.
+
+**`components/Sidebar.tsx`** — `/workspaces` added to `SYSTEM_NAV` (first entry, above Beta Overview).
+
+**`components/WorkspaceSwitcher.tsx`** — "Analytics →" link in dropdown footer → `/workspaces`. Added `import Link from "next/link"`.
+
+**`components/ChiefOfStaffCard.tsx`** — Imports analytics engine. Computes highest-risk workspace in useEffect. When riskScore ≥ 45, renders "Watch: [WorkspaceName] — [High/Critical] risk" alert in Workspace Summary section. Added "Analytics →" link header in Workspace Summary.
+
+**`components/TodayCommand.tsx`** — Imports analytics engine. When active workspace is not "all", computes analytics for that workspace and renders "Risk [score]" + "Mom [score]" badges in header bar alongside existing global Momentum badge.
+
+### Workspace Activation (v7.4)
 
 ### Private Beta Landing (v7.3)
 

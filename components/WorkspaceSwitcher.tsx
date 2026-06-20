@@ -12,6 +12,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { KEYS } from "@/lib/keys";
 import { DEFAULT_WORKSPACE } from "@/lib/types/workspace";
 import type { Workspace } from "@/lib/types/workspace";
@@ -154,10 +155,18 @@ export default function WorkspaceSwitcher() {
               </div>
             </button>
           ))}
-          <div className="px-3 pt-1 pb-2 mt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="px-3 pt-1.5 pb-2 mt-1 flex items-center justify-between gap-2" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
             <p className="text-[8px] text-white/15 leading-relaxed">
-              Data is filtered per workspace. All Workspaces shows everything.
+              All Workspaces shows everything.
             </p>
+            <Link
+              href="/workspaces"
+              onClick={() => setOpen(false)}
+              className="text-[8px] font-semibold shrink-0 transition-colors"
+              style={{ color: "rgba(99,102,241,0.5)" }}
+            >
+              Analytics →
+            </Link>
           </div>
         </div>
       )}

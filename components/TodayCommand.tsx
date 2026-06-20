@@ -17,6 +17,13 @@ import { KEYS } from "@/lib/keys";
 import { getActiveWorkspaceId } from "@/lib/workspaces/activeWorkspace";
 import type { Workspace } from "@/lib/types/workspace";
 import { DEFAULT_WORKSPACE } from "@/lib/types/workspace";
+import {
+  computeWorkspaceAnalytics,
+  getWeekStart,
+  riskColor as wsRiskColor,
+  momentumColor as wsMomentumColor,
+} from "@/lib/workspaces/analytics";
+import type { WorkspaceAnalytics } from "@/lib/workspaces/analytics";
 import { computeKnowledgeGraph } from "@/lib/knowledgeGraph/engine";
 import { computeActionEngine } from "@/lib/actionEngine/engine";
 import { computeFocusEngine } from "@/lib/focus/engine";
@@ -50,10 +57,11 @@ const RISK_COLOR: Record<string, string> = {
 };
 
 interface CommandData {
-  brief:         ChiefOfStaffBrief;
-  topObjective:  string;
-  activeSession: FocusSession | null;
-  todayStr:      string;
+  brief:            ChiefOfStaffBrief;
+  topObjective:     string;
+  activeSession:    FocusSession | null;
+  todayStr:         string;
+  wsAnalytics:      WorkspaceAnalytics | null;  // analytics for active workspace (null if "all")
 }
 
 export default function TodayCommand() {
@@ -122,11 +130,29 @@ export default function TodayCommand() {
         .sort((a, b) => (b.startedAt ?? "").localeCompare(a.startedAt ?? ""))[0] ??
       null;
 
+    // Workspace analytics for active workspace (when not "all")
+    let wsAnalytics: WorkspaceAnalytics | null = null;
+    if (activeWsId !== "all") {
+      const storedWs = safeRead<Workspace[]>(KEYS.WORKSPACES, [DEFAULT_WORKSPACE]);
+      const hasPersonal = storedWs.some((w) => w.id === "personal");
+      const allWs = hasPersonal ? storedWs : [DEFAULT_WORKSPACE, ...storedWs];
+      const weekStartStr = getWeekStart(todayStr);
+      const allAnalytics = computeWorkspaceAnalytics({
+        workspaces:    allWs,
+        projects,      projectTasks,  memoryItems,
+        contentItems,  opportunities: opps,
+        people,        focusSessions,
+        todayStr,      weekStartStr,
+      });
+      wsAnalytics = allAnalytics.find((a) => a.workspace.id === activeWsId) ?? null;
+    }
+
     setData({
       brief,
       topObjective: strategic.topObjectives[0]?.title ?? "",
       activeSession,
       todayStr,
+      wsAnalytics,
     });
     setLoaded(true);
   }, []);
@@ -145,7 +171,7 @@ export default function TodayCommand() {
 
   if (!data) return null;
 
-  const { brief, topObjective, activeSession } = data;
+  const { brief, topObjective, activeSession, wsAnalytics } = data;
   const riskColor = RISK_COLOR[brief.biggestRisk.severity] ?? RISK_COLOR.medium;
   const momentumColor =
     brief.weeklyMomentum.score >= 70 ? "rgba(52,211,153,0.85)" :
@@ -190,6 +216,29 @@ export default function TodayCommand() {
           <span className="text-[9px] text-white/20">{dateLabel}</span>
         </div>
         <div className="flex items-center gap-2">
+          {/* Workspace-scoped risk + momentum when not viewing all */}
+          {wsAnalytics && (
+            <>
+              <span
+                className="text-[9px] font-semibold px-2 py-0.5 rounded-full tabular-nums"
+                style={{
+                  background: `${wsRiskColor(wsAnalytics.riskScore).replace("0.85", "0.08").replace("0.7", "0.07")}`,
+                  color: wsRiskColor(wsAnalytics.riskScore),
+                }}
+              >
+                Risk {wsAnalytics.riskScore}
+              </span>
+              <span
+                className="text-[9px] font-semibold px-2 py-0.5 rounded-full tabular-nums"
+                style={{
+                  background: `${wsMomentumColor(wsAnalytics.momentumScore).replace("0.85", "0.08").replace("0.75", "0.07")}`,
+                  color: wsMomentumColor(wsAnalytics.momentumScore),
+                }}
+              >
+                Mom {wsAnalytics.momentumScore}
+              </span>
+            </>
+          )}
           <span
             className="text-[9px] font-semibold px-2 py-0.5 rounded-full tabular-nums"
             style={{ background: `${momentumColor.replace("0.85", "0.08").replace("0.75", "0.08")}`, color: momentumColor }}
