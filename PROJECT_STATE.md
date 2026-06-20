@@ -1,10 +1,26 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-19 (v7.0 — Supabase RLS Policy Plan)_
+_Last updated: 2026-06-19 (v7.1 — Welcome + First-Run Onboarding)_
 
 ---
 
 ## Current State
+
+**Version:** Sovereign OS v7.1 (Welcome + First-Run Onboarding: Complete)
+
+### Welcome + First-Run Onboarding (v7.1)
+
+**`lib/keys.ts`** — Two keys added: `WELCOME_SEEN` (`sovereign_welcome_seen`) + `SETUP_CHECKLIST` (`sovereign_setup_checklist`).
+
+**`app/welcome/page.tsx`** — Full welcome page: Hero (logo + headline + tagline), "What This Is" card (3 points: intelligence engine / private local-first / built around operating rhythm), "Start Here — First 5 Actions" card (5 Step components linking to /projects /memory /relationships /opportunities /daily), "Your Data, Your Rules" card (4 points: export / no analytics / client-side AI context / clear any time), "Local vs Cloud Storage" 2-col grid, bottom CTA button `markSeenAndGo()` → sets `WELCOME_SEEN = true` → routes to `/`.
+
+**`components/WelcomeBanner.tsx`** — Subtle one-liner shown on the homepage when `WELCOME_SEEN` is not set. Indigo-accented pulse dot + "New here? Start with the Welcome Guide" link → `/welcome` + X dismiss button (sets `WELCOME_SEEN = true`, hides banner). Does not force redirect.
+
+**`components/settings/SetupProgress.tsx`** — 7-item first-run checklist. 5 items auto-detected from localStorage (PROJECTS/MEMORY_ITEMS/RELATIONSHIPS/OPPORTUNITIES array length > 0; DAILY_RHYTHM checklistDone). 2 manual toggles: Export Created, Supabase Configured. Progress bar + percentage. Reads/writes `KEYS.SETUP_CHECKLIST`.
+
+**`components/DashboardShell.tsx`** — `<WelcomeBanner />` mounted between System Status row and TodayCommand hero. First-run only (hides after dismissed or after visiting /welcome).
+
+**`app/settings/page.tsx`** — "Onboarding" section added above Workspaces with `<SetupProgress />`.
 
 **Version:** Sovereign OS v7.0 (Supabase RLS Policy Plan: Complete)
 

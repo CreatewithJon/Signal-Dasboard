@@ -11,6 +11,7 @@ import ReadModeSettings from "@/components/settings/ReadModeSettings";
 import VectorMemorySettings from "@/components/settings/VectorMemorySettings";
 import WorkspaceSettings from "@/components/settings/WorkspaceSettings";
 import FocusCleanupStatus from "@/components/settings/FocusCleanupStatus";
+import SetupProgress from "@/components/settings/SetupProgress";
 
 export const metadata: Metadata = {
   title: "Settings — Sovereign OS",
@@ -72,6 +73,17 @@ export default function SettingsPage() {
           Manage persistence, data, and environment configuration.
         </p>
       </div>
+
+      {/* ── Setup Progress ──────────────────────────────────────────────── */}
+      <section className="mb-8">
+        <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-4">
+          Onboarding
+        </p>
+        <SetupProgress />
+        <p className="text-[10px] text-white/20 mt-2 px-1">
+          Auto-detected from your data. Manual toggles for export and Supabase — tap to mark complete.
+        </p>
+      </section>
 
       {/* ── Workspaces ──────────────────────────────────────────────────── */}
       <section className="mb-8">

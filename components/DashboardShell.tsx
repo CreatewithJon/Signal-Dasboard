@@ -15,6 +15,7 @@
  * "Today's Command" hero sits above the zones.
  */
 
+import WelcomeBanner from "@/components/WelcomeBanner";
 import TodayCommand from "@/components/TodayCommand";
 import CollapsibleZone from "@/components/CollapsibleZone";
 import ChiefOfStaffCard from "@/components/ChiefOfStaffCard";
@@ -87,6 +88,9 @@ export default function DashboardShell({
       <div className="mb-6">
         <SystemStatus hasAIKey={hasAIKey} marketDataLive={marketDataLive} />
       </div>
+
+      {/* ── Welcome Banner (first-run only) ────────────────────────── */}
+      <WelcomeBanner />
 
       {/* ── Today's Command Hero ────────────────────────────────────── */}
       <TodayCommand />

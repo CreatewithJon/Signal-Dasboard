@@ -67,6 +67,10 @@ export const KEYS = {
   WORKSPACES:          "sovereign_workspaces",
   ACTIVE_WORKSPACE_ID: "sovereign_active_workspace_id",
 
+  // Onboarding (v7.1)
+  WELCOME_SEEN:      "sovereign_welcome_seen",
+  SETUP_CHECKLIST:   "sovereign_setup_checklist",
+
   // Migration sentinel — presence means migration has run
   MIGRATION_V1:      "sovereign_migration_v1_complete",
 } as const;

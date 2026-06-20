@@ -2,7 +2,7 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-19 (v7.0)_
+_Last updated: 2026-06-19 (v7.1)_
 
 ---
 
@@ -227,6 +227,18 @@ _Semantic embedding infrastructure without replacing the deterministic engine._
 - [x] `supabase/schema.sql` — Commented pgvector migration section: `enable extension vector`, `alter table memory_items add column embedding vector(1536)`, `match_memories` RPC function, IVFFlat index.
 - [x] `docs/VECTOR_MEMORY_PLAN.md` — Architecture doc: activation checklist, embedding provider rationale, text format, RPC design, fallback behavior, future phases v5.7–v6.0.
 - [x] Build clean, lint clean, type-check clean.
+
+## Phase 7.1 — Welcome + First-Run Onboarding (Complete)
+_First-run detection, /welcome guide page, WelcomeBanner on homepage, Setup Progress checklist in settings._
+
+- [x] `lib/keys.ts` — `WELCOME_SEEN` + `SETUP_CHECKLIST` keys added
+- [x] `app/welcome/page.tsx` — Full welcome guide: hero, "What This Is" (3-point card), "First 5 Actions" (Steps → /projects /memory /relationships /opportunities /daily), "Your Data, Your Rules" (4-point card), Local vs Cloud 2-col grid, "Go to Command Center" CTA
+- [x] `components/WelcomeBanner.tsx` — Subtle indigo one-liner on homepage; reads `WELCOME_SEEN`; shows if not set; dismissible (sets key); links to `/welcome`
+- [x] `components/settings/SetupProgress.tsx` — 7-item checklist; 5 auto-detected from localStorage (projects, memory, relationships, opportunities, daily rhythm); 2 manual toggles (export, Supabase); progress bar + %; reads/writes `KEYS.SETUP_CHECKLIST`
+- [x] `components/DashboardShell.tsx` — `<WelcomeBanner />` mounted between System Status row and TodayCommand
+- [x] `app/settings/page.tsx` — "Onboarding" section with `<SetupProgress />` added above Workspaces
+- [x] `PROJECT_STATE.md` + `ROADMAP.md` updated to v7.1
+- [x] lint ✓ · tsc ✓ · build ✓
 
 ## Phase 7.0 — Supabase RLS Policy Plan (Complete)
 _Row-level security policies for all 5 synced tables. Required before external beta._
