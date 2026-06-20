@@ -112,9 +112,20 @@ export default function AuthStatus() {
           className="mt-4 px-3 py-2.5 rounded-xl text-[10px] leading-relaxed"
           style={{ background: "rgba(52,211,153,0.06)", color: "rgba(52,211,153,0.65)" }}
         >
-          Your Supabase writes now include your user ID. localStorage remains the active
-          source of truth — no data has been migrated. RLS and per-user data scoping
-          will activate in v4.5.
+          Your Supabase writes include your user ID. localStorage is still the active
+          source of truth — no data has been migrated.
+        </div>
+        <div
+          className="mt-3 px-3 py-2.5 rounded-xl text-[10px] leading-relaxed flex items-start gap-2"
+          style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)" }}
+        >
+          <span style={{ color: "rgba(245,158,11,0.8)" }}>⚠</span>
+          <span style={{ color: "rgba(245,158,11,0.75)" }}>
+            <strong>RLS required before external beta.</strong> Row-Level Security is not yet active —
+            any authenticated user on this Supabase project can read all rows.
+            Run the v7.0 migration in <code>supabase/schema.sql</code> and
+            see <code>docs/RLS_SECURITY_PLAN.md</code> before sharing with other users.
+          </span>
         </div>
       </div>
     );
@@ -132,11 +143,22 @@ export default function AuthStatus() {
           Supabase Auth Ready
         </span>
       </div>
-      <p className="text-xs mb-5 leading-relaxed" style={{ color: "rgba(255,255,255,0.35)" }}>
+      <p className="text-xs mb-4 leading-relaxed" style={{ color: "rgba(255,255,255,0.35)" }}>
         Supabase is configured but you are not signed in. The app works normally —
-        Supabase writes will use <code className="text-white/25">user_id = null</code> until
-        you sign in. Signing in is optional and does not change what data you see.
+        Supabase writes use <code className="text-white/25">user_id = null</code> until
+        you sign in.
       </p>
+      <div
+        className="mb-5 px-3 py-2.5 rounded-xl text-[10px] leading-relaxed flex items-start gap-2"
+        style={{ background: "rgba(245,158,11,0.05)", border: "1px solid rgba(245,158,11,0.12)" }}
+      >
+        <span style={{ color: "rgba(245,158,11,0.7)" }}>⚠</span>
+        <span style={{ color: "rgba(245,158,11,0.6)" }}>
+          Rows written with <code>user_id = null</code> become inaccessible once RLS is
+          enabled. Sign in first, then run the null-row migration in{" "}
+          <code>docs/RLS_SECURITY_PLAN.md</code> before activating RLS.
+        </span>
+      </div>
 
       {/* Magic link sign-in form */}
       {signInState === "sent" ? (

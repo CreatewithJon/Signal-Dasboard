@@ -289,15 +289,154 @@ end $$;
 -- ============================================================
 
 -- ============================================================
--- Notes for v4.1 migration
+-- v7.0 — Row-Level Security (RLS) Policies
 -- ============================================================
--- When ready to add RLS:
---   alter table projects enable row level security;
---   create policy "users see own rows" on projects
---     for all using (auth.uid() = user_id);
--- (repeat for each table)
 --
--- When migrating from localStorage:
---   Use the /api/migrate route (to be built in v4.1) to POST
---   existing localStorage dumps and upsert into these tables.
+-- OVERVIEW
+-- --------
+-- RLS ensures each authenticated user can only read and write
+-- their own rows. Without RLS, any authenticated user can query
+-- any other user's data via the Supabase anon key.
+--
+-- IMPORTANT: This migration is REQUIRED before sharing the app
+-- with any external users. Run it once RLS is ready to activate.
+--
+-- TABLES COVERED (5 synced modules):
+--   memory_items, projects, project_tasks, content_items, focus_sessions
+--
+-- TABLES NOT COVERED (local-only modules):
+--   planner_entries, habits, habit_logs
+--   These tables are not yet synced. Add RLS when sync is added.
+--
+-- ANONYMOUS / LOCAL MODE
+-- ----------------------
+-- The app works 100% in localStorage-only mode without Supabase.
+-- When Supabase is configured but the user is NOT signed in,
+-- writes use user_id = null. Once RLS is active, those null-user_id
+-- rows will NOT be readable by anyone — this is intentional and safe
+-- for the local-first architecture (reads come from localStorage).
+--
+-- NULL USER_ID MIGRATION WARNING
+-- --------------------------------
+-- If you have existing rows with user_id = null (written before auth
+-- was set up), those rows become inaccessible once RLS is active.
+-- Run the UPDATE statements below BEFORE enabling RLS to assign
+-- those rows to the correct user.
+--
+-- Step 0: Find your user UUID (run as authenticated user):
+--   select auth.uid();
+--
+-- Step 1: Assign orphaned rows to your user (replace <YOUR-UUID>):
+--   update memory_items    set user_id = '<YOUR-UUID>' where user_id is null;
+--   update projects        set user_id = '<YOUR-UUID>' where user_id is null;
+--   update project_tasks   set user_id = '<YOUR-UUID>' where user_id is null;
+--   update content_items   set user_id = '<YOUR-UUID>' where user_id is null;
+--   update focus_sessions  set user_id = '<YOUR-UUID>' where user_id is null;
+--
+-- Step 2: Verify no null rows remain:
+--   select count(*) from memory_items   where user_id is null;
+--   select count(*) from projects       where user_id is null;
+--   select count(*) from project_tasks  where user_id is null;
+--   select count(*) from content_items  where user_id is null;
+--   select count(*) from focus_sessions where user_id is null;
+--
+-- Step 3: Apply RLS (run the statements below).
+--
+-- POLICY DESIGN
+-- -------------
+-- One "for all" policy per table: read + insert + update + delete
+-- all require auth.uid() = user_id.
+-- The "with check" clause on inserts/updates prevents a user from
+-- writing a row with a different user_id than their own.
+--
+-- No anonymous read policy is created. Rows with user_id = null
+-- are inaccessible once RLS is active (SQL NULL comparison = NULL,
+-- which is falsy). This is the correct security posture.
+--
+-- SERVICE ROLE: The Supabase service_role key bypasses RLS by
+-- default. Do NOT expose service_role to the browser. It is safe
+-- to use in server-side route handlers that need admin access.
+-- ============================================================
+
+-- ── memory_items ─────────────────────────────────────────────────────────
+
+alter table memory_items enable row level security;
+
+create policy "memory_items: users own their rows"
+  on memory_items
+  for all
+  using     (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- ── projects ──────────────────────────────────────────────────────────────
+
+alter table projects enable row level security;
+
+create policy "projects: users own their rows"
+  on projects
+  for all
+  using     (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- ── project_tasks ─────────────────────────────────────────────────────────
+-- Note: project_tasks.project_id references projects(id).
+-- Because projects has RLS, a task whose project is not owned by the
+-- current user will also be invisible (the JOIN fails the projects policy).
+-- The task-level policy adds defense-in-depth.
+
+alter table project_tasks enable row level security;
+
+create policy "project_tasks: users own their rows"
+  on project_tasks
+  for all
+  using     (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- ── content_items ─────────────────────────────────────────────────────────
+
+alter table content_items enable row level security;
+
+create policy "content_items: users own their rows"
+  on content_items
+  for all
+  using     (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- ── focus_sessions ────────────────────────────────────────────────────────
+
+alter table focus_sessions enable row level security;
+
+create policy "focus_sessions: users own their rows"
+  on focus_sessions
+  for all
+  using     (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- ── OPTIONAL: temporary dev/migration bypass (DISABLED BY DEFAULT) ────────
+-- If you need to inspect or fix all rows as a superuser during migration,
+-- use the Supabase SQL editor (which runs as service_role, bypassing RLS).
+-- Do NOT create a permissive anonymous policy in production.
+--
+-- -- NEVER enable this in production:
+-- create policy "TEMP: allow all for migration"
+--   on memory_items for all using (true) with check (true);
+-- ── (disabled — do not uncomment without understanding the security impact) ─
+
+-- ============================================================
+-- v7.0 — Verification Queries
+-- Run these after applying RLS to confirm policies are in place.
+-- ============================================================
+--
+-- select tablename, rowsecurity
+-- from pg_tables
+-- where schemaname = 'public'
+--   and tablename in ('memory_items','projects','project_tasks','content_items','focus_sessions');
+--
+-- select tablename, policyname, cmd, qual
+-- from pg_policies
+-- where schemaname = 'public'
+-- order by tablename;
+--
+-- Expected: rowsecurity = true for each covered table.
+-- Expected: 5 policies, one per table, cmd = 'ALL'.
 -- ============================================================

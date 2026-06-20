@@ -2,7 +2,7 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-19 (v6.9)_
+_Last updated: 2026-06-19 (v7.0)_
 
 ---
 
@@ -227,6 +227,17 @@ _Semantic embedding infrastructure without replacing the deterministic engine._
 - [x] `supabase/schema.sql` — Commented pgvector migration section: `enable extension vector`, `alter table memory_items add column embedding vector(1536)`, `match_memories` RPC function, IVFFlat index.
 - [x] `docs/VECTOR_MEMORY_PLAN.md` — Architecture doc: activation checklist, embedding provider rationale, text format, RPC design, fallback behavior, future phases v5.7–v6.0.
 - [x] Build clean, lint clean, type-check clean.
+
+## Phase 7.0 — Supabase RLS Policy Plan (Complete)
+_Row-level security policies for all 5 synced tables. Required before external beta._
+
+- [x] `supabase/schema.sql` — v7.0 RLS section: `ENABLE ROW LEVEL SECURITY` + `for all` policy (`auth.uid() = user_id` with `WITH CHECK`) on `memory_items`, `projects`, `project_tasks`, `content_items`, `focus_sessions`. Null `user_id` migration guide. Verification queries. Disabled dev bypass comment block.
+- [x] `docs/RLS_SECURITY_PLAN.md` — Full security plan: auth model, policy design, anonymous local mode, null user_id migration (step-by-step SQL), testing checklist (pre/post RLS + multi-user), future extensions roadmap.
+- [x] `components/settings/AuthStatus.tsx` — Amber RLS warning in authenticated mode ("RLS required before external beta"). Amber null `user_id` warning in supabase-auth-ready mode. Stale "v4.5" copy removed.
+- [x] `PROJECT_STATE.md` + `ROADMAP.md` updated to v7.0
+- [x] Tables NOT covered (local-only): `planner_entries`, `habits`, `habit_logs` — documented; RLS added when sync ships
+- [x] No app behavior changes — schema/docs/warning UI only
+- [x] lint ✓ · tsc ✓ · build ✓
 
 ## Phase 6.9 — Focus Session Cleanup (Complete)
 _Auto-close stale Active sessions on app startup. Prevents stuck "Active" state from browser closes._

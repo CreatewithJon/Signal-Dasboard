@@ -1,10 +1,35 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-19 (v6.9 — Focus Session Cleanup)_
+_Last updated: 2026-06-19 (v7.0 — Supabase RLS Policy Plan)_
 
 ---
 
 ## Current State
+
+**Version:** Sovereign OS v7.0 (Supabase RLS Policy Plan: Complete)
+
+### Supabase RLS Policy Plan (v7.0)
+
+**`supabase/schema.sql`** — v7.0 RLS section added at the bottom. For the 5 synced tables (`memory_items`, `projects`, `project_tasks`, `content_items`, `focus_sessions`):
+- `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` for each table
+- One `for all` policy per table: `auth.uid() = user_id` in both `USING` (read gate) and `WITH CHECK` (write gate)
+- Full migration guide for existing `user_id = null` rows (UPDATE statements to claim orphaned rows before enabling RLS)
+- Verification queries to confirm RLS is active and policies are in place
+- Disabled-by-default comment block for temporary dev bypass (clearly marked DO NOT ENABLE in production)
+- Tables NOT covered: `planner_entries`, `habits`, `habit_logs` (local-only, not yet synced)
+
+**`docs/RLS_SECURITY_PLAN.md`** — Full RLS architecture document:
+- Current auth model (3 modes: anonymous-local, supabase-auth-ready, authenticated) with table
+- Why RLS is required before external users (anon key exposure risk)
+- Policy design rationale (why `for all`, why no anonymous read, service role exception)
+- Anonymous/local mode explanation (RLS has zero effect on local-only mode)
+- Step-by-step null `user_id` migration with verification SQL
+- Testing checklist (before + after RLS, multi-user test)
+- Future RLS extensions roadmap (v7.1 profiles, v7.2 workspace scoping, v7.5 shared workspace)
+
+**`components/settings/AuthStatus.tsx`** — Two warning banners added:
+- **Authenticated mode**: amber "RLS required before external beta" banner with instructions to run `supabase/schema.sql` v7.0 migration and see `docs/RLS_SECURITY_PLAN.md`
+- **Supabase Auth Ready mode** (configured, not signed in): amber warning that `user_id = null` rows become inaccessible once RLS is active; advises signing in before enabling RLS
 
 **Version:** Sovereign OS v6.9 (Focus Session Cleanup: Complete)
 
