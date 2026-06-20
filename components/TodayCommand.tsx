@@ -14,6 +14,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { KEYS } from "@/lib/keys";
+import { getActiveWorkspaceId } from "@/lib/workspaces/activeWorkspace";
+import type { Workspace } from "@/lib/types/workspace";
+import { DEFAULT_WORKSPACE } from "@/lib/types/workspace";
 import { computeKnowledgeGraph } from "@/lib/knowledgeGraph/engine";
 import { computeActionEngine } from "@/lib/actionEngine/engine";
 import { computeFocusEngine } from "@/lib/focus/engine";
@@ -54,10 +57,19 @@ interface CommandData {
 }
 
 export default function TodayCommand() {
-  const [data,   setData]   = useState<CommandData | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [data,      setData]      = useState<CommandData | null>(null);
+  const [loaded,    setLoaded]    = useState(false);
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
 
   useEffect(() => {
+    // Resolve active workspace for the header label
+    const activeWsId = getActiveWorkspaceId();
+    const allWorkspaces = safeRead<Workspace[]>(KEYS.WORKSPACES, [DEFAULT_WORKSPACE]);
+    const activeWs = activeWsId === "all"
+      ? { ...DEFAULT_WORKSPACE, id: "all", name: "All Workspaces", color: "#64748b" }
+      : (allWorkspaces.find((w) => w.id === activeWsId) ?? DEFAULT_WORKSPACE);
+    setWorkspace(activeWs);
+
     const todayStr     = new Date().toISOString().slice(0, 10);
     const projects     = safeRead<Project[]>(KEYS.PROJECTS, []);
     const projectTasks = safeRead<ProjectTask[]>(KEYS.PROJECT_TASKS, []);
@@ -163,6 +175,18 @@ export default function TodayCommand() {
           <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">
             Command Center
           </span>
+          {workspace && (
+            <span
+              className="text-[8px] font-bold px-1.5 py-0.5 rounded-full"
+              style={{
+                background: `${workspace.color}18`,
+                color: `${workspace.color}cc`,
+                border: `1px solid ${workspace.color}28`,
+              }}
+            >
+              {workspace.name}
+            </span>
+          )}
           <span className="text-[9px] text-white/20">{dateLabel}</span>
         </div>
         <div className="flex items-center gap-2">

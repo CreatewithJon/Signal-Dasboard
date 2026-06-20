@@ -10,6 +10,7 @@
 import { KEYS } from "@/lib/keys";
 import type { Opportunity, OpportunityStatus, OpportunityConversionTarget } from "@/lib/types/opportunities";
 import { scoreOpportunity } from "@/lib/opportunities/score";
+import { getActiveWorkspaceId } from "@/lib/workspaces/activeWorkspace";
 
 // ── Read ───────────────────────────────────────────────────────────────────
 
@@ -46,6 +47,7 @@ export function createOpportunity(
     id:              crypto.randomUUID(),
     score:           0,
     score_reasoning: "",
+    workspace_id:    draft.workspace_id ?? getActiveWorkspaceId(),
     created_at:      now,
     updated_at:      now,
   };

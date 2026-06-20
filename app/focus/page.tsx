@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { KEYS } from "@/lib/keys";
 import { computeFocusEngine } from "@/lib/focus/engine";
 import { upsertFocusSessionSupabase } from "@/lib/repositories/focusSessionRepository";
+import { getActiveWorkspaceId } from "@/lib/workspaces/activeWorkspace";
 import { saveMemoryItemDual } from "@/lib/repositories/memoryRepository";
 import type { FocusEngineResult, FocusPriority, FocusBlock } from "@/lib/focus/engine";
 import type { Project, ProjectTask } from "@/lib/types/projects";
@@ -968,6 +969,7 @@ export default function FocusPage() {
       startedAt: new Date().toISOString(),
       status: "Active",
       savedToMemory: false,
+      workspace_id: getActiveWorkspaceId(),
     };
 
     persistSessions([...sessions, session], session);

@@ -44,6 +44,7 @@ export interface Opportunity {
   source:           "detected" | "manual"; // detected = from Chief engine, manual = user-created
   conversion:       OpportunityConversion | null;
   notes:            string;
+  workspace_id?:    string;         // v7.4 — undefined = Personal (backwards-compatible)
   created_at:       string; // ISO
   updated_at:       string; // ISO
 }

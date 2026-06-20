@@ -16,6 +16,19 @@ import {
   WORKSPACE_TYPE_LABELS,
 } from "@/lib/types/workspace";
 import type { Workspace, WorkspaceType } from "@/lib/types/workspace";
+import type { Project } from "@/lib/types/projects";
+import type { MemoryItem } from "@/lib/types/memory";
+import type { ContentItem } from "@/lib/types/content";
+import type { Person } from "@/lib/types/relationships";
+import type { Opportunity } from "@/lib/types/opportunities";
+
+interface WsCounts {
+  projects:      number;
+  memories:      number;
+  content:       number;
+  relationships: number;
+  opportunities: number;
+}
 
 function safeRead<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -76,6 +89,7 @@ export default function WorkspaceSettings() {
   const [editId,     setEditId]     = useState<string | null>(null);
   const [form,       setForm]       = useState({ ...EMPTY_FORM });
   const [saved,      setSaved]      = useState(false);
+  const [counts,     setCounts]     = useState<Record<string, WsCounts>>({});
 
   useEffect(() => {
     const stored = safeRead<Workspace[]>(KEYS.WORKSPACES, []);
@@ -83,6 +97,30 @@ export default function WorkspaceSettings() {
     const all = hasPersonal ? stored : [DEFAULT_WORKSPACE, ...stored];
     if (!hasPersonal) safeWrite(KEYS.WORKSPACES, all);
     setWorkspaces(all);
+
+    // Compute per-workspace counts
+    const projects      = safeRead<Project[]>(KEYS.PROJECTS, []);
+    const memories      = safeRead<MemoryItem[]>(KEYS.MEMORY_ITEMS, []);
+    const content       = safeRead<ContentItem[]>(KEYS.CONTENT_ITEMS, []);
+    const relationships = safeRead<Person[]>(KEYS.RELATIONSHIPS, []);
+    const opportunities = safeRead<Opportunity[]>(KEYS.OPPORTUNITIES, []);
+
+    function countFor<T extends { workspace_id?: string }>(items: T[], wsId: string): number {
+      if (wsId === "personal") return items.filter((i) => !i.workspace_id || i.workspace_id === "personal").length;
+      return items.filter((i) => i.workspace_id === wsId).length;
+    }
+
+    const computed: Record<string, WsCounts> = {};
+    for (const ws of all) {
+      computed[ws.id] = {
+        projects:      countFor(projects,      ws.id),
+        memories:      countFor(memories,      ws.id),
+        content:       countFor(content,       ws.id),
+        relationships: countFor(relationships, ws.id),
+        opportunities: countFor(opportunities, ws.id),
+      };
+    }
+    setCounts(computed);
   }, []);
 
   function persist(updated: Workspace[]) {
@@ -157,7 +195,7 @@ export default function WorkspaceSettings() {
       >
         <p className="text-[10px] text-white/40 leading-relaxed">
           <span className="font-semibold text-indigo-400/70">Workspaces</span> let you organize Sovereign OS across multiple contexts — Personal, business brands, client engagements, and communities.
-          {" "}<span className="text-white/25">Data filtering (scoping projects, memory, and content to a workspace) ships in a future release. For now, workspaces are metadata that prepares your data model.</span>
+          {" "}<span className="text-white/25">New items are stamped to the active workspace. Use the sidebar switcher to scope your view. Counts below show P = Projects · M = Memory · C = Content · R = Relationships · $ = Opportunities.</span>
         </p>
       </div>
 
@@ -188,6 +226,23 @@ export default function WorkspaceSettings() {
               </div>
               {ws.description && (
                 <p className="text-[10px] text-white/25 mt-0.5 truncate">{ws.description}</p>
+              )}
+              {counts[ws.id] && (
+                <div className="flex items-center gap-2.5 mt-1.5 flex-wrap">
+                  {(
+                    [
+                      ["P", counts[ws.id].projects],
+                      ["M", counts[ws.id].memories],
+                      ["C", counts[ws.id].content],
+                      ["R", counts[ws.id].relationships],
+                      ["$", counts[ws.id].opportunities],
+                    ] as [string, number][]
+                  ).map(([label, count]) => (
+                    <span key={label} className="text-[8px] tabular-nums" style={{ color: count > 0 ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.1)" }}>
+                      {label} {count}
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
             {/* Actions */}

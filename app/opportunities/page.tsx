@@ -16,6 +16,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import AppModal from "@/components/ui/AppModal";
+import WorkspaceBadge from "@/components/WorkspaceBadge";
 import { KEYS } from "@/lib/keys";
 import {
   loadOpportunities,
@@ -935,6 +936,7 @@ function OppCard({
               {opp.source === "detected" && (
                 <Badge label="auto" color="rgba(156,163,175,0.6)" bg="rgba(156,163,175,0.05)" border="rgba(156,163,175,0.12)" />
               )}
+              <WorkspaceBadge workspaceId={opp.workspace_id} />
             </div>
           </div>
 

@@ -15,6 +15,8 @@ import {
   upsertProjectTaskSupabase,
   deleteProjectTaskSupabase,
 } from "@/lib/repositories/projectRepository";
+import { getActiveWorkspaceId } from "@/lib/workspaces/activeWorkspace";
+import WorkspaceBadge from "@/components/WorkspaceBadge";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -1120,6 +1122,7 @@ function ProjectCard({
             style={{ background: statusCfg.color, boxShadow: project.status === "Active" ? `0 0 5px ${statusCfg.color}80` : "none" }}
           />
           <h3 className="text-sm font-semibold text-white/85 leading-tight">{project.title}</h3>
+          <WorkspaceBadge workspaceId={project.workspace_id} />
         </div>
         {project.description && (
           <p className="text-xs leading-relaxed line-clamp-2 pl-3.5" style={{ color: "rgba(255,255,255,0.35)" }}>
@@ -1548,7 +1551,8 @@ export default function ProjectsPage() {
   function addProject() {
     const p: Project = {
       id: newId("proj"), title: "New Project", status: "Idea", category: "Other", priority: "Medium",
-      description: "", objective: "", next_action: "", due_date: "", links: [], notes: "", created_at: now(), updated_at: now(),
+      description: "", objective: "", next_action: "", due_date: "", links: [], notes: "",
+      workspace_id: getActiveWorkspaceId(), created_at: now(), updated_at: now(),
     };
     saveProjectsState([p, ...projects]);
     setOpenId(p.id);
@@ -1570,7 +1574,7 @@ export default function ProjectsPage() {
   function addTask(projectId: string, title: string, priority: ProjectPriority = "Medium") {
     const t: ProjectTask = {
       id: newId("task"), project_id: projectId, title, status: "Todo", priority,
-      due_date: "", notes: "", created_at: now(), updated_at: now(),
+      due_date: "", notes: "", workspace_id: getActiveWorkspaceId(), created_at: now(), updated_at: now(),
     };
     saveTasksState([t, ...tasks]);
     void upsertProjectTaskSupabase(t);
@@ -1579,9 +1583,10 @@ export default function ProjectsPage() {
   function batchAddTasks(projectId: string, parsed: ParsedTask[]): { imported: number; skipped: number } {
     if (parsed.length === 0) return { imported: 0, skipped: 0 };
 
+    const wsId = getActiveWorkspaceId();
     const newTasks: ProjectTask[] = parsed.map((p) => ({
       id: newId("task"), project_id: projectId, title: p.title, status: "Todo" as TaskStatus,
-      priority: p.priority, due_date: "", notes: "", created_at: now(), updated_at: now(),
+      priority: p.priority, due_date: "", notes: "", workspace_id: wsId, created_at: now(), updated_at: now(),
     }));
 
     saveTasksState([...newTasks, ...tasks]);

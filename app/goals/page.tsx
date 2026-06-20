@@ -21,6 +21,7 @@ import { computeFocusEngine } from "@/lib/focus/engine";
 import { computeDailyBriefing } from "@/lib/briefing/daily";
 import { computeChiefOfStaffBrief } from "@/lib/chiefOfStaff/engine";
 import { createOpportunity } from "@/lib/opportunities/store";
+import { getActiveWorkspaceId } from "@/lib/workspaces/activeWorkspace";
 import { updatePerson } from "@/lib/relationships/store";
 import type { Project, ProjectTask } from "@/lib/types/projects";
 import type { ContentItem } from "@/lib/types/content";
@@ -180,6 +181,7 @@ function GoalCard({
         notes:              `Suggested by Goal Decomposition for: "${goal.objectiveTitle}"`,
         related_project_id: goal.existingRelatedProjects[0]?.id ?? "",
         publish_date:       "",
+        workspace_id:       getActiveWorkspaceId(),
         created_at:         now,
         updated_at:         now,
       };

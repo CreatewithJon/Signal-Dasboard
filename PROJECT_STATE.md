@@ -1,12 +1,20 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-19 (v7.2 — Beta Demo Hardening)_
+_Last updated: 2026-06-19 (v7.3 — Private Beta Landing)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v7.2 (Beta Demo Hardening: Complete)
+**Version:** Sovereign OS v7.3 (Private Beta Landing: Complete)
+
+### Private Beta Landing (v7.3)
+
+**`app/beta/page.tsx`** — Server component (no `"use client"` needed). Sections: Private Beta pill + hero (headline, tagline, 3 CTA buttons) → What It Does (3-point card: deterministic AI / local-first / operating rhythm) → Who It's For (3 persona cards: solo founders / builders & operators / content creators) → Core Modules (2-col grid, 8 modules with icons, descriptions, and nav links) → Data Ownership (5-point emerald card) → Current Beta Limitations (8-item table with amber dots) → Beta Disclaimer (amber card: private beta / not professional advice / local-first data model / Supabase experimental) → Bottom CTA block (Enter Sovereign OS / Welcome Guide / Settings & Export). Prerendered as static HTML (175B).
+
+**`components/Sidebar.tsx`** — "Beta Overview" link added to `SYSTEM_NAV` above Leads. Desktop sidebar only — not added to MobileNav.
+
+**`app/welcome/page.tsx`** — "Beta Overview" link added to the bottom CTA row alongside Settings link. Subdued (`text-white/20`) — secondary to the main CTAs.
 
 ### Beta Demo Hardening (v7.2)
 

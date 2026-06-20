@@ -7,6 +7,7 @@
 
 import { KEYS } from "@/lib/keys";
 import type { Person, RelationshipStatus } from "@/lib/types/relationships";
+import { getActiveWorkspaceId } from "@/lib/workspaces/activeWorkspace";
 
 // ── Read ───────────────────────────────────────────────────────────────────
 
@@ -36,7 +37,13 @@ export function createPerson(
   draft: Omit<Person, "id" | "created_at" | "updated_at">
 ): Person {
   const now = new Date().toISOString();
-  const person: Person = { ...draft, id: crypto.randomUUID(), created_at: now, updated_at: now };
+  const person: Person = {
+    ...draft,
+    id:           crypto.randomUUID(),
+    workspace_id: draft.workspace_id ?? getActiveWorkspaceId(),
+    created_at:   now,
+    updated_at:   now,
+  };
   persist([person, ...loadPeople()]);
   return person;
 }

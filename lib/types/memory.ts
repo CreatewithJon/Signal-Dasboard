@@ -23,6 +23,7 @@ export interface MemoryItem {
   relatedPeople: string[];
   importance: MemoryImportance;
   source: MemorySource;
+  workspace_id?: string; // v7.4 — undefined = Personal (backwards-compatible)
   createdAt: string;
   updatedAt: string;
 }

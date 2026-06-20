@@ -35,6 +35,7 @@ export interface ContentItem {
   notes: string;              // draft content, research, outline
   related_project_id: string; // "" = none
   publish_date: string;       // "YYYY-MM-DD" or ""
+  workspace_id?: string;      // v7.4 — undefined = Personal (backwards-compatible)
   created_at: string;         // ISO
   updated_at: string;         // ISO
 }

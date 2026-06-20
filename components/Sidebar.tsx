@@ -227,6 +227,16 @@ const MODULE_NAV: NavItem[] = [
 
 const SYSTEM_NAV: NavItem[] = [
   {
+    href: "/beta",
+    label: "Beta Overview",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-4 h-4">
+        <path d="M10 2l1.5 4.5L16 8l-4.5 1.5L10 14l-1.5-4.5L4 8l4.5-1.5L10 2z" strokeLinejoin="round" />
+        <path d="M16 14l1 3M18 16l-3 1" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
     href: "/leads",
     label: "Leads",
     soon: true,

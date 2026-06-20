@@ -1,8 +1,8 @@
-# BETA_CHECKLIST.md — Sovereign OS v7.2
+# BETA_CHECKLIST.md — Sovereign OS v7.4
 
 > Pre-beta readiness tracker. Work through this list before inviting external users.
 
-_Created: 2026-06-19 · Updated: 2026-06-19 (v7.2) · Target: Beta Phase 1 (5–10 users)_
+_Created: 2026-06-19 · Updated: 2026-06-19 (v7.4) · Target: Beta Phase 1 (5–10 users)_
 
 ---
 
@@ -115,12 +115,13 @@ ALTER TABLE focus_sessions   ADD COLUMN workspace_id text;
 - [ ] 10-minute onboarding call per beta user (optional but strongly recommended)
 - [ ] Demo video (see docs/DEMO_SCRIPT.md)
 
-### In-App Onboarding (Beta Phase 1 — DONE v7.1)
+### In-App Onboarding (Beta Phase 1 — DONE v7.1–v7.3)
 - [x] `/welcome` route — Full first-run welcome guide with 5 action steps
 - [x] `WelcomeBanner` — Shown on homepage until dismissed; links to `/welcome`
 - [x] `SetupProgress` — 7-item auto-detecting checklist in settings
 - [x] Empty state CTAs in place on all major routes (done in v6.4 audit)
 - [x] First-run detection via `KEYS.WELCOME_SEEN` flag
+- [x] `/beta` route — Private beta landing page with hero, all 8 modules, data ownership, limitations, and legal disclaimer. Linked from Sidebar (desktop) and Welcome page.
 
 ---
 
@@ -205,7 +206,7 @@ Be honest with beta users about what the product can and cannot do today.
 | Limitation | Impact | Plan |
 |---|---|---|
 | Single-user per browser | Users can't share data with collaborators | v8.0 team workspaces |
-| Workspace filtering not active | Workspace switcher shows UI but doesn't filter data | v7.1 |
+| Workspace filtering active | Creation stamping + badge display live (v7.4); full view filtering planned | v8.0 |
 | No mobile app | Web only; PWA-installable but no native app | Future |
 | YouTube API key required for Content Engine | Each user needs their own YouTube Data API v3 key | Config in settings |
 | AI requires Anthropic API key | Shared key (beta) or user's own key | Shared in beta |
@@ -274,4 +275,4 @@ Send to each beta user weekly:
 
 ---
 
-_Beta Checklist — Sovereign OS v7.2 · Created 2026-06-19 · Updated 2026-06-19_
+_Beta Checklist — Sovereign OS v7.3 · Created 2026-06-19 · Updated 2026-06-19_

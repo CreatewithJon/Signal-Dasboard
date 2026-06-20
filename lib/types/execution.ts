@@ -17,4 +17,5 @@ export interface FocusSession {
   blockers?: string;
   nextAction?: string;
   savedToMemory: boolean;
+  workspace_id?: string;  // v7.4 — undefined = Personal (backwards-compatible)
 }

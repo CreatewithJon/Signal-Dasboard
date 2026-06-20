@@ -1,8 +1,8 @@
-# DEMO_SCRIPT.md — Sovereign OS v7.2
+# DEMO_SCRIPT.md — Sovereign OS v7.3
 
 > 10-minute live demo flow. Use this for screen recordings, investor walkthroughs, client pitches, and beta user onboarding calls.
 
-_Updated: 2026-06-19 (v7.2 — demo setup checklist + safe walkthrough guidance added)_
+_Updated: 2026-06-19 (v7.3 — /beta route added; send /beta link to invited users before first session)_
 
 ---
 

@@ -25,6 +25,8 @@ import type { Person } from "@/lib/types/relationships";
 import type { Opportunity } from "@/lib/types/opportunities";
 import { computeKnowledgeGraph } from "@/lib/knowledgeGraph/engine";
 import { computeActionEngine } from "@/lib/actionEngine/engine";
+import type { Workspace } from "@/lib/types/workspace";
+import { DEFAULT_WORKSPACE } from "@/lib/types/workspace";
 
 function safeRead<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -70,9 +72,19 @@ const RISK_COLORS: Record<string, string> = {
   medium:   "rgba(167,139,250,0.7)",
 };
 
+interface WorkspaceSummaryRow {
+  id:           string;
+  name:         string;
+  color:        string;
+  openProjects: number;
+  overdueTasks: number;
+  openOpps:     number;
+}
+
 export default function ChiefOfStaffCard() {
-  const [brief,  setBrief]  = useState<ChiefOfStaffBrief | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [brief,            setBrief]            = useState<ChiefOfStaffBrief | null>(null);
+  const [workspaceSummary, setWorkspaceSummary] = useState<WorkspaceSummaryRow[]>([]);
+  const [loaded,           setLoaded]           = useState(false);
 
   useEffect(() => {
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -134,6 +146,42 @@ export default function ChiefOfStaffCard() {
     });
 
     setBrief(result);
+
+    // Workspace summary — per-workspace counts, max 5
+    const storedWorkspaces = safeRead<Workspace[]>(KEYS.WORKSPACES, [DEFAULT_WORKSPACE]);
+    const hasPersonal = storedWorkspaces.some((w) => w.id === "personal");
+    const allWorkspaces = hasPersonal ? storedWorkspaces : [DEFAULT_WORKSPACE, ...storedWorkspaces];
+    // Only show summary rows when viewing "all" workspaces, or always show for context
+    const wsRows: WorkspaceSummaryRow[] = allWorkspaces
+      .filter((w) => !w.archived)
+      .slice(0, 5)
+      .map((w) => {
+        const isPersonal = w.id === "personal";
+        const wsProjects = projects.filter((p) =>
+          isPersonal
+            ? !p.workspace_id || p.workspace_id === "personal"
+            : p.workspace_id === w.id
+        );
+        const wsTasks = projectTasks.filter((t) =>
+          isPersonal
+            ? !t.workspace_id || t.workspace_id === "personal"
+            : t.workspace_id === w.id
+        );
+        const wsOpps = opportunities.filter((o) =>
+          isPersonal
+            ? !o.workspace_id || o.workspace_id === "personal"
+            : o.workspace_id === w.id
+        );
+
+        const openProjects = wsProjects.filter((p) => p.status !== "Shipped" && p.status !== "Archived").length;
+        const overdueTasks = wsTasks.filter((t) => t.status !== "Done" && t.due_date && t.due_date < todayStr).length;
+        const openOpps     = wsOpps.filter((o) => o.status !== "Converted" && o.status !== "Archived").length;
+
+        return { id: w.id, name: w.name, color: w.color, openProjects, overdueTasks, openOpps };
+      })
+      .filter((row) => row.openProjects > 0 || row.openOpps > 0);
+
+    setWorkspaceSummary(wsRows);
     setLoaded(true);
   }, []);
 
@@ -251,6 +299,47 @@ export default function ChiefOfStaffCard() {
             <p className="text-[9px] text-white/30">Alignment</p>
           </div>
         </div>
+
+        {/* Workspace Summary */}
+        {workspaceSummary.length > 0 && (
+          <>
+            <div style={{ height: 1, background: "rgba(255,255,255,0.04)" }} />
+            <div>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/25 mb-2">
+                Workspace Summary
+              </p>
+              <div className="space-y-1.5">
+                {workspaceSummary.map((row) => (
+                  <div key={row.id} className="flex items-center gap-2">
+                    <div
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{ background: row.color }}
+                    />
+                    <p className="text-[10px] font-semibold text-white/55 truncate flex-1">{row.name}</p>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {row.openProjects > 0 && (
+                        <span className="text-[9px] text-white/30 tabular-nums">
+                          {row.openProjects}p
+                        </span>
+                      )}
+                      {row.overdueTasks > 0 && (
+                        <span className="text-[9px] tabular-nums" style={{ color: "rgba(239,68,68,0.6)" }}>
+                          {row.overdueTasks}!
+                        </span>
+                      )}
+                      {row.openOpps > 0 && (
+                        <span className="text-[9px] tabular-nums" style={{ color: "rgba(52,211,153,0.55)" }}>
+                          {row.openOpps}$
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[8px] text-white/15 mt-2">p = projects · ! = overdue · $ = opportunities</p>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

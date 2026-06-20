@@ -9,6 +9,8 @@ import {
   deleteMemoryItemDual,
   getMemoryItems,
 } from "@/lib/repositories/memoryRepository";
+import { getActiveWorkspaceId } from "@/lib/workspaces/activeWorkspace";
+import WorkspaceBadge from "@/components/WorkspaceBadge";
 
 const PROJECTS_KEY = "sovereign_projects";
 
@@ -143,6 +145,7 @@ function MemoryCard({
           {item.importance !== "Medium" && (
             <Pill label={item.importance} color={impCfg.color} bg={impCfg.bg} border={impCfg.border} />
           )}
+          <WorkspaceBadge workspaceId={item.workspace_id} />
           <span className="ml-auto text-[9px] text-white/20 shrink-0">{formatDate(item.updatedAt)}</span>
         </div>
 
@@ -643,6 +646,7 @@ export default function MemoryPage() {
       relatedPeople: [],
       importance: captureImportance,
       source: "Manual",
+      workspace_id: getActiveWorkspaceId(),
       createdAt: nowIso(),
       updatedAt: nowIso(),
     };

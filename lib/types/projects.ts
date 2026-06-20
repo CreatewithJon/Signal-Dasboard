@@ -20,11 +20,12 @@ export interface Project {
   description: string;
   objective: string;
   next_action: string;
-  due_date: string;   // "YYYY-MM-DD" or ""
-  links: string[];    // array of URLs
+  due_date: string;      // "YYYY-MM-DD" or ""
+  links: string[];       // array of URLs
   notes: string;
-  created_at: string; // ISO
-  updated_at: string; // ISO
+  workspace_id?: string; // v7.4 — undefined = Personal (backwards-compatible)
+  created_at: string;    // ISO
+  updated_at: string;    // ISO
 }
 
 export interface ProjectTask {
@@ -35,6 +36,7 @@ export interface ProjectTask {
   priority: ProjectPriority;
   due_date: string;
   notes: string;
+  workspace_id?: string; // v7.4
   created_at: string;
   updated_at: string;
 }

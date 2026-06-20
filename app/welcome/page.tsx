@@ -303,6 +303,12 @@ export default function WelcomePage() {
           >
             Configure Settings &amp; Supabase
           </Link>
+          <Link
+            href="/beta"
+            className="text-xs text-white/20 hover:text-white/45 transition-all"
+          >
+            Beta Overview
+          </Link>
         </div>
 
       </div>

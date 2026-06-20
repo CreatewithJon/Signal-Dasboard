@@ -18,6 +18,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import AppModal from "@/components/ui/AppModal";
+import WorkspaceBadge from "@/components/WorkspaceBadge";
 import { KEYS } from "@/lib/keys";
 import {
   loadPeople,
@@ -785,6 +786,7 @@ function PersonCard({
             <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
               <Badge label={person.relationship_type} {...tc} />
               <Badge label={person.status} {...sc} />
+              <WorkspaceBadge workspaceId={person.workspace_id} />
               {(person.priority === "High" || person.priority === "Critical") && (
                 <span className="text-[8px] font-bold" style={{ color: pc }}>● {person.priority}</span>
               )}

@@ -35,6 +35,7 @@ export interface Person {
   related_memory_ids:       string[];
   last_contacted_at:        string;        // ISO or ""
   next_follow_up_at:        string;        // ISO date "YYYY-MM-DD" or ""
+  workspace_id?:            string;        // v7.4 — undefined = Personal (backwards-compatible)
   created_at:               string;        // ISO
   updated_at:               string;        // ISO
 }

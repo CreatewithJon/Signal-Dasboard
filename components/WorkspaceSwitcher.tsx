@@ -1,21 +1,32 @@
 "use client";
 
 /**
- * components/WorkspaceSwitcher.tsx — Sovereign OS v6.7
+ * components/WorkspaceSwitcher.tsx — Sovereign OS v7.4
  *
  * Compact sidebar switcher for the active workspace.
  * - Reads workspaces from localStorage (KEYS.WORKSPACES).
  * - Ensures the Personal default workspace always exists.
- * - When only one workspace is active: shows name as a static label.
- * - When multiple active workspaces exist: shows a dropdown to switch.
- * - Switching changes the displayed name only — no data filtering yet.
- *   Data filtering ships in a future workspace activation phase.
+ * - First option is always "All Workspaces" (id: "all") — shows everything.
+ * - Switching updates KEYS.ACTIVE_WORKSPACE_ID.
+ * - Data filtering via filterByWorkspace() is applied in each module.
  */
 
 import { useState, useEffect, useRef } from "react";
 import { KEYS } from "@/lib/keys";
 import { DEFAULT_WORKSPACE } from "@/lib/types/workspace";
 import type { Workspace } from "@/lib/types/workspace";
+
+// Virtual "All Workspaces" entry — not stored, always prepended
+const ALL_WORKSPACES: Workspace = {
+  id: "all",
+  name: "All Workspaces",
+  type: "Personal",
+  description: "Show everything across all workspaces.",
+  color: "#64748b",
+  archived: false,
+  created_at: "",
+  updated_at: "",
+};
 
 function safeRead<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -61,8 +72,16 @@ export default function WorkspaceSwitcher() {
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
-  const active    = workspaces.find((w) => w.id === activeId) ?? DEFAULT_WORKSPACE;
-  const available = workspaces.filter((w) => !w.archived && w.id !== activeId);
+  const active = activeId === "all"
+    ? ALL_WORKSPACES
+    : (workspaces.find((w) => w.id === activeId) ?? DEFAULT_WORKSPACE);
+
+  // Dropdown options: All Workspaces + every non-archived workspace except the active one
+  const available = [
+    ALL_WORKSPACES,
+    ...workspaces.filter((w) => !w.archived),
+  ].filter((w) => w.id !== activeId);
+
   const canSwitch = available.length > 0;
 
   function switchTo(ws: Workspace) {
@@ -137,7 +156,7 @@ export default function WorkspaceSwitcher() {
           ))}
           <div className="px-3 pt-1 pb-2 mt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
             <p className="text-[8px] text-white/15 leading-relaxed">
-              Data filtering ships in a future update.
+              Data is filtered per workspace. All Workspaces shows everything.
             </p>
           </div>
         </div>
