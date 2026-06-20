@@ -34,6 +34,10 @@ import {
   riskLabel as wsRiskLabel,
 } from "@/lib/workspaces/analytics";
 import type { WorkspaceAnalytics } from "@/lib/workspaces/analytics";
+import { getSupabaseStatus } from "@/lib/supabase/status";
+import { getSyncHealth } from "@/lib/supabase/syncHealth";
+import { isDemoMode } from "@/lib/demo/demoMode";
+import { computeSystemHealth, buildSystemRiskNote, statusColor, type HealthStatus } from "@/lib/systemHealth/engine";
 
 function safeRead<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -92,6 +96,7 @@ export default function ChiefOfStaffCard() {
   const [brief,            setBrief]            = useState<ChiefOfStaffBrief | null>(null);
   const [workspaceSummary, setWorkspaceSummary] = useState<WorkspaceSummaryRow[]>([]);
   const [highestRiskWs,    setHighestRiskWs]    = useState<WorkspaceAnalytics | null>(null);
+  const [systemRiskNote,   setSystemRiskNote]   = useState<{ note: string; status: HealthStatus } | null>(null);
   const [loaded,           setLoaded]           = useState(false);
 
   useEffect(() => {
@@ -209,6 +214,29 @@ export default function ChiefOfStaffCard() {
       ? wsAnalytics.reduce((a, b) => a.riskScore > b.riskScore ? a : b)
       : null;
     setHighestRiskWs(topRisk && topRisk.riskScore >= 20 ? topRisk : null);
+
+    // System health for risk note
+    let lsAvailable = false;
+    try { localStorage.setItem("__chk__", "1"); localStorage.removeItem("__chk__"); lsAvailable = true; } catch { /* noop */ }
+    const { configured: sbConfigured } = getSupabaseStatus();
+    const syncRpt = getSyncHealth();
+    const demoOn  = isDemoMode();
+    const sysHealth = computeSystemHealth({
+      localStorageAvailable:  lsAvailable,
+      localItemCount:         typeof window !== "undefined" ? localStorage.length : 0,
+      supabaseConfigured:     sbConfigured,
+      supabaseAuthenticated:  false,
+      syncReport:             syncRpt,
+      anthropicConfigured:    false,
+      openaiConfigured:       false,
+      projects, projectTasks, memoryItems, contentItems, opportunities, people,
+      focusSessionCount:      focusSessions.length,
+      workspaceAnalytics:     wsAnalytics,
+      isDemoMode:             demoOn,
+      todayStr,
+    });
+    const note = buildSystemRiskNote(sysHealth);
+    if (note) setSystemRiskNote({ note, status: sysHealth.overallStatus });
 
     setLoaded(true);
   }, []);
@@ -398,6 +426,39 @@ export default function ChiefOfStaffCard() {
                 ))}
               </div>
               <p className="text-[8px] text-white/15 mt-2">p = projects · ! = overdue · $ = opportunities</p>
+            </div>
+          </>
+        )}
+
+        {/* System Risk Note */}
+        {systemRiskNote && (
+          <>
+            <div style={{ height: 1, background: "rgba(255,255,255,0.04)" }} />
+            <div
+              className="flex items-start gap-2 px-2.5 py-2 rounded-lg"
+              style={{
+                background: statusColor(systemRiskNote.status).replace("0.85", "0.06").replace("0.75", "0.06"),
+                border: `1px solid ${statusColor(systemRiskNote.status).replace("0.85", "0.15").replace("0.75", "0.12")}`,
+              }}
+            >
+              <svg viewBox="0 0 12 12" fill="none" className="w-3 h-3 shrink-0 mt-0.5">
+                <path d="M6 1L1 10h10L6 1z" stroke={statusColor(systemRiskNote.status)} strokeWidth="1.2" strokeLinejoin="round" />
+                <path d="M6 5v2.5M6 9v.5" stroke={statusColor(systemRiskNote.status)} strokeWidth="1.2" strokeLinecap="round" />
+              </svg>
+              <div className="flex-1">
+                <div className="flex items-center justify-between gap-2 mb-0.5">
+                  <p className="text-[8px] font-bold uppercase tracking-[0.12em]" style={{ color: statusColor(systemRiskNote.status) }}>
+                    System {systemRiskNote.status}
+                  </p>
+                  <a
+                    href="/system"
+                    className="text-[7px] font-semibold uppercase tracking-wide text-white/25 hover:text-white/50 transition-colors"
+                  >
+                    Details →
+                  </a>
+                </div>
+                <p className="text-[9px] text-white/40 leading-relaxed">{systemRiskNote.note}</p>
+              </div>
             </div>
           </>
         )}

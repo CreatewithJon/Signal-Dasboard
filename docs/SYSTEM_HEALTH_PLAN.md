@@ -1,0 +1,172 @@
+# SYSTEM_HEALTH_PLAN.md — Sovereign OS v7.6
+
+_Created: 2026-06-19_
+
+---
+
+## Overview
+
+System Health & Observability is an executive visibility layer for Sovereign OS itself — not a developer panel, not a settings page, but a first-class operational dashboard that answers the question: **"Is my system running well right now?"**
+
+This is the same posture Jonathan would apply to any business he operates. The system is the business. Visibility is leverage.
+
+---
+
+## Architecture
+
+### Pure Engine Pattern
+
+`lib/systemHealth/engine.ts` follows the same pure-function contract as all other Sovereign OS engines:
+
+- Accepts a fully pre-loaded `SystemHealthInput` object
+- Returns a deterministic `SystemHealthReport`
+- Zero side effects, zero localStorage access, zero async
+- Caller (page or component) handles all data loading
+
+### Health Computation
+
+**Overall Status:**
+
+| Status | Conditions |
+|---|---|
+| Healthy | No warnings of any severity |
+| Warning | Any High or Medium warnings present |
+| Critical | localStorage unavailable, ≥2 sync failures, or any Critical warning |
+
+**Warning Generation (in severity order):**
+
+| Severity | Trigger |
+|---|---|
+| Critical | localStorage unavailable |
+| Critical | ≥2 sync modules failed |
+| High | 1 sync module failed |
+| High | Demo mode active |
+| High | ≥5 overdue tasks |
+| High | Active projects past due date |
+| High | Opportunities with overdue follow-ups |
+| Medium | 1–4 overdue tasks |
+| Medium | Content past publish date |
+| Medium | Memories not semantically indexed |
+| Medium | Supabase configured but not authenticated (RLS inactive) |
+
+---
+
+## Files
+
+### New Files (v7.6)
+
+| File | Purpose |
+|---|---|
+| `lib/systemHealth/engine.ts` | Pure health computation engine |
+| `app/system/page.tsx` | Server component wrapper (reads env var flags) |
+| `app/system/_inner.tsx` | Client component — full 7-section dashboard |
+| `components/SystemHealthCard.tsx` | Compact homepage card (Executive zone) |
+| `docs/SYSTEM_HEALTH_PLAN.md` | This document |
+
+### Modified Files (v7.6)
+
+| File | Change |
+|---|---|
+| `components/DashboardShell.tsx` | `SystemHealthCard` added to Executive zone grid |
+| `components/ChiefOfStaffCard.tsx` | System Risk Note section appended when status ≠ Healthy |
+| `components/Sidebar.tsx` | `/system` added to `SYSTEM_NAV` (first entry) |
+
+---
+
+## Dashboard Sections
+
+### Section 1 — Overall Status
+- 4-cell stat grid: Status label, Critical count, High count, Medium count
+- Color-coded by health status (green/amber/red)
+
+### Section 2 — Storage Health
+- LocalStorage: enabled/disabled, item count
+- Supabase: configured, authenticated, mode, fallback state
+- Sync results table: per-module last write result, timestamp, error
+
+### Section 3 — AI Health
+- Anthropic: configured (from server env), chat available
+- OpenAI: configured (from server env), embeddings (planned)
+- Vector Memory: mode (none/planned/active), vector DB ready, semantic search active
+
+> **Note:** Anthropic and OpenAI key presence is read from server-side env vars in the server wrapper (`app/system/page.tsx`) and passed as boolean props to the client component. This avoids exposing keys to the client.
+
+### Section 4 — Data Health
+- Record counts: Projects, Tasks, Memories, Relationships, Opportunities, Content, Focus Sessions
+- Total records across all types
+
+### Section 5 — Workspace Health
+- Table: workspace name, open projects, overdue tasks, active opportunities, risk score + label, momentum score
+- Reuses `computeWorkspaceAnalytics()` from v7.5
+
+### Section 6 — Warnings
+- Full sorted warning list (Critical → High → Medium)
+- Each warning: severity badge, message, category
+- Color-coded backgrounds and borders
+
+### Section 7 — Quick Actions
+- 6 quick links: Chief of Staff, Actions, Workspaces, Settings, Focus Engine, Weekly Review
+
+---
+
+## Homepage Integration
+
+`SystemHealthCard` is a compact version of the health view placed in the Executive zone of the homepage (alongside Chief of Staff, Strategic Planner, Goals, Weekly Review).
+
+Displays:
+- Overall status badge with color pulse
+- Warning count breakdown (C/H/M)
+- Sync state (Local only / Fallback / Synced)
+- Top 2 active warnings (preview)
+- "Full report →" link to `/system`
+
+**Note on AI key detection:** The compact card does not know if AI keys are configured (server env vars can't be read client-side). The `/system` full page correctly shows this because it uses a server component wrapper. The card conservatively shows Anthropic/OpenAI as not configured, which only affects the AI Health section (not the overall status or warnings count unless those specific warnings are triggered by other conditions).
+
+---
+
+## Chief of Staff Integration
+
+`ChiefOfStaffCard.tsx` now computes system health in its `useEffect` and appends a **System Risk Note** section when health status is Warning or Critical.
+
+The note is generated by `buildSystemRiskNote(report)`:
+- Extracts overdue task count and sync failure count from the report
+- Returns a natural-language sentence: _"System reports 14 overdue tasks and 3 sync failures."_
+- Links to `/system` for the full report
+
+This surfaces system risk at the top-level executive brief without requiring navigation.
+
+---
+
+## Health Score Logic
+
+### Overall Status Decision Tree
+
+```
+localStorage unavailable?              → Critical
+failedWrites >= 2?                     → Critical
+any Critical warning?                  → Critical
+
+any High warning?                      → Warning
+any Medium warning?                    → Warning
+
+otherwise                              → Healthy
+```
+
+### Warning Priority
+
+Warnings are sorted by severity order (`Critical → High → Medium`) within each tier. No secondary sort — order of evaluation is the tiebreaker.
+
+---
+
+## Future Enhancements
+
+- **Vector health:** When vector memory ships, add real `vectorDbReady` checks
+- **Auth health:** Add async auth check (currently conservative false)
+- **Background refresh:** Auto-refresh health report every 60 seconds
+- **Health history:** Track status changes over time in localStorage
+- **Alerting:** Surface Critical warnings in TodayCommand hero
+- **RLS verification:** Active RLS status check via Supabase API
+
+---
+
+_Sovereign OS — System Health & Observability v7.6_

@@ -2,7 +2,7 @@
 
 > A personal AI operating system for the AI-powered digital era. This roadmap covers the evolution from Signal Dashboard into a fully realized Sovereign OS.
 
-_Last updated: 2026-06-19 (v7.3)_
+_Last updated: 2026-06-19 (v7.6)_
 
 ---
 
@@ -227,6 +227,26 @@ _Semantic embedding infrastructure without replacing the deterministic engine._
 - [x] `supabase/schema.sql` — Commented pgvector migration section: `enable extension vector`, `alter table memory_items add column embedding vector(1536)`, `match_memories` RPC function, IVFFlat index.
 - [x] `docs/VECTOR_MEMORY_PLAN.md` — Architecture doc: activation checklist, embedding provider rationale, text format, RPC design, fallback behavior, future phases v5.7–v6.0.
 - [x] Build clean, lint clean, type-check clean.
+
+## Phase 7.6 — System Health & Observability (Complete)
+_Executive visibility dashboard — health of Sovereign OS itself. Not a dev page; an operational command layer._
+
+- [x] `lib/systemHealth/engine.ts` — Pure `computeSystemHealth()` engine: Overall Status (Healthy/Warning/Critical), Storage Health (localStorage + Supabase + sync results), AI Health (Anthropic/OpenAI/Vector), Data Health (counts), Workspace Health (reuses v7.5 analytics), Warnings (sorted Critical→High→Medium). Helpers: `statusColor()`, `statusBg()`, `statusBorder()`, `severityColor()`, `buildSystemRiskNote()`
+- [x] `app/system/page.tsx` — Server component wrapper; reads `ANTHROPIC_API_KEY` + `OPENAI_API_KEY` from env; passes boolean flags to client inner component
+- [x] `app/system/_inner.tsx` — Client component; 7 sections: Overall Status · Storage Health · AI Health · Data Health · Workspace Health · Warnings · Quick Actions
+- [x] `components/SystemHealthCard.tsx` — Compact Executive zone card: status badge, warning counts (C/H/M), sync state, top 2 warnings preview, "Full report →" link
+- [x] `components/DashboardShell.tsx` — `SystemHealthCard` added to Executive zone grid
+- [x] `components/ChiefOfStaffCard.tsx` — System Risk Note section appended when status ≠ Healthy; natural-language note via `buildSystemRiskNote()`; "Details →" link to `/system`
+- [x] `components/Sidebar.tsx` — `/system` (System Health) added as first entry in `SYSTEM_NAV`
+- [x] `docs/SYSTEM_HEALTH_PLAN.md` — Architecture doc: health scoring logic, warning generation rules, file inventory, future enhancements
+- [x] `PROJECT_STATE.md` + `ROADMAP.md` updated to v7.6
+- [x] lint ✓ · tsc ✓ · build ✓
+
+## Phase 7.5 — Workspace Analytics (Complete)
+_Per-workspace operational snapshot: risk/momentum scores, analytics page, sidebar link, Chief integration._
+
+## Phase 7.4 — Workspace Activation (Complete)
+_Functional organizational layer: workspace_id stamping, filterByWorkspace(), WorkspaceBadge, WorkspaceSwitcher, TodayCommand badges._
 
 ## Phase 7.3 — Private Beta Landing (Complete)
 _Clean /beta route for invited users — hero, modules overview, data ownership, limitations, disclaimer, CTAs._

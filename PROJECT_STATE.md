@@ -1,12 +1,32 @@
 # PROJECT_STATE.md — Sovereign OS
 
-_Last updated: 2026-06-19 (v7.5 — Workspace Analytics)_
+_Last updated: 2026-06-19 (v7.6 — System Health & Observability)_
 
 ---
 
 ## Current State
 
-**Version:** Sovereign OS v7.5 (Workspace Analytics: Complete)
+**Version:** Sovereign OS v7.6 (System Health & Observability: Complete)
+
+### System Health & Observability (v7.6)
+
+**`lib/systemHealth/engine.ts`** — Pure health computation engine. `computeSystemHealth()` takes a `SystemHealthInput` (storage flags, Supabase status, sync report, AI key booleans, all data arrays, workspace analytics, demo mode flag, todayStr) and returns a `SystemHealthReport` with: `overallStatus` (Healthy/Warning/Critical), `storage` (localStorage + Supabase + sync results), `ai` (Anthropic/OpenAI/vector), `data` (record counts per type), `workspaceHealth` (WorkspaceAnalytics[]), `warnings` (sorted Critical→High→Medium), `warningCounts`. Helper exports: `statusColor()`, `statusBg()`, `statusBorder()`, `severityColor()`, `buildSystemRiskNote()`.
+
+**`app/system/page.tsx`** — Thin server component wrapper. Reads `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` env vars (server-side, never exposed to browser). Passes boolean flags to `SystemHealthInner`.
+
+**`app/system/_inner.tsx`** — Client component. Loads all data from localStorage, calls `computeWorkspaceAnalytics()` then `computeSystemHealth()`, renders 7 sections: Overall Status (4-stat grid) → Storage Health (localStorage card + Supabase card + sync results table) → AI Health (Anthropic/OpenAI/Vector 3-col) → Data Health (count table + total count) → Workspace Health (full table with risk/momentum) → Warnings (sorted severity list) → Quick Actions (6 nav links).
+
+**`components/SystemHealthCard.tsx`** — Compact homepage widget. Shows status badge, warning count breakdown (C/H/M), sync state, top 2 warnings preview, "Full report →" link to `/system`. Placed in Executive zone of Command Center.
+
+**`components/DashboardShell.tsx`** — `SystemHealthCard` added to the 2×2 Executive grid (now 5 cards).
+
+**`components/ChiefOfStaffCard.tsx`** — Imports health engine. Computes `computeSystemHealth()` in `useEffect`. When status ≠ Healthy, appends a **System Risk Note** section: amber/red callout with natural-language note (e.g. _"System reports 14 overdue tasks and 3 sync failures."_) + "Details →" link to `/system`.
+
+**`components/Sidebar.tsx`** — `/system` (System Health) added as first entry in `SYSTEM_NAV`, above Workspaces.
+
+**`docs/SYSTEM_HEALTH_PLAN.md`** — Full architecture doc: health scoring logic, warning generation rules, file inventory, future enhancements.
+
+### Workspace Analytics (v7.5)
 
 ### Workspace Analytics (v7.5)
 
