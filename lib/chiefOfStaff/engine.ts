@@ -598,7 +598,7 @@ function findOpportunities(input: ChiefInput): Opportunity[] {
       p.status !== "Archived" &&
       (p.relationship_type === "Prospect" || p.relationship_type === "Client") &&
       (p.priority === "High" || p.priority === "Critical") &&
-      p.related_opportunity_ids.length === 0
+      (p.related_opportunity_ids ?? []).length === 0
   );
   if (relOpps.length > 0) {
     const top = relOpps[0];

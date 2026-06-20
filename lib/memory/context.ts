@@ -225,7 +225,7 @@ export function getRelationshipContext(
     if (person.email && q.includes(person.email.toLowerCase())) score += 10;
 
     // Tag match
-    for (const tag of person.tags) {
+    for (const tag of (person.tags ?? [])) {
       const tl = tag.toLowerCase();
       if (q.includes(tl) || tl.includes(q.slice(0, 12))) score += 4;
     }
@@ -299,24 +299,24 @@ export function getRelationshipContext(
       lines.push(`Next follow-up: ${p.next_follow_up_at}${overdue ? " ⚠️ OVERDUE" : ""}`);
     }
 
-    if (p.related_project_ids.length > 0) {
-      const projNames = p.related_project_ids
+    if ((p.related_project_ids ?? []).length > 0) {
+      const projNames = (p.related_project_ids ?? [])
         .map((id) => projectMap.get(id))
         .filter(Boolean)
         .join(", ");
       if (projNames) lines.push(`Related projects: ${projNames}`);
     }
 
-    if (p.related_opportunity_ids.length > 0) {
-      const oppNames = p.related_opportunity_ids
+    if ((p.related_opportunity_ids ?? []).length > 0) {
+      const oppNames = (p.related_opportunity_ids ?? [])
         .map((id) => oppMap.get(id))
         .filter(Boolean)
         .join(", ");
       if (oppNames) lines.push(`Related opportunities: ${oppNames}`);
     }
 
-    if (p.related_memory_ids.length > 0) {
-      const mems = p.related_memory_ids
+    if ((p.related_memory_ids ?? []).length > 0) {
+      const mems = (p.related_memory_ids ?? [])
         .map((id) => memoryItems.find((m) => m.id === id)?.title)
         .filter(Boolean)
         .slice(0, 3)
@@ -324,8 +324,8 @@ export function getRelationshipContext(
       if (mems) lines.push(`Related memories: ${mems}`);
     }
 
-    if (p.tags.length > 0) {
-      lines.push(`Tags: ${p.tags.map((t) => `#${t}`).join(" ")}`);
+    if ((p.tags ?? []).length > 0) {
+      lines.push(`Tags: ${(p.tags ?? []).map((t) => `#${t}`).join(" ")}`);
     }
 
     if (p.notes) {

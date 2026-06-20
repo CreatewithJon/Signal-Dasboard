@@ -51,9 +51,9 @@ export function scoreOpportunity(opp: Opportunity): { score: number; reasoning: 
   if (statusPts > 0) parts.push(`status ${opp.status}: ${statusPts}pts`);
 
   // Context depth (max 20): people + projects + memories
-  const peoplePts  = Math.min(opp.related_people.length  * 4, 8);
-  const projectPts = Math.min(opp.related_project_ids.length * 4, 8);
-  const memoryPts  = Math.min(opp.related_memory_ids.length * 2, 4);
+  const peoplePts  = Math.min((opp.related_people ?? []).length  * 4, 8);
+  const projectPts = Math.min((opp.related_project_ids ?? []).length * 4, 8);
+  const memoryPts  = Math.min((opp.related_memory_ids ?? []).length * 2, 4);
   const contextPts = peoplePts + projectPts + memoryPts;
   if (contextPts > 0) parts.push(`context depth: ${contextPts}pts`);
 

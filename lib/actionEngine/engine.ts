@@ -250,7 +250,7 @@ function actionsFromOpportunities(
         priority:         opp.score >= 80 ? "critical" : "high",
         estimatedImpact:  "transformative",
         estimatedEffort:  "1hr",
-        relatedEntityIds: [oid(opp.id), ...opp.related_project_ids.map(pjid)],
+        relatedEntityIds: [oid(opp.id), ...(opp.related_project_ids ?? []).map(pjid)],
         suggestedDueDate: dueDateFromPriority("high", todayStr),
       });
     }

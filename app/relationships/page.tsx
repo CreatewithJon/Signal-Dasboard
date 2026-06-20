@@ -164,9 +164,9 @@ function AIPanel({
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
-  const relProjects     = projects.filter((p) => person.related_project_ids.includes(p.id));
-  const relOpportunities = opportunities.filter((o) => person.related_opportunity_ids.includes(o.id));
-  const relMemories      = memories.filter((m) => person.related_memory_ids.includes(m.id));
+  const relProjects     = projects.filter((p) => (person.related_project_ids ?? []).includes(p.id));
+  const relOpportunities = opportunities.filter((o) => (person.related_opportunity_ids ?? []).includes(o.id));
+  const relMemories      = memories.filter((m) => (person.related_memory_ids ?? []).includes(m.id));
 
   const context = [
     `Person: ${person.name}`,
@@ -646,7 +646,7 @@ function ConvertOppModal({
     });
     // Link opp back to person
     updatePerson(person.id, {
-      related_opportunity_ids: [...person.related_opportunity_ids, opp.id],
+      related_opportunity_ids: [...(person.related_opportunity_ids ?? []), opp.id],
     });
     setDone(true);
     onSave(opp);
@@ -755,8 +755,8 @@ function PersonCard({
 
   const overdue = isFollowUpDue(person, today);
   const soon    = !overdue && isFollowUpSoon(person, today);
-  const relProjs = projects.filter((p) => person.related_project_ids.includes(p.id));
-  const relOpps  = opportunities.filter((o) => person.related_opportunity_ids.includes(o.id));
+  const relProjs = projects.filter((p) => (person.related_project_ids ?? []).includes(p.id));
+  const relOpps  = opportunities.filter((o) => (person.related_opportunity_ids ?? []).includes(o.id));
 
   const isArchived = person.status === "Archived";
 

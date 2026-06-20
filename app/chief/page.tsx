@@ -659,7 +659,7 @@ export default function ChiefPage() {
                 p.status !== "Archived" &&
                 (p.relationship_type === "Prospect" || p.relationship_type === "Client") &&
                 (p.priority === "High" || p.priority === "Critical") &&
-                p.related_opportunity_ids.length === 0
+                (p.related_opportunity_ids ?? []).length === 0
             );
             if (overdue.length === 0 && highProspects.length === 0) return null;
             return (
