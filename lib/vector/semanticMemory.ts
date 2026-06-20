@@ -35,6 +35,7 @@ import {
   type EmbeddingResult,
 } from "@/lib/vector/embedding";
 import type { MemoryItem } from "@/lib/types/memory";
+import { safeStringArray } from "@/lib/utils/arrays";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -70,15 +71,15 @@ function keywordFallback(query: string, items: MemoryItem[], limit: number): Mem
     const haystack = [
       item.title,
       item.content,
-      item.tags.join(" "),
-      item.relatedPeople.join(" "),
+      safeStringArray(item.tags).join(" "),
+      safeStringArray(item.relatedPeople).join(" "),
       item.type,
     ].join(" ").toLowerCase();
 
     const score = terms.reduce((sum, term) => {
       const titleBonus   = item.title.toLowerCase().includes(term) ? 3 : 0;
       const contentBonus = item.content.toLowerCase().includes(term) ? 1 : 0;
-      const tagBonus     = item.tags.some((t) => t.includes(term)) ? 2 : 0;
+      const tagBonus     = safeStringArray(item.tags).some((t) => t.includes(term)) ? 2 : 0;
       return sum + (haystack.includes(term) ? 1 : 0) + titleBonus + contentBonus + tagBonus;
     }, 0);
 

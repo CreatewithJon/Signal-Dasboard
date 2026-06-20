@@ -35,6 +35,7 @@ import type { Person, RelationshipType, RelationshipStatus, RelationshipPriority
 import type { Project } from "@/lib/types/projects";
 import type { Opportunity } from "@/lib/types/opportunities";
 import type { MemoryItem } from "@/lib/types/memory";
+import { safeStringArray } from "@/lib/utils/arrays";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -181,7 +182,7 @@ function AIPanel({
     relProjects.length      > 0 ? `Related projects: ${relProjects.map((p) => p.title).join(", ")}` : "",
     relOpportunities.length > 0 ? `Related opportunities: ${relOpportunities.map((o) => o.title).join(", ")}` : "",
     relMemories.length      > 0 ? `Related memories: ${relMemories.map((m) => m.title).join(", ")}` : "",
-    person.tags.length > 0 ? `Tags: ${person.tags.join(", ")}` : "",
+    safeStringArray(person.tags).length > 0 ? `Tags: ${safeStringArray(person.tags).join(", ")}` : "",
   ].filter(Boolean).join("\n");
 
   const SUGGESTIONS = [
@@ -541,7 +542,7 @@ function NoteModal({
       title:             `Note: ${person.name}`,
       content:           content.trim(),
       type:              "Person",
-      tags:              person.tags.slice(0, 3),
+      tags:              safeStringArray(person.tags).slice(0, 3),
       relatedProjectIds: person.related_project_ids,
       relatedPeople:     [person.name],
       importance:        person.priority === "Critical" ? "Critical" : person.priority === "High" ? "High" : "Medium",
@@ -554,7 +555,7 @@ function NoteModal({
 
     // Link memory back to person
     updatePerson(person.id, {
-      related_memory_ids: [...person.related_memory_ids, mem.id],
+      related_memory_ids: [...safeStringArray(person.related_memory_ids), mem.id],
       last_contacted_at:  ts,
     });
 
@@ -832,9 +833,9 @@ function PersonCard({
         <div className="px-4 pb-3 space-y-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: 10 }}>
           {person.notes && <p className="text-[10px] text-white/45 leading-relaxed">{person.notes}</p>}
 
-          {person.tags.length > 0 && (
+          {safeStringArray(person.tags).length > 0 && (
             <div className="flex flex-wrap gap-1">
-              {person.tags.map((tag) => (
+              {safeStringArray(person.tags).map((tag) => (
                 <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded-md"
                   style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }}>
                   {tag}

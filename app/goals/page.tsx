@@ -31,6 +31,7 @@ import type { MemoryItem } from "@/lib/types/memory";
 import type { HabitEntry } from "@/lib/memory/context";
 import type { PlannerItem } from "@/lib/briefing/daily";
 import type { FocusSession } from "@/lib/types/execution";
+import { safeStringArray } from "@/lib/utils/arrays";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -380,7 +381,7 @@ function GoalCard({
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-white/75 leading-snug">{item.title}</p>
                       <p className="text-[10px] text-white/30 mt-0.5">
-                        {item.format} · {item.platforms.join(", ")}
+                        {item.format} · {safeStringArray(item.platforms).join(", ")}
                       </p>
                       <p className="text-[9px] text-white/20 mt-0.5 italic leading-relaxed">{item.angle}</p>
                     </div>

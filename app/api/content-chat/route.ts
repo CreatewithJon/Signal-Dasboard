@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import type { ContentItem } from "@/lib/types/content";
+import { safeStringArray } from "@/lib/utils/arrays";
 
 function buildSystemPrompt(contentItem?: ContentItem, preset?: string): string {
   const base = `You are a content strategy and creation assistant for Jonathan Cardona — a creator building authority around AI, Bitcoin, automation, and digital wealth building.
@@ -14,7 +15,7 @@ Tone:
 
   if (!contentItem) return base;
 
-  const platformList = contentItem.platforms.join(", ") || "unspecified";
+  const platformList = safeStringArray(contentItem.platforms).join(", ") || "unspecified";
   const itemContext = [
     "",
     "## Content Item",

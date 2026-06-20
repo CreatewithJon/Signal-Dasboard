@@ -33,6 +33,7 @@ import type {
 } from "@/lib/types/opportunities";
 import type { Project } from "@/lib/types/projects";
 import type { MemoryItem } from "@/lib/types/memory";
+import { safeStringArray } from "@/lib/utils/arrays";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -152,7 +153,7 @@ function AIDevelopPanel({
     `Score: ${opp.score}/100`,
     `Description: ${opp.description}`,
     `Suggested action: ${opp.suggested_action}`,
-    opp.related_people.length > 0 ? `Related people: ${opp.related_people.join(", ")}` : "",
+    safeStringArray(opp.related_people).length > 0 ? `Related people: ${safeStringArray(opp.related_people).join(", ")}` : "",
     opp.notes ? `Notes: ${opp.notes}` : "",
   ].filter(Boolean).join("\n");
 
@@ -949,7 +950,7 @@ function OppCard({
   const tc = TYPE_COLORS[opp.type];
   const sc = STATUS_COLORS[opp.status];
 
-  const relProjects = projects.filter((p) => opp.related_project_ids.includes(p.id));
+  const relProjects = projects.filter((p) => safeStringArray(opp.related_project_ids).includes(p.id));
 
   const NEXT_STATUS: Partial<Record<OpportunityStatus, OpportunityStatus>> = {
     Detected:  "Reviewing",
@@ -1042,10 +1043,10 @@ function OppCard({
               <p className="text-[10px] text-white/60">→ {opp.suggested_action}</p>
             </div>
           )}
-          {opp.related_people.length > 0 && (
+          {safeStringArray(opp.related_people).length > 0 && (
             <div>
               <p className="text-[9px] font-semibold text-white/25 uppercase tracking-wide mb-0.5">People</p>
-              <p className="text-[10px] text-white/45">{opp.related_people.join(", ")}</p>
+              <p className="text-[10px] text-white/45">{safeStringArray(opp.related_people).join(", ")}</p>
             </div>
           )}
           {relProjects.length > 0 && (

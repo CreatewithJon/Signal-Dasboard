@@ -11,6 +11,7 @@ import {
 } from "@/lib/repositories/memoryRepository";
 import { getActiveWorkspaceId } from "@/lib/workspaces/activeWorkspace";
 import WorkspaceBadge from "@/components/WorkspaceBadge";
+import { safeStringArray } from "@/lib/utils/arrays";
 
 const PROJECTS_KEY = "sovereign_projects";
 
@@ -160,9 +161,9 @@ function MemoryCard({
         )}
 
         {/* Tags */}
-        {item.tags.length > 0 && (
+        {safeStringArray(item.tags).length > 0 && (
           <div className="flex flex-wrap gap-1">
-            {item.tags.slice(0, 5).map((tag) => (
+            {safeStringArray(item.tags).slice(0, 5).map((tag) => (
               <span
                 key={tag}
                 className="text-[9px] px-1.5 py-0.5 rounded-full"
@@ -171,24 +172,24 @@ function MemoryCard({
                 #{tag}
               </span>
             ))}
-            {item.tags.length > 5 && (
-              <span className="text-[9px] text-white/20">+{item.tags.length - 5}</span>
+            {safeStringArray(item.tags).length > 5 && (
+              <span className="text-[9px] text-white/20">+{safeStringArray(item.tags).length - 5}</span>
             )}
           </div>
         )}
 
         {/* Related people */}
-        {item.relatedPeople.length > 0 && (
+        {safeStringArray(item.relatedPeople).length > 0 && (
           <p className="text-[9px] text-white/30 leading-snug">
-            {item.relatedPeople.slice(0, 3).join(", ")}
-            {item.relatedPeople.length > 3 ? ` +${item.relatedPeople.length - 3} more` : ""}
+            {safeStringArray(item.relatedPeople).slice(0, 3).join(", ")}
+            {safeStringArray(item.relatedPeople).length > 3 ? ` +${safeStringArray(item.relatedPeople).length - 3} more` : ""}
           </p>
         )}
 
         {/* Related projects */}
-        {item.relatedProjectIds.length > 0 && (
+        {safeStringArray(item.relatedProjectIds).length > 0 && (
           <div className="flex flex-wrap gap-1">
-            {item.relatedProjectIds.slice(0, 2).map((id) => (
+            {safeStringArray(item.relatedProjectIds).slice(0, 2).map((id) => (
               <span
                 key={id}
                 className="text-[9px] px-1.5 py-0.5 rounded-full"
@@ -197,8 +198,8 @@ function MemoryCard({
                 {projectMap.get(id) ?? "Project"}
               </span>
             ))}
-            {item.relatedProjectIds.length > 2 && (
-              <span className="text-[9px] text-white/20">+{item.relatedProjectIds.length - 2}</span>
+            {safeStringArray(item.relatedProjectIds).length > 2 && (
+              <span className="text-[9px] text-white/20">+{safeStringArray(item.relatedProjectIds).length - 2}</span>
             )}
           </div>
         )}
@@ -258,28 +259,28 @@ function MemoryModal({
 
   function addTag() {
     const t = tagInput.trim().toLowerCase().replace(/^#/, "");
-    if (!t || draft.tags.includes(t)) { setTagInput(""); return; }
-    update({ tags: [...draft.tags, t] });
+    if (!t || safeStringArray(draft.tags).includes(t)) { setTagInput(""); return; }
+    update({ tags: [...safeStringArray(draft.tags), t] });
     setTagInput("");
   }
 
-  function removeTag(tag: string) { update({ tags: draft.tags.filter((t) => t !== tag) }); }
+  function removeTag(tag: string) { update({ tags: safeStringArray(draft.tags).filter((t) => t !== tag) }); }
 
   function addPerson() {
     const p = personInput.trim();
-    if (!p || draft.relatedPeople.includes(p)) { setPersonInput(""); return; }
-    update({ relatedPeople: [...draft.relatedPeople, p] });
+    if (!p || safeStringArray(draft.relatedPeople).includes(p)) { setPersonInput(""); return; }
+    update({ relatedPeople: [...safeStringArray(draft.relatedPeople), p] });
     setPersonInput("");
   }
 
   function removePerson(person: string) {
-    update({ relatedPeople: draft.relatedPeople.filter((p) => p !== person) });
+    update({ relatedPeople: safeStringArray(draft.relatedPeople).filter((p) => p !== person) });
   }
 
   function toggleProject(id: string) {
-    const next = draft.relatedProjectIds.includes(id)
-      ? draft.relatedProjectIds.filter((x) => x !== id)
-      : [...draft.relatedProjectIds, id];
+    const next = safeStringArray(draft.relatedProjectIds).includes(id)
+      ? safeStringArray(draft.relatedProjectIds).filter((x) => x !== id)
+      : [...safeStringArray(draft.relatedProjectIds), id];
     update({ relatedProjectIds: next });
   }
 
@@ -431,7 +432,7 @@ function MemoryModal({
           <div>
             <label className="block text-[9px] font-semibold uppercase tracking-[0.2em] text-white/25 mb-1.5">Tags</label>
             <div className="flex flex-wrap gap-1.5 mb-2">
-              {draft.tags.map((tag) => (
+              {safeStringArray(draft.tags).map((tag) => (
                 <span
                   key={tag}
                   className="flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full"
@@ -469,7 +470,7 @@ function MemoryModal({
           <div>
             <label className="block text-[9px] font-semibold uppercase tracking-[0.2em] text-white/25 mb-1.5">Related People</label>
             <div className="flex flex-wrap gap-1.5 mb-2">
-              {draft.relatedPeople.map((person) => (
+              {safeStringArray(draft.relatedPeople).map((person) => (
                 <span
                   key={person}
                   className="flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full"
@@ -511,7 +512,7 @@ function MemoryModal({
               </label>
               <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto">
                 {activeProjects.map((p) => {
-                  const checked = draft.relatedProjectIds.includes(p.id);
+                  const checked = safeStringArray(draft.relatedProjectIds).includes(p.id);
                   return (
                     <label
                       key={p.id}
@@ -678,14 +679,14 @@ export default function MemoryPage() {
   const visibleItems = items.filter((item) => {
     if (filterType !== "All" && item.type !== filterType) return false;
     if (filterImportance !== "All" && item.importance !== filterImportance) return false;
-    if (filterTag !== "All" && !item.tags.includes(filterTag)) return false;
+    if (filterTag !== "All" && !safeStringArray(item.tags).includes(filterTag)) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       if (
         !item.title.toLowerCase().includes(q) &&
         !item.content.toLowerCase().includes(q) &&
-        !item.tags.some((t) => t.includes(q)) &&
-        !item.relatedPeople.some((p) => p.toLowerCase().includes(q))
+        !safeStringArray(item.tags).some((t) => t.includes(q)) &&
+        !safeStringArray(item.relatedPeople).some((p) => p.toLowerCase().includes(q))
       ) return false;
     }
     return true;

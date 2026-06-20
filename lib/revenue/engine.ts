@@ -230,7 +230,7 @@ export function computeRevenueSnapshot(input: RevenueEngineInput): RevenueSnapsh
       });
     } else if (isOverdue) {
       // High-value + overdue + has people → check if any person has follow-up scheduled
-      const hasFollowUp = opp.related_people.some((name) => {
+      const hasFollowUp = (opp.related_people ?? []).some((name) => {
         const person = people.find((p) => p.name === name);
         return person?.next_follow_up_at && person.next_follow_up_at >= todayStr;
       });

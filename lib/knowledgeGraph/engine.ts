@@ -15,6 +15,7 @@ import type { Project } from "@/lib/types/projects";
 import type { Opportunity } from "@/lib/types/opportunities";
 import type { ContentItem } from "@/lib/types/content";
 import type { MemoryItem } from "@/lib/types/memory";
+import { safeStringArray } from "@/lib/utils/arrays";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -303,8 +304,8 @@ function buildEdges(input: GraphInput, nodeIds: Set<string>): GraphEdge[] {
 
   // Content ↔ Memory by shared tags (2+ shared tags)
   const memTagsList: { id: string; tags: string[] }[] = input.memoryItems
-    .filter((m) => m.tags.length > 0)
-    .map((m) => ({ id: mid(m.id), tags: m.tags.map((t) => t.toLowerCase()) }));
+    .filter((m) => safeStringArray(m.tags).length > 0)
+    .map((m) => ({ id: mid(m.id), tags: safeStringArray(m.tags).map((t) => t.toLowerCase()) }));
 
   for (const item of input.contentItems) {
     if (item.status === "Archived" || item.status === "Published") continue;

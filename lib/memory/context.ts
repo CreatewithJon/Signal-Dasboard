@@ -1,4 +1,5 @@
 import type { MemoryItem } from "@/lib/types/memory";
+import { safeStringArray } from "@/lib/utils/arrays";
 import type { Project, ProjectTask } from "@/lib/types/projects";
 import type { ContentItem } from "@/lib/types/content";
 import type { Person } from "@/lib/types/relationships";
@@ -635,7 +636,7 @@ export function getContentContext(
         item.description,
         item.notes,
         item.format,
-        ...item.platforms,
+        ...safeStringArray(item.platforms),
       ]
         .join(" ")
         .toLowerCase();
@@ -649,7 +650,7 @@ export function getContentContext(
       }
 
       // Platform keyword in query
-      for (const platform of item.platforms) {
+      for (const platform of safeStringArray(item.platforms)) {
         if (q.includes(platform.toLowerCase())) score += 5;
       }
 
@@ -691,7 +692,7 @@ export function getContentContext(
   for (let i = 0; i < scored.length; i++) {
     const item = scored[i];
     const isOverdue = item.publish_date && item.publish_date < todayStr;
-    const platformStr = item.platforms.length > 0 ? item.platforms.join(", ") : "No platform";
+    const platformStr = safeStringArray(item.platforms).length > 0 ? safeStringArray(item.platforms).join(", ") : "No platform";
     const projectName = item.related_project_id
       ? (projectMap.get(item.related_project_id) ?? null)
       : null;
@@ -789,7 +790,7 @@ export function getProjectContext(
 
   // Related memories — exact project id match
   const relatedMemories = memoryItems.filter((m) =>
-    m.relatedProjectIds.includes(matched!.id)
+    safeStringArray(m.relatedProjectIds).includes(matched!.id)
   );
 
   const lines: string[] = [
@@ -876,8 +877,8 @@ export function getRelevantMemoryContext(
       const searchText = [
         item.title,
         item.content,
-        ...item.tags,
-        ...item.relatedPeople,
+        ...safeStringArray(item.tags),
+        ...safeStringArray(item.relatedPeople),
         item.type,
       ]
         .join(" ")
@@ -892,13 +893,13 @@ export function getRelevantMemoryContext(
       }
 
       // Exact tag match — strong signal
-      for (const tag of item.tags) {
+      for (const tag of safeStringArray(item.tags)) {
         const t = tag.toLowerCase();
         if (q.includes(t) || t.includes(q)) score += 5;
       }
 
       // People name match
-      for (const person of item.relatedPeople) {
+      for (const person of safeStringArray(item.relatedPeople)) {
         const p = person.toLowerCase();
         if (p.includes(q) || q.includes(p)) score += 4;
       }
@@ -934,19 +935,19 @@ export function getRelevantMemoryContext(
         item.content,
       ];
 
-      if (item.relatedProjectIds.length > 0) {
-        const names = item.relatedProjectIds
+      if (safeStringArray(item.relatedProjectIds).length > 0) {
+        const names = safeStringArray(item.relatedProjectIds)
           .map((id) => projectMap.get(id) ?? id)
           .join(", ");
         lines.push(`Related Projects: ${names}`);
       }
 
-      if (item.relatedPeople.length > 0) {
-        lines.push(`People: ${item.relatedPeople.join(", ")}`);
+      if (safeStringArray(item.relatedPeople).length > 0) {
+        lines.push(`People: ${safeStringArray(item.relatedPeople).join(", ")}`);
       }
 
-      if (item.tags.length > 0) {
-        lines.push(`Tags: ${item.tags.map((t) => `#${t}`).join(" ")}`);
+      if (safeStringArray(item.tags).length > 0) {
+        lines.push(`Tags: ${safeStringArray(item.tags).map((t) => `#${t}`).join(" ")}`);
       }
 
       return lines.filter(Boolean).join("\n");

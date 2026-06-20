@@ -11,6 +11,7 @@ import type { Person } from "@/lib/types/relationships";
 import type { Opportunity } from "@/lib/types/opportunities";
 import { KEYS } from "@/lib/keys";
 import { saveMemoryItemDual, getMemoryItemsLocal } from "@/lib/repositories/memoryRepository";
+import { safeStringArray } from "@/lib/utils/arrays";
 
 interface Message {
   role: "user" | "assistant";
@@ -265,17 +266,17 @@ export default function AIPanel() {
                     "",
                     item.content,
                   ];
-                  if (item.relatedProjectIds.length > 0) {
-                    const names = item.relatedProjectIds
+                  if (safeStringArray(item.relatedProjectIds).length > 0) {
+                    const names = safeStringArray(item.relatedProjectIds)
                       .map((id) => projectMap.get(id) ?? id)
                       .join(", ");
                     lines.push(`Related Projects: ${names}`);
                   }
-                  if (item.relatedPeople.length > 0) {
-                    lines.push(`People: ${item.relatedPeople.join(", ")}`);
+                  if (safeStringArray(item.relatedPeople).length > 0) {
+                    lines.push(`People: ${safeStringArray(item.relatedPeople).join(", ")}`);
                   }
-                  if (item.tags.length > 0) {
-                    lines.push(`Tags: ${item.tags.map((t) => `#${t}`).join(" ")}`);
+                  if (safeStringArray(item.tags).length > 0) {
+                    lines.push(`Tags: ${safeStringArray(item.tags).map((t) => `#${t}`).join(" ")}`);
                   }
                   return lines.filter(Boolean).join("\n");
                 }),

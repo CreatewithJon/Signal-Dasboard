@@ -394,12 +394,15 @@ function ContentModal({
   }
 
   function togglePlatform(p: ContentPlatform) {
-    setDraft((d) => ({
-      ...d,
-      platforms: d.platforms.includes(p)
-        ? d.platforms.filter((x) => x !== p)
-        : [...d.platforms, p],
-    }));
+    setDraft((d) => {
+      const platforms = (Array.isArray(d.platforms) ? d.platforms : []) as ContentPlatform[];
+      return {
+        ...d,
+        platforms: platforms.includes(p)
+          ? platforms.filter((x) => x !== p)
+          : [...platforms, p],
+      };
+    });
   }
 
   function handleSave() {
@@ -437,12 +440,12 @@ function ContentModal({
             />
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               <StatusBadge status={draft.status} />
-              {draft.platforms.slice(0, 3).map((p) => (
+              {((Array.isArray(draft.platforms) ? draft.platforms : []) as ContentPlatform[]).slice(0, 3).map((p) => (
                 <PlatformChip key={p} platform={p} />
               ))}
-              {draft.platforms.length > 3 && (
+              {((Array.isArray(draft.platforms) ? draft.platforms : []) as ContentPlatform[]).length > 3 && (
                 <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.3)" }}>
-                  +{draft.platforms.length - 3}
+                  +{((Array.isArray(draft.platforms) ? draft.platforms : []) as ContentPlatform[]).length - 3}
                 </span>
               )}
             </div>
@@ -539,7 +542,7 @@ function ContentModal({
                 <div className="flex flex-wrap gap-1.5">
                   {PLATFORMS.map((p) => {
                     const c = PLATFORM_CFG[p];
-                    const active = draft.platforms.includes(p);
+                    const active = ((Array.isArray(draft.platforms) ? draft.platforms : []) as ContentPlatform[]).includes(p);
                     return (
                       <button
                         key={p}
@@ -748,12 +751,12 @@ function ContentCard({
         >
           {item.format}
         </span>
-        {item.platforms.slice(0, 2).map((p) => (
+        {((Array.isArray(item.platforms) ? item.platforms : []) as ContentPlatform[]).slice(0, 2).map((p) => (
           <PlatformChip key={p} platform={p} />
         ))}
-        {item.platforms.length > 2 && (
+        {((Array.isArray(item.platforms) ? item.platforms : []) as ContentPlatform[]).length > 2 && (
           <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.25)" }}>
-            +{item.platforms.length - 2}
+            +{((Array.isArray(item.platforms) ? item.platforms : []) as ContentPlatform[]).length - 2}
           </span>
         )}
       </div>
@@ -842,7 +845,7 @@ export default function ContentPipeline() {
   const filtered = items.filter((i) => {
     if (!showArchived && i.status === "Archived") return false;
     if (filterStatus !== "All" && i.status !== filterStatus) return false;
-    if (filterPlatform && !i.platforms.includes(filterPlatform)) return false;
+    if (filterPlatform && !((Array.isArray(i.platforms) ? i.platforms : []) as ContentPlatform[]).includes(filterPlatform)) return false;
     if (filterPriority && i.priority !== filterPriority) return false;
     if (search) {
       const q = search.toLowerCase();

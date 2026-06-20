@@ -20,6 +20,7 @@
  */
 
 import type { MemoryItem } from "@/lib/types/memory";
+import { safeStringArray } from "@/lib/utils/arrays";
 
 // ── Provider detection ─────────────────────────────────────────────────────
 
@@ -70,12 +71,12 @@ export function formatMemoryForEmbedding(item: MemoryItem): string {
     parts.push(item.content.trim());
   }
 
-  if (item.tags.length > 0) {
-    parts.push(`Tags: ${item.tags.join(", ")}`);
+  if (safeStringArray(item.tags).length > 0) {
+    parts.push(`Tags: ${safeStringArray(item.tags).join(", ")}`);
   }
 
-  if (item.relatedPeople.length > 0) {
-    parts.push(`People: ${item.relatedPeople.join(", ")}`);
+  if (safeStringArray(item.relatedPeople).length > 0) {
+    parts.push(`People: ${safeStringArray(item.relatedPeople).join(", ")}`);
   }
 
   return parts.join("\n").slice(0, 8000); // Stay well within token limits
