@@ -215,15 +215,15 @@ function buildEdges(input: GraphInput, nodeIds: Set<string>): GraphEdge[] {
   // ── Person → Project ───────────────────────────────────────────────────
   for (const person of input.people) {
     if (person.status === "Archived") continue;
-    for (const projId of person.related_project_ids) {
+    for (const projId of (person.related_project_ids ?? [])) {
       addEdge(pid(person.id), pjid(projId), "related_to",
         `${person.name} is linked to this project`);
     }
-    for (const oppId of person.related_opportunity_ids) {
+    for (const oppId of (person.related_opportunity_ids ?? [])) {
       addEdge(pid(person.id), oid(oppId), "supports",
         `${person.name} is associated with this opportunity`);
     }
-    for (const memId of person.related_memory_ids) {
+    for (const memId of (person.related_memory_ids ?? [])) {
       addEdge(pid(person.id), mid(memId), "referenced_by",
         `${person.name} is referenced in this memory`);
     }
@@ -240,15 +240,15 @@ function buildEdges(input: GraphInput, nodeIds: Set<string>): GraphEdge[] {
 
   for (const opp of input.opportunities) {
     if (opp.status === "Archived" || opp.status === "Converted") continue;
-    for (const projId of opp.related_project_ids) {
+    for (const projId of (opp.related_project_ids ?? [])) {
       addEdge(oid(opp.id), pjid(projId), "supports",
         `Opportunity supports this project`);
     }
-    for (const memId of opp.related_memory_ids) {
+    for (const memId of (opp.related_memory_ids ?? [])) {
       addEdge(oid(opp.id), mid(memId), "referenced_by",
         `Opportunity is grounded in this memory`);
     }
-    for (const name of opp.related_people) {
+    for (const name of (opp.related_people ?? [])) {
       const personNodeId = personByName.get(name.toLowerCase());
       if (personNodeId) {
         addEdge(oid(opp.id), personNodeId, "connected_to",
@@ -266,11 +266,11 @@ function buildEdges(input: GraphInput, nodeIds: Set<string>): GraphEdge[] {
 
   // ── Memory → Project / People (by name) ───────────────────────────────
   for (const mem of input.memoryItems) {
-    for (const projId of mem.relatedProjectIds) {
+    for (const projId of (mem.relatedProjectIds ?? [])) {
       addEdge(mid(mem.id), pjid(projId), "referenced_by",
         `Memory references this project`);
     }
-    for (const name of mem.relatedPeople) {
+    for (const name of (mem.relatedPeople ?? [])) {
       const personNodeId = personByName.get(name.toLowerCase());
       if (personNodeId) {
         addEdge(mid(mem.id), personNodeId, "referenced_by",
@@ -283,15 +283,15 @@ function buildEdges(input: GraphInput, nodeIds: Set<string>): GraphEdge[] {
   // Only connect when there is at least one shared tag (and both have tags)
   const personTags = new Map<string, string[]>();
   for (const p of input.people) {
-    if (p.status !== "Archived" && p.tags.length > 0) {
-      personTags.set(pid(p.id), p.tags.map((t) => t.toLowerCase()));
+    if (p.status !== "Archived" && (p.tags ?? []).length > 0) {
+      personTags.set(pid(p.id), (p.tags ?? []).map((t) => t.toLowerCase()));
     }
   }
 
   // Person ↔ Memory by shared tags
   for (const mem of input.memoryItems) {
-    if (mem.tags.length === 0) continue;
-    const memTagSet = new Set(mem.tags.map((t) => t.toLowerCase()));
+    if ((mem.tags ?? []).length === 0) continue;
+    const memTagSet = new Set((mem.tags ?? []).map((t) => t.toLowerCase()));
     for (const [personNodeId, pTags] of personTags) {
       const shared = pTags.filter((t) => memTagSet.has(t));
       if (shared.length >= 2) {
@@ -442,7 +442,7 @@ function buildInsights(
   const oppCountByProject = new Map<string, string[]>();
   for (const opp of input.opportunities) {
     if (opp.status === "Archived" || opp.status === "Converted") continue;
-    for (const projId of opp.related_project_ids) {
+    for (const projId of (opp.related_project_ids ?? [])) {
       const list = oppCountByProject.get(projId) ?? [];
       list.push(oid(opp.id));
       oppCountByProject.set(projId, list);
@@ -514,7 +514,7 @@ function buildInsights(
   // ── 6. Isolated important memories ────────────────────────────────────
   for (const mem of input.memoryItems) {
     if (mem.importance !== "High" && mem.importance !== "Critical") continue;
-    if (mem.relatedProjectIds.length > 0 || mem.relatedPeople.length > 0) continue;
+    if ((mem.relatedProjectIds ?? []).length > 0 || (mem.relatedPeople ?? []).length > 0) continue;
     const memNodeId = mid(mem.id);
     const weight = weightMap.get(memNodeId) ?? 0;
     if (weight > 0) continue; // has connections, fine

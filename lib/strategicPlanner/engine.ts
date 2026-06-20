@@ -213,7 +213,7 @@ function deriveObjectives(input: StrategicInput): StrategicObjective[] {
   const oppsByProject = new Map<string, number>();
 
   for (const opp of opportunities) {
-    for (const pid of opp.related_project_ids) {
+    for (const pid of (opp.related_project_ids ?? [])) {
       oppsByProject.set(pid, (oppsByProject.get(pid) ?? 0) + 1);
     }
   }
@@ -302,7 +302,7 @@ function detectDependencies(input: StrategicInput): DependencyChain[] {
   const oppsByProject = new Map<string, string[]>();
 
   for (const opp of opportunities.filter((o) => o.status !== "Archived")) {
-    for (const pid of opp.related_project_ids) {
+    for (const pid of (opp.related_project_ids ?? [])) {
       const arr = oppsByProject.get(pid) ?? [];
       arr.push(opp.title);
       oppsByProject.set(pid, arr);

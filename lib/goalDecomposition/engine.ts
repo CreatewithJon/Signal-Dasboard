@@ -427,7 +427,7 @@ function suggestFollowUps(
   const linked = people.filter(
     (p) =>
       p.status !== "Archived" &&
-      p.related_project_ids.some((pid) => obj.relatedProjects.includes(pid))
+      (p.related_project_ids ?? []).some((pid) => obj.relatedProjects.includes(pid))
   );
   for (const person of linked.slice(0, 2)) {
     results.push({
